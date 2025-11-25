@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\Admin\MediaController;
 use App\Http\Controllers\Api\Admin\BannerController;
 use App\Http\Controllers\Api\Admin\TestimonialController;
 use App\Http\Controllers\Api\Admin\FaqController;
+use App\Http\Controllers\Api\Admin\AdminSubscriptionController;
+use App\Http\Controllers\Api\Admin\ClientController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -238,6 +240,22 @@ Route::prefix('v1')->group(function () {
         Route::post('/{subscription}/downgrade', [App\Http\Controllers\Api\SubscriptionController::class, 'downgrade'])
             ->name('api.subscriptions.downgrade')
             ->middleware('permission:subscriptions.downgrade');
+
+        // Client-specific: change-plan, reactivate, proration-preview, addons
+        Route::post('/{subscription}/change-plan', [App\Http\Controllers\Api\SubscriptionController::class, 'changePlan'])
+            ->name('api.subscriptions.change-plan');
+        
+        Route::post('/{subscription}/reactivate', [App\Http\Controllers\Api\SubscriptionController::class, 'reactivate'])
+            ->name('api.subscriptions.reactivate');
+        
+        Route::get('/{subscription}/proration-preview', [App\Http\Controllers\Api\SubscriptionController::class, 'prorationPreview'])
+            ->name('api.subscriptions.proration-preview');
+        
+        Route::post('/{subscription}/addons', [App\Http\Controllers\Api\SubscriptionController::class, 'addAddon'])
+            ->name('api.subscriptions.addons.add');
+        
+        Route::delete('/{subscription}/addons/{addon}', [App\Http\Controllers\Api\SubscriptionController::class, 'removeAddon'])
+            ->name('api.subscriptions.addons.remove');
         
         // Staff/Admin Only Routes
         Route::middleware('role:admin|staff')->group(function () {
@@ -249,6 +267,35 @@ Route::prefix('v1')->group(function () {
                 ->name('api.subscriptions.activate')
                 ->middleware('permission:subscriptions.activate');
         });
+    });
+
+    // ============================================
+    // ADMIN SUBSCRIPTIONS ROUTES (Separate Admin Routes)
+    // ============================================
+    Route::prefix('admin/subscriptions')->middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+        Route::get('/', [App\Http\Controllers\Api\Admin\SubscriptionController::class, 'index'])
+            ->name('api.admin.subscriptions.index');
+        
+        Route::post('/', [App\Http\Controllers\Api\Admin\SubscriptionController::class, 'store'])
+            ->name('api.admin.subscriptions.store');
+        
+        Route::get('/analytics', [App\Http\Controllers\Api\Admin\SubscriptionController::class, 'analytics'])
+            ->name('api.admin.subscriptions.analytics');
+        
+        Route::get('/{subscription}', [App\Http\Controllers\Api\Admin\SubscriptionController::class, 'show'])
+            ->name('api.admin.subscriptions.show');
+        
+        Route::post('/{subscription}/activate', [App\Http\Controllers\Api\Admin\SubscriptionController::class, 'activate'])
+            ->name('api.admin.subscriptions.activate');
+        
+        Route::post('/{subscription}/suspend', [App\Http\Controllers\Api\Admin\SubscriptionController::class, 'suspend'])
+            ->name('api.admin.subscriptions.suspend');
+        
+        Route::post('/{subscription}/reactivate', [App\Http\Controllers\Api\Admin\SubscriptionController::class, 'reactivate'])
+            ->name('api.admin.subscriptions.reactivate');
+        
+        Route::post('/{subscription}/change-plan', [App\Http\Controllers\Api\Admin\SubscriptionController::class, 'changePlan'])
+            ->name('api.admin.subscriptions.change-plan');
     });
 
     // ============================================
@@ -409,6 +456,59 @@ Route::prefix('v1')->group(function () {
     });
 
     // ============================================
+    // CLIENTS MANAGEMENT ROUTES (Admin/Staff Only)
+    // ============================================
+    Route::prefix('admin/clients')->middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+        Route::get('/', [ClientController::class, 'index'])
+            ->name('api.admin.clients.index');
+        
+        Route::post('/', [ClientController::class, 'store'])
+            ->name('api.admin.clients.store');
+        
+        Route::get('/statistics', [ClientController::class, 'statistics'])
+            ->name('api.admin.clients.statistics');
+        
+        Route::get('/{client}', [ClientController::class, 'show'])
+            ->name('api.admin.clients.show');
+        
+        Route::put('/{client}', [ClientController::class, 'update'])
+            ->name('api.admin.clients.update');
+        
+        Route::delete('/{client}', [ClientController::class, 'destroy'])
+            ->name('api.admin.clients.destroy');
+        
+        Route::post('/{client}/suspend', [ClientController::class, 'suspend'])
+            ->name('api.admin.clients.suspend');
+        
+        Route::post('/{client}/activate', [ClientController::class, 'activate'])
+            ->name('api.admin.clients.activate');
+    });
+
+    // ============================================
+    // STAFF INVITATION ROUTES (Admin Only)
+    // ============================================
+    Route::prefix('admin/staff-invitations')->middleware(['auth:sanctum', 'role:admin'])->group(function () {
+        Route::get('/', [App\Http\Controllers\Api\Admin\InvitationController::class, 'index'])
+            ->name('api.admin.staff-invitations.index');
+        
+        Route::post('/', [App\Http\Controllers\Api\Admin\InvitationController::class, 'store'])
+            ->name('api.admin.staff-invitations.store');
+        
+        Route::get('/statistics', [App\Http\Controllers\Api\Admin\InvitationController::class, 'statistics'])
+            ->name('api.admin.staff-invitations.statistics');
+        
+        Route::post('/{invitation}/resend', [App\Http\Controllers\Api\Admin\InvitationController::class, 'resend'])
+            ->name('api.admin.staff-invitations.resend');
+        
+        Route::delete('/{invitation}', [App\Http\Controllers\Api\Admin\InvitationController::class, 'destroy'])
+            ->name('api.admin.staff-invitations.destroy');
+    });
+
+    // Public route for accepting invitation (no auth required)
+    Route::post('/staff-invitations/accept', [App\Http\Controllers\Api\Admin\InvitationController::class, 'accept'])
+        ->name('api.staff-invitations.accept');
+
+// ============================================
     // REPORTS & ANALYTICS (Admin/Staff Only)
     // ============================================
     Route::prefix('reports')->middleware(['auth:sanctum', 'role:admin|staff|sales'])->group(function () {
@@ -431,6 +531,50 @@ Route::prefix('v1')->group(function () {
         Route::post('/export', [App\Http\Controllers\Api\ReportController::class, 'export'])
             ->name('api.reports.export')
             ->middleware('permission:reports.export');
+    });
+
+    // ============================================
+    // ROLES & PERMISSIONS MANAGEMENT (Admin Only)
+    // ============================================
+    Route::prefix('admin/roles')->middleware(['auth:sanctum', 'role:admin'])->group(function () {
+        // Roles CRUD
+        Route::get('/', [App\Http\Controllers\Api\Admin\RoleController::class, 'index'])
+            ->name('api.admin.roles.index')
+            ->middleware('permission:roles.view');
+        
+        Route::get('/permissions', [App\Http\Controllers\Api\Admin\RoleController::class, 'permissions'])
+            ->name('api.admin.roles.permissions')
+            ->middleware('permission:permissions.view');
+        
+        Route::get('/{role}', [App\Http\Controllers\Api\Admin\RoleController::class, 'show'])
+            ->name('api.admin.roles.show')
+            ->middleware('permission:roles.view');
+        
+        Route::post('/', [App\Http\Controllers\Api\Admin\RoleController::class, 'store'])
+            ->name('api.admin.roles.store')
+            ->middleware('permission:roles.create');
+        
+        Route::put('/{role}', [App\Http\Controllers\Api\Admin\RoleController::class, 'update'])
+            ->name('api.admin.roles.update')
+            ->middleware('permission:roles.edit');
+        
+        Route::delete('/{role}', [App\Http\Controllers\Api\Admin\RoleController::class, 'destroy'])
+            ->name('api.admin.roles.destroy')
+            ->middleware('permission:roles.delete');
+        
+        // Role Permissions
+        Route::post('/{role}/permissions', [App\Http\Controllers\Api\Admin\RoleController::class, 'assignPermissions'])
+            ->name('api.admin.roles.permissions.assign')
+            ->middleware('permission:permissions.assign');
+        
+        Route::delete('/{role}/permissions', [App\Http\Controllers\Api\Admin\RoleController::class, 'revokePermissions'])
+            ->name('api.admin.roles.permissions.revoke')
+            ->middleware('permission:permissions.assign');
+        
+        // Role Users
+        Route::get('/{role}/users', [App\Http\Controllers\Api\Admin\RoleController::class, 'users'])
+            ->name('api.admin.roles.users')
+            ->middleware('permission:users.view.all');
     });
 
     // ============================================
