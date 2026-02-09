@@ -1,0 +1,43 @@
+# Laravel standard .gitignore
+
+# Compiled files
+*.class
+*.log
+*.lock
+*.DS_Store
+*.env
+
+# Node modules
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Laravel specific
+/vendor/
+composer.lock
+.env.backup
+.env.production
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.phpunit/
+
+# Quodo
+.quodo
+
