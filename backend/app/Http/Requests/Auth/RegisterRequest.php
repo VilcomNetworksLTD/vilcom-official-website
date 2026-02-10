@@ -41,7 +41,7 @@ class RegisterRequest extends FormRequest
                     ->mixedCase()
                     ->numbers()
                     ->symbols()
-                    ->uncompromised()
+                    ->uncompromised(app()->environment('testing'))
             ],
             
             // Contact Information
@@ -54,7 +54,7 @@ class RegisterRequest extends FormRequest
             'secondary_phone' => [
                 'nullable',
                 'string',
-                'regex:/^(\+254|254|0)[17]\d{8}$/'
+                'regex:/^(\+254|254|0)[17]\d{8}$/',
             ],
             
             // Address Information
@@ -64,7 +64,7 @@ class RegisterRequest extends FormRequest
             'postal_code' => ['nullable', 'string', 'max:20'],
             
             // Customer Type
-            'customer_type' => ['required', 'in:individual,business'],
+            'customer_type' => ['nullable', 'in:individual,business'],
             
             // Business Information (required if customer_type is business)
             'company_name' => ['required_if:customer_type,business', 'nullable', 'string', 'max:255'],
@@ -151,14 +151,50 @@ class RegisterRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        // Format phone number to international format
+        $phone = preg_replace('/[^0-9+]/', '', $this->phone ?? '');
+        if (!empty($phone)) {
+            // Convert to international format if starts with 0
+            if (substr($phone, 0, 1) === '0') {
+                $phone = '+254' . substr($phone, 1);
+            }
+            // Add +254 if not present
+            if (substr($phone, 0, 1) !== '+') {
+                $phone = '+254' . $phone;
+            }
+        }
+        
+        // Format secondary phone if provided
+        $secondaryPhoneRaw = $this->secondary_phone ? preg_replace('/[^0-9+]/', '', $this->secondary_phone) : null;
+        $secondaryPhoneData = null;
+        if (!empty($secondaryPhoneRaw)) {
+            // Convert to international format if starts with 0
+            if (substr($secondaryPhoneRaw, 0, 1) === '0') {
+                $secondaryPhoneData = '+254' . substr($secondaryPhoneRaw, 1);
+            }
+            // Add +254 if not present
+            elseif (substr($secondaryPhoneRaw, 0, 1) !== '+') {
+                $secondaryPhoneData = '+254' . $secondaryPhoneRaw;
+            }
+            else {
+                $secondaryPhoneData = $secondaryPhoneRaw;
+            }
+        }
+
         // Trim whitespace from string inputs
-        $this->merge([
+        $mergeData = [
             'name' => trim($this->name ?? ''),
             'email' => strtolower(trim($this->email ?? '')),
-            'phone' => preg_replace('/\s+/', '', $this->phone ?? ''),
-            'secondary_phone' => $this->secondary_phone ? preg_replace('/\s+/', '', $this->secondary_phone) : null,
+            'phone' => $phone,
             'company_name' => trim($this->company_name ?? ''),
             'tax_pin' => strtoupper(trim($this->tax_pin ?? '')),
-        ]);
+        ];
+        
+        // Only add secondary_phone if it has a valid value
+        if ($secondaryPhoneData !== null) {
+            $mergeData['secondary_phone'] = $secondaryPhoneData;
+        }
+        
+        $this->merge($mergeData);
     }
 }

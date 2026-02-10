@@ -8,8 +8,6 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\Activitylog\LogOptions;
 
 class User extends Authenticatable
 {
@@ -17,7 +15,6 @@ class User extends Authenticatable
         HasFactory, 
         Notifiable, 
         HasRoles, 
-        LogsActivity,
         SoftDeletes;
 
     /**
@@ -461,13 +458,6 @@ class User extends Authenticatable
             'suspension_reason' => $reason,
         ]);
 
-        // Log activity
-        activity()
-            ->causedBy(auth()->user())
-            ->performedOn($this)
-            ->withProperties(['reason' => $reason])
-            ->log('User suspended');
-
         return $this;
     }
 
@@ -482,12 +472,6 @@ class User extends Authenticatable
             'suspension_reason' => null,
         ]);
 
-        // Log activity
-        activity()
-            ->causedBy(auth()->user())
-            ->performedOn($this)
-            ->log('User activated');
-
         return $this;
     }
 
@@ -497,12 +481,6 @@ class User extends Authenticatable
     public function deactivate()
     {
         $this->update(['status' => 'inactive']);
-
-        // Log activity
-        activity()
-            ->causedBy(auth()->user())
-            ->performedOn($this)
-            ->log('User deactivated');
 
         return $this;
     }
