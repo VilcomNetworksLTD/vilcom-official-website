@@ -147,36 +147,36 @@
       inset -4px 0 8px hsl(200 80% 90% / 0.1);
   }
 
-  /* Bubble glass for dark backgrounds */
+  /* Bubble glass for dark backgrounds - brighter, more translucent */
   .glass-bubble-dark {
     background: radial-gradient(
       ellipse at 30% 30%,
-      hsl(200 90% 80% / 0.18) 0%,
-      hsl(220 80% 60% / 0.12) 40%,
-      hsl(220 70% 50% / 0.08) 70%,
-      hsl(230 60% 40% / 0.05) 100%
+      hsl(200 90% 85% / 0.22) 0%,
+      hsl(220 80% 65% / 0.15) 40%,
+      hsl(220 70% 55% / 0.10) 70%,
+      hsl(230 60% 45% / 0.06) 100%
     );
-    backdrop-filter: blur(30px) saturate(180%);
-    -webkit-backdrop-filter: blur(30px) saturate(180%);
-    border: 1.5px solid hsl(200 90% 70% / 0.25);
+    backdrop-filter: blur(30px) saturate(200%);
+    -webkit-backdrop-filter: blur(30px) saturate(200%);
+    border: 1.5px solid hsl(200 90% 75% / 0.30);
     box-shadow:
-      0 30px 80px -20px hsl(220 80% 40% / 0.4),
-      0 0 120px hsl(200 90% 50% / 0.08),
-      inset 0 2px 4px hsl(200 90% 80% / 0.2),
-      inset 0 -4px 8px hsl(220 80% 50% / 0.1),
-      inset 4px 0 8px hsl(200 80% 70% / 0.1),
-      inset -4px 0 8px hsl(220 70% 60% / 0.05);
+      0 30px 80px -20px hsl(220 80% 45% / 0.35),
+      0 0 120px hsl(200 90% 55% / 0.10),
+      inset 0 2px 4px hsl(200 90% 85% / 0.25),
+      inset 0 -4px 8px hsl(220 80% 55% / 0.12),
+      inset 4px 0 8px hsl(200 80% 75% / 0.12),
+      inset -4px 0 8px hsl(220 70% 65% / 0.08);
   }
 
-  /* Dark glass for elements on dark backgrounds */
+  /* Dark glass for elements on dark backgrounds - brighter, more translucent */
   .glass-dark {
-    background: hsl(220 60% 20% / 0.3);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid hsl(200 80% 60% / 0.15);
+    background: hsl(220 50% 25% / 0.35);
+    backdrop-filter: blur(20px) saturate(200%);
+    -webkit-backdrop-filter: blur(20px) saturate(200%);
+    border: 1px solid hsl(200 80% 65% / 0.20);
     box-shadow:
-      0 8px 32px hsl(220 80% 30% / 0.3),
-      inset 0 1px 0 hsl(200 80% 70% / 0.1);
+      0 8px 32px hsl(220 80% 35% / 0.25),
+      inset 0 1px 0 hsl(200 80% 75% / 0.15);
   }
 
   /* Cyan text gradient for dark backgrounds */

@@ -17,13 +17,13 @@ const Navbar = () => {
   const location = useLocation();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 glass-crystal border-b border-white/60">
+    <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/40">
       <div className="container mx-auto flex items-center justify-between h-16 px-4">
         <Link to="/" className="flex items-center gap-2 font-heading font-bold text-xl text-foreground">
           <div className="w-9 h-9 rounded-lg gradient-royal flex items-center justify-center shadow-lg">
-            <Wifi className="w-5 h-5 text-primary-foreground" />
+            <Wifi className="w-5 h-5 text-white" />
           </div>
-          <span>SkyNet<span className="text-gradient-royal">Fiber</span></span>
+          <span>Vilcom<span className="text-gradient-royal">Network</span></span>
         </Link>
 
         {/* Desktop */}
@@ -35,7 +35,7 @@ const Navbar = () => {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 location.pathname === link.to
                   ? "text-primary bg-primary/10"
-                  : "text-foreground/70 hover:text-foreground hover:bg-primary/5"
+                  : "text-slate-700 hover:text-primary hover:bg-primary/5"
               }`}
             >
               {link.label}
@@ -44,36 +44,36 @@ const Navbar = () => {
         </div>
 
         <div className="hidden md:flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="text-foreground/70 hover:text-foreground">
+          <Button variant="ghost" size="sm" className="text-slate-700 hover:text-primary">
             Login
           </Button>
-          <Button size="sm" className="gradient-royal text-primary-foreground font-semibold shadow-lg royal-glow border-0">
+          <Button size="sm" className="gradient-royal text-white font-semibold shadow-lg royal-glow border-0">
             Get Started
           </Button>
         </div>
 
         {/* Mobile toggle */}
-        <button onClick={() => setOpen(!open)} className="md:hidden p-2 text-foreground">
+        <button onClick={() => setOpen(!open)} className="md:hidden p-2 text-slate-700">
           {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
 
       {/* Mobile menu */}
       {open && (
-        <div className="md:hidden glass-strong border-t border-border/30 px-4 pb-4">
+        <div className="md:hidden glass border-t border-white/40 px-4 pb-4">
           {navLinks.map((link) => (
             <Link
               key={link.to}
               to={link.to}
               onClick={() => setOpen(false)}
-              className="block py-3 text-sm font-medium text-foreground/80 hover:text-foreground border-b border-border/20"
+              className="block py-3 text-sm font-medium text-slate-700 hover:text-primary border-b border-slate-200/20"
             >
               {link.label}
             </Link>
           ))}
           <div className="flex gap-3 mt-4">
-            <Button variant="ghost" size="sm" className="flex-1">Login</Button>
-            <Button size="sm" className="flex-1 gradient-royal text-primary-foreground font-semibold border-0">Get Started</Button>
+            <Button variant="ghost" size="sm" className="flex-1 text-slate-700">Login</Button>
+            <Button size="sm" className="flex-1 gradient-royal text-white font-semibold border-0">Get Started</Button>
           </div>
         </div>
       )}
@@ -82,3 +82,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+

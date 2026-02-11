@@ -7,13 +7,13 @@ import FooterSection from "@/components/FooterSection";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-[hsl(225,50%,6%)]">
+    <div className="min-h-screen gradient-bg">
       <Navbar />
       <main>
         <HeroSection />
         <ServicesSection />
-        <TestimonialsSection />
         <PricingSection />
+        <TestimonialsSection />
       </main>
       <FooterSection />
     </div>

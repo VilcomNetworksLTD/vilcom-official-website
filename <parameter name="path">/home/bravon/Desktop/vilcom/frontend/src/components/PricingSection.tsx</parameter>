@@ -1,0 +1,167 @@
+<parameter name="content">import { Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+
+const PricingSection = () => {
+  const homePlans = [
+    {
+      name: "Basic",
+      speed: "20Mbps",
+      price: "KSh 2,500",
+      period: "/mo",
+      features: ["Unlimited Data", "Standard Support", "1 Device"],
+      popular: false,
+    },
+    {
+      name: "Standard",
+      speed: "50Mbps",
+      price: "KSh 3,500",
+      period: "/mo",
+      features: ["Unlimited Data", "Priority Support", "3 Devices"],
+      popular: false,
+    },
+    {
+      name: "Premium",
+      speed: "100Mbps",
+      price: "KSh 5,000",
+      period: "/mo",
+      features: ["Unlimited Data", "24/7 Support", "5 Devices", "Free Router"],
+      popular: true,
+    },
+    {
+      name: "Ultra",
+      speed: "1Gbps",
+      price: "KSh 8,000",
+      period: "/mo",
+      features: ["Unlimited Data", "24/7 Support", "Unlimited Devices", "Premium Router"],
+      popular: false,
+    },
+  ];
+
+  const businessPlans = [
+    {
+      name: "Startup",
+      speed: "100Mbps",
+      price: "KSh 7,000",
+      period: "/mo",
+      features: ["Static IP", "Business Support", "5 Users", "SLA"],
+      popular: false,
+    },
+    {
+      name: "Growth",
+      speed: "500Mbps",
+      price: "KSh 15,000",
+      period: "/mo",
+      features: ["Static IPs", "24/7 Support", "20 Users", "Premium SLA", "Cloud Backup"],
+      popular: false,
+    },
+    {
+      name: "Enterprise",
+      speed: "1Gbps",
+      price: "KSh 25,000",
+      period: "/mo",
+      features: ["Multiple IPs", "Dedicated Support", "Unlimited Users", "Gold SLA", "Cloud Backup"],
+      popular: false,
+    },
+    {
+      name: "Corporate",
+      speed: "10Gbps",
+      price: "KSh 80,000",
+      period: "/mo",
+      features: ["Custom Solutions", "Account Manager", "Unlimited Users", "Platinum SLA", "Full Backup"],
+      popular: false,
+    },
+  ];
+
+  return (
+    <section className="py-20 bg-gradient-to-b from-slate-50 to-white">
+      <div className="container mx-auto px-4">
+        {/* Home Fibre Section */}
+        <div className="mb-16">
+          <h2 className="text-3xl font-bold text-center mb-12 text-slate-800">Home Fibre</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {homePlans.map((plan) => (
+              <div
+                key={plan.name}
+                className={`relative bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl ${
+                  plan.popular ? "ring-2 ring-blue-500 scale-105" : ""
+                }`}
+              >
+                {plan.popular && (
+                  <div className="absolute top-0 left-0 right-0 bg-blue-500 text-white text-center py-2 text-sm font-semibold z-10">
+                    Most Popular
+                  </div>
+                )}
+                <div className={`p-6 ${plan.popular ? "pt-12" : ""}`}>
+                  <h3 className="text-xl font-bold text-slate-800 mb-2">{plan.name}</h3>
+                  <div className="flex items-baseline gap-1 mb-4">
+                    <span className="text-3xl font-bold text-blue-600">{plan.speed}</span>
+                  </div>
+                  <div className="flex items-baseline gap-1 mb-6">
+                    <span className="text-2xl font-bold text-slate-800">{plan.price}</span>
+                    <span className="text-slate-500">{plan.period}</span>
+                  </div>
+                  <ul className="space-y-3 mb-6">
+                    {plan.features.map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-sm text-slate-600">
+                        <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    asChild
+                    className={`w-full font-semibold py-3 rounded-xl transition-transform hover:scale-105 ${
+                      plan.popular
+                        ? "bg-blue-600 hover:bg-blue-700 text-white"
+                        : "bg-slate-800 hover:bg-slate-900 text-white"
+                    }`}
+                  >
+                    <Link to="/plans">Get Started</Link>
+                  </Button>
+                </div>
+            ))}
+          </div>
+
+        {/* Business Fibre Section */}
+        <div>
+          <h2 className="text-3xl font-bold text-center mb-12 text-slate-800">Business Fibre</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {businessPlans.map((plan) => (
+              <div
+                key={plan.name}
+                className="relative bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl"
+              >
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-slate-800 mb-2">{plan.name}</h3>
+                  <div className="flex items-baseline gap-1 mb-4">
+                    <span className="text-3xl font-bold text-blue-600">{plan.speed}</span>
+                  </div>
+                  <div className="flex items-baseline gap-1 mb-6">
+                    <span className="text-2xl font-bold text-slate-800">{plan.price}</span>
+                    <span className="text-slate-500">{plan.period}</span>
+                  </div>
+                  <ul className="space-y-3 mb-6">
+                    {plan.features.map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-sm text-slate-600">
+                        <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    asChild
+                    className="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 rounded-xl transition-transform hover:scale-105"
+                  >
+                    <Link to="/plans">Get Started</Link>
+                  </Button>
+                </div>
+            ))}
+          </div>
+      </div>
+    </section>
+  );
+};
+
+export default PricingSection;
+</parameter>
