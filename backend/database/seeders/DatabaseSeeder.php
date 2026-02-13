@@ -17,6 +17,12 @@ class DatabaseSeeder extends Seeder
         // Run role and permission seeder first
         $this->call(RoleAndPermissionSeeder::class);
 
+        // Seed categories (must run before products)
+        $this->call(CategorySeeder::class);
+
+        // Seed products
+        $this->call(ProductSeeder::class);
+
         // Create admin user
         $admin = User::create([
             'name' => 'Admin User',
