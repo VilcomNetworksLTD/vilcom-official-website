@@ -173,8 +173,8 @@ const Signup = () => {
         </div>
       </div>
 
-      {/* Left Side - Content */}
-      <div className="hidden lg:flex lg:w-1/2 relative z-10 flex-col justify-between p-12 xl:p-20">
+      {/* Left Side - Content - Square bubble panel */}
+      <div className="hidden md:flex md:w-[35%] lg:w-1/2 relative z-10 flex-col justify-between p-6 md:p-8 xl:p-20">
         {/* Logo */}
         <div className="mb-auto">
           <Link to="/" className="inline-block">
@@ -216,7 +216,7 @@ const Signup = () => {
       </div>
 
       {/* Right Side - Glass Card */}
-      <div className="w-full lg:w-3/5 flex items-center justify-center p-4 sm:p-8 lg:p-12 relative z-10">
+      <div className="w-full md:w-[65%] lg:w-3/5 flex items-center justify-center p-4 sm:p-8 lg:p-12 relative z-10">
         {/* Frosted Glass Card */}
         <div className="w-full max-w-4xl">
           <div className="glass-dark backdrop-blur-xl rounded-3xl p-8 sm:p-10 shadow-2xl border border-white/10">
@@ -506,8 +506,8 @@ const Signup = () => {
 
           </div>
 
-          {/* Mobile Logo (visible on small screens) */}
-          <div className="lg:hidden text-center mt-6">
+          {/* Mobile Logo (visible on small screens below md) */}
+          <div className="md:hidden text-center mt-6">
             <Link to="/" className="inline-flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
                 <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2">

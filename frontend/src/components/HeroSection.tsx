@@ -36,14 +36,14 @@ const HeroSection = () => {
       <div className="absolute top-[50%] right-[10%] w-5 h-5 rounded-full bg-[hsl(200,90%,65%)] blur-[8px] animate-bokeh opacity-40" style={{ animationDelay: '0.5s' }} />
       <div className="absolute bottom-[25%] right-[35%] w-7 h-7 rounded-full bg-[hsl(45,100%,60%)] blur-[11px] animate-bokeh opacity-35" style={{ animationDelay: '1.5s' }} />
 
-      <div className="relative z-10 container mx-auto px-4 pt-28 pb-16">
-        {/* The Liquid Glass Bubble */}
-        <div className="flex justify-center mb-16">
+      <div className="relative z-10 container mx-auto px-4 pt-24 md:pt-32 pb-16">
+        {/* The Liquid Glass Bubble - Left aligned with square shape - Responsive */}
+        <div className="flex justify-start mb-12 md:mb-16">
           <div className="relative animate-float">
             {/* Caustic reflections */}
-            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-[60%] h-8 bg-[hsl(340,80%,60%)] opacity-20 blur-[20px] rounded-full" />
+            <div className="absolute -bottom-6 md:-bottom-8 left-1/2 -translate-x-1/2 w-[60%] h-6 md:h-8 bg-[hsl(340,80%,60%)] opacity-20 blur-[20px] rounded-full" />
 
-            <div className="glass animate-morph w-full max-w-xl lg:max-w-2xl flex flex-col items-center text-center p-8 sm:p-10 lg:p-12 relative">
+            <div className="glass w-[85vw] sm:w-[70vw] md:w-[50vw] lg:w-[40vw] min-w-[280px] sm:min-w-[350px] md:min-w-[400px] max-w-[600px] h-[85vw] sm:h-[70vw] md:h-[50vw] lg:h-[40vw] min-h-[280px] sm:min-h-[350px] md:min-h-[400px] max-h-[600px] rounded-2xl md:rounded-3xl flex flex-col items-center justify-center text-center p-4 sm:p-6 md:p-8 lg:p-10 relative">
               {/* Inner refraction highlights */}
               <div className="absolute top-[15%] left-[20%] w-[40%] h-[20%] bg-white/50 rounded-full blur-[25px] rotate-[-20deg]" />
               <div className="absolute bottom-[20%] right-[15%] w-[30%] h-[15%] bg-[hsl(340,80%,60%)] opacity-25 rounded-full blur-[20px] rotate-[10deg]" />
@@ -56,31 +56,31 @@ const HeroSection = () => {
                 </div>
               </div>
 
-              <h1 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-800 leading-tight mb-3">
+              <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-tight mb-5">
                 VILCOM NETWORKS LIMITED
               </h1>
 
-              <h2 className="font-heading text-lg sm:text-xl lg:text-2xl font-semibold text-slate-700 mb-4">
+              <h2 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-800 mb-6">
                 Internet solutions that are <span className="text-[hsl(30,100%,45%)]">affordable</span>,{" "}
                 <span className="text-[hsl(30,100%,45%)]">reliable</span>,{" "}
                 <span className="text-[hsl(30,100%,45%)]">responsive</span>
               </h2>
 
-              <p className="text-sm sm:text-base text-slate-600 mb-8 max-w-lg">
+              <p className="text-lg sm:text-xl text-slate-700 mb-10 max-w-xl font-medium">
                 Unlock speedy connectivity with our high-speed internet! Elevate your digital presence with our top-notch hosting and web services.
               </p>
 
-              <div className="flex flex-wrap gap-4 justify-center">
+              <div className="flex flex-wrap gap-5 justify-center">
                 <Button
                   asChild
-                  className="gradient-royal text-white font-semibold px-6 py-5 rounded-xl royal-glow border-0 hover:scale-105 transition-transform"
+                  className="gradient-royal text-white font-bold px-8 py-6 rounded-xl royal-glow border-0 hover:scale-105 transition-transform text-lg"
                 >
                   <Link to="/plans">OUR PLANS</Link>
                 </Button>
                 <Button
                   asChild
                   variant="outline"
-                  className="border-2 border-slate-700 text-slate-700 font-semibold px-6 py-5 rounded-xl hover:bg-slate-700 hover:text-white transition-colors"
+                  className="border-2 border-slate-700 text-slate-700 font-bold px-8 py-6 rounded-xl hover:bg-slate-700 hover:text-white transition-colors text-lg"
                 >
                   <Link to="/coverage">OUR COVERAGE</Link>
                 </Button>
@@ -89,25 +89,26 @@ const HeroSection = () => {
           </div>
         </div>
 
-        {/* Coverage search bar - separate rectangle outside bubble */}
-        <div className="flex justify-center mb-16">
-          <div className="glass rounded-2xl p-2 flex items-center gap-2 max-w-xl w-full">
+        {/* Coverage search bar - aligned with bubble */}
+        <div className="flex justify-start mb-16">
+          <div className="glass rounded-2xl p-4 flex items-center gap-3 max-w-xl w-full">
             <div className="flex items-center gap-2 px-4 flex-1">
-              <Wifi className="w-5 h-5 text-[hsl(30,100%,50%)]" />
+              <Wifi className="w-7 h-7 text-[hsl(30,100%,50%)]" />
               <input
                 type="text"
                 placeholder="Enter your estate to check availability..."
-                className="bg-transparent border-0 outline-none text-sm text-slate-700 placeholder:text-slate-500 w-full py-3"
+                className="bg-transparent border-0 outline-none text-lg text-slate-800 placeholder:text-slate-500 w-full py-4 font-medium"
               />
             </div>
-            <Button asChild className="gradient-royal text-white font-semibold rounded-xl border-0 px-6">
+            <Button asChild className="gradient-royal text-white font-bold rounded-xl border-0 px-10 py-5 text-lg">
               <Link to="/coverage">Check Coverage</Link>
             </Button>
           </div>
         </div>
 
-        {/* Trust indicators - accent colors */}
-        <div className="flex flex-wrap justify-center gap-6 lg:gap-10">
+        {/* Trust indicators - commented out */}
+        {/*
+        <div className="flex flex-wrap justify-start gap-6 lg:gap-10">
           {[
             { icon: Zap, value: "1Gbps", label: "Max Speed", color: "text-[hsl(30,100%,50%)]" },
             { icon: Shield, value: "99.9%", label: "Uptime SLA", color: "text-[hsl(340,80%,55%)]" },
@@ -122,10 +123,10 @@ const HeroSection = () => {
             </div>
           ))}
         </div>
+        */}
       </div>
     </section>
   );
 };
 
 export default HeroSection;
-

@@ -52,7 +52,7 @@ const WebDevelopment = () => {
 
       <Navbar />
       
-      <main className="pt-28 pb-16 relative z-10">
+      <main className="pt-32 pb-16 relative z-10">
         <div className="container mx-auto px-4">
           {/* Hero Section */}
           <div className="text-center mb-16">
