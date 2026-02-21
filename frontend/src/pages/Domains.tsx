@@ -1,20 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Search, Check, ArrowRight, Globe, Shield, Zap, Clock } from "lucide-react";
+import { Search, Check, ArrowRight, Globe, Shield, Zap, Clock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import FooterSection from "@/components/FooterSection";
-
-const domainExtensions = [
-  { ext: ".com", price: "1,800", renewal: "1,800", popular: true },
-  { ext: ".co.ke", price: "1,200", renewal: "1,000" },
-  { ext: ".org", price: "2,000", renewal: "2,000" },
-  { ext: ".net", price: "2,200", renewal: "2,200" },
-  { ext: ".biz", price: "1,500", renewal: "1,500" },
-  { ext: ".io", price: "4,500", renewal: "4,500" },
-  { ext: ".ke", price: "800", renewal: "600" },
-  { ext: ".info", price: "1,400", renewal: "1,400" },
-];
+import { productsApi } from "@/services/products";
+import type { Product } from "@/services/api";
 
 const domainFeatures = [
   { icon: Shield, title: "Domain Protection", desc: "Privacy protection to keep your info safe" },

@@ -18,13 +18,13 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->foreignId('addon_id')->constrained()->onDelete('cascade');
             
-            // Custom pricing for this combination
+            // Pricing Override (optional - overrides addon's default price)
             $table->decimal('custom_price', 10, 2)->nullable();
             $table->decimal('discount_percent', 5, 2)->nullable();
             
-            // Rules
-            $table->boolean('is_required')->default(false);
-            $table->boolean('is_default')->default(false);
+            // Behavior
+            $table->boolean('is_required')->default(false); // Must be selected with product
+            $table->boolean('is_default')->default(false); // Auto-selected by default
             $table->integer('sort_order')->default(0);
             
             $table->timestamps();
@@ -43,4 +43,3 @@ return new class extends Migration
         Schema::dropIfExists('product_addon');
     }
 };
-

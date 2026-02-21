@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 
 // API Base URL - should be configured in .env
-const API_URL = import.meta.env.VITE_API_URL;
+// Strip /api/v1 if present to avoid double paths
+let API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+API_URL = API_URL.replace(/\/api\/v1$/, "");
 
 // Types
 export interface LoginCredentials {

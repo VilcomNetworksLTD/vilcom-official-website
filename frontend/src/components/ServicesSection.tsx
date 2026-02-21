@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Wifi, Server, Globe, ArrowRight } from "lucide-react";
 
 const services = [
@@ -7,6 +8,7 @@ const services = [
     description: "Ultra-fast fiber optic connections for homes and businesses with speeds from 20Mbps to 1Gbps.",
     blob: "bg-[hsl(340,80%,55%)/0.35]",
     iconColor: "text-[hsl(340,80%,55%)]",
+    to: "/fiber",
   },
   {
     icon: Server,
@@ -14,6 +16,7 @@ const services = [
     description: "Reliable cloud hosting solutions with 99.9% uptime, SSL certificates, and dedicated support.",
     blob: "bg-[hsl(30,100%,55%)/0.3]",
     iconColor: "text-[hsl(30,100%,55%)]",
+    to: "/hosting",
   },
   {
     icon: Globe,
@@ -21,6 +24,7 @@ const services = [
     description: "Custom websites and web applications built with modern technologies tailored to your brand.",
     blob: "bg-[hsl(170,70%,45%)/0.3]",
     iconColor: "text-[hsl(170,70%,45%)]",
+    to: "/web-development",
   },
 ];
 
@@ -104,8 +108,9 @@ const ServicesSection = () => {
 
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {services.map((service) => (
-            <div
+            <Link
               key={service.title}
+              to={service.to}
               className="glass rounded-2xl p-8 group hover:caustic-glow transition-all duration-500 cursor-pointer relative overflow-hidden"
             >
               <div className={`absolute -bottom-6 -left-6 w-40 h-40 ${service.blob} rounded-full blur-[50px]`} />
@@ -119,7 +124,7 @@ const ServicesSection = () => {
                   Learn More <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>

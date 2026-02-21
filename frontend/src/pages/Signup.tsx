@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   Eye,
@@ -11,16 +11,43 @@ import {
   MapPin,
   Building,
   Loader2,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { register, RegisterData } from "@/services/auth";
+import { useAuth } from "@/contexts/AuthContext";
+import { Product, getProductDetails } from "@/services/api";
 
 const Signup = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { register, getDashboardUrl } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // Get product from URL parameter
+  const productSlug = searchParams.get("product");
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [loadingProduct, setLoadingProduct] = useState(!!productSlug);
+
+  // Fetch product details if product slug is provided
+  useEffect(() => {
+    const fetchProduct = async () => {
+      if (productSlug) {
+        try {
+          const product = await getProductDetails(productSlug);
+          setSelectedProduct(product);
+        } catch (err) {
+          console.error("Error fetching product:", err);
+        } finally {
+          setLoadingProduct(false);
+        }
+      }
+    };
+
+    fetchProduct();
+  }, [productSlug]);
 
   const [form, setForm] = useState({
     name: "",
@@ -60,7 +87,7 @@ const Signup = () => {
     setIsLoading(true);
 
     try {
-      const registerData: RegisterData = {
+      const registerData = {
         name: form.name,
         email: form.email,
         phone: form.phone,
@@ -73,26 +100,43 @@ const Signup = () => {
         postal_code: form.postalCode,
         sms_notifications: form.smsNotifications,
         marketing_consent: form.marketingConsent,
+        // Include selected product for later subscription creation
+        selected_product_id: selectedProduct?.id,
+        selected_product_slug: selectedProduct?.slug,
       };
 
       if (form.customerType === "business") {
-        registerData.company_name = form.companyName;
-        registerData.company_registration = form.companyRegistration;
-        registerData.tax_pin = form.taxPin;
+        Object.assign(registerData, {
+          company_name: form.companyName,
+          company_registration: form.companyRegistration,
+          tax_pin: form.taxPin,
+        });
       }
 
-      const response = await register(registerData);
+      await register(registerData);
 
-      if (response.success) {
-        setSuccess(true);
-        setTimeout(() => {
-          navigate("/auth");
-        }, 3000);
-      } else {
-        setError(response.message || "Registration failed. Please try again.");
+      // Store selected product info in session storage for after verification
+      if (selectedProduct) {
+        sessionStorage.setItem(
+          "pending_subscription",
+          JSON.stringify({
+            product_id: selectedProduct.id,
+            product_slug: selectedProduct.slug,
+            product_name: selectedProduct.name,
+            product_price: selectedProduct.price_monthly,
+          })
+        );
       }
-    } catch (err) {
-      setError("An error occurred. Please check your connection.");
+
+      // Registration successful
+      setSuccess(true);
+      setTimeout(() => {
+        // Redirect to appropriate dashboard based on user role
+        navigate(getDashboardUrl());
+      }, 2000);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "An error occurred. Please check your connection.";
+      setError(errorMessage);
       console.error("Registration error:", err);
     } finally {
       setIsLoading(false);
@@ -204,6 +248,31 @@ const Signup = () => {
           <p className="text-xl text-blue-100/80 max-w-md">
             Join Vilcom Network and get connected with high-speed internet. Fill out the form to get started.
           </p>
+
+          {/* Selected Plan Display */}
+          {(loadingProduct || selectedProduct) && (
+            <div className="mt-8 p-4 rounded-xl bg-cyan-500/20 border border-cyan-400/30 backdrop-blur-sm">
+              {loadingProduct ? (
+                <div className="flex items-center gap-2 text-cyan-200">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm">Loading selected plan...</span>
+                </div>
+              ) : selectedProduct ? (
+                <div>
+                  <p className="text-xs text-cyan-300 mb-1">Selected Plan</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-white font-semibold">{selectedProduct.name}</p>
+                      <p className="text-cyan-200 text-sm">
+                        KES {selectedProduct.price_monthly?.toLocaleString()}/month
+                      </p>
+                    </div>
+                    <Check className="w-5 h-5 text-green-400" />
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          )}
         </div>
 
         {/* Decorative elements */}
@@ -227,7 +296,9 @@ const Signup = () => {
                 Sign Up
               </h2>
               <p className="text-blue-200/70">
-                Create your account to get started.
+                {selectedProduct 
+                  ? `Complete your registration for ${selectedProduct.name}`
+                  : "Create your account to get started."}
               </p>
             </div>
 
@@ -240,7 +311,7 @@ const Signup = () => {
 
             {/* Signup Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Row 1: Name + Email */}
+              {/* Row 1: Name + Email */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div>
                   <label className="block text-sm font-medium text-blue-100 mb-2">Full Name</label>
@@ -486,7 +557,7 @@ const Signup = () => {
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
-                  "Create Account"
+                  selectedProduct ? `Sign Up for ${selectedProduct.name}` : "Create Account"
                 )}
               </button>
             </form>
@@ -503,7 +574,6 @@ const Signup = () => {
                 </Link>
               </p>
             </div>
-
           </div>
 
           {/* Mobile Logo (visible on small screens below md) */}
@@ -526,4 +596,3 @@ const Signup = () => {
 };
 
 export default Signup;
-

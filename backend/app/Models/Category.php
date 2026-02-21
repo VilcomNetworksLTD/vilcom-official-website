@@ -5,11 +5,34 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Kalnoy\Nestedset\NodeTrait; // composer require kalnoy/nestedset
+use Kalnoy\Nestedset\NodeTrait;
+use Illuminate\Support\Str;
 
 class Category extends Model
 {
     use HasFactory, SoftDeletes, NodeTrait;
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Auto-generate slug from name when creating
+        static::creating(function ($category) {
+            if (empty($category->slug)) {
+                $category->slug = Str::slug($category->name);
+            }
+        });
+        
+        // Also handle updates
+        static::updating(function ($category) {
+            if ($category->isDirty('name') && empty($category->slug)) {
+                $category->slug = Str::slug($category->name);
+            }
+        });
+    }
 
     protected $fillable = [
         'parent_id',
@@ -256,20 +279,20 @@ class Category extends Model
     /**
      * Get category attributes by key
      */
-    public function getAttribute($key, $default = null)
+    public function getCategoryAttribute($key, $default = null)
     {
-        $attributes = $this->attributes ?? [];
+        $attributes = $this->attributes['attributes'] ?? [];
         return $attributes[$key] ?? $default;
     }
 
     /**
      * Set category attribute
      */
-    public function setAttribute($key, $value)
+    public function setCategoryAttribute($key, $value)
     {
-        $attributes = $this->attributes ?? [];
+        $attributes = $this->attributes['attributes'] ?? [];
         $attributes[$key] = $value;
-        $this->attributes = $attributes;
+        $this->attributes['attributes'] = $attributes;
         $this->save();
     }
 }

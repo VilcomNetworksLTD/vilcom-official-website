@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Subscription;
+use App\Policies\SubscriptionPolicy;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Register the SubscriptionPolicy
+        \Gate::policy(Subscription::class, SubscriptionPolicy::class);
     }
 }

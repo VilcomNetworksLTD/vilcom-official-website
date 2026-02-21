@@ -5,131 +5,713 @@ use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
 use App\Http\Controllers\Api\Auth\PasswordResetController;
 use App\Http\Controllers\Api\Auth\RegisterController;
+use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\AddonController;
+use App\Http\Controllers\Api\Admin\MediaController;
+use App\Http\Controllers\Api\Admin\BannerController;
+use App\Http\Controllers\Api\Admin\TestimonialController;
+use App\Http\Controllers\Api\Admin\FaqController;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Authentication API Routes
+| API Routes - Multi-Tenant ISP System
 |--------------------------------------------------------------------------
 |
-| These routes handle user authentication including registration, login,
-| logout, password reset, and token refresh.
+| This file defines all API routes with proper authentication and 
+| authorization for a multi-tenant ISP management system.
 |
 */
 
-Route::prefix('auth')->group(function () {
-    // Public routes (no authentication required)
-    Route::post('/register', [RegisterController::class, 'register'])->name('auth.register');
-    Route::post('/login', [LoginController::class, 'login'])->name('auth.login');
-    Route::post('/refresh', [LoginController::class, 'refresh'])->name('auth.refresh');
-    
-    // Password Reset Routes
-    Route::post('/password/email', [PasswordResetController::class, 'sendResetLink'])->name('auth.password.email');
-    Route::post('/password/reset', [PasswordResetController::class, 'resetPassword'])->name('auth.password.reset');
-    Route::get('/password/verify-token/{token}', [PasswordResetController::class, 'verifyToken'])->name('auth.password.verify-token');
-    
-    // 2FA Verification (before full login)
-    Route::post('/verify-2fa', [LoginController::class, 'verify2FA'])->name('auth.verify-2fa');
-    
-    // Email Verification
-    Route::post('/email/verify/resend', [RegisterController::class, 'resendVerification'])->name('auth.email.verify.resend');
-    Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])->name('auth.email.verify');
+Route::prefix('v1')->group(function () {
 
-    // Protected routes (authentication required)
-    Route::middleware('auth:sanctum')->group(function () {
-        // User info
-        Route::get('/user', [LoginController::class, 'user'])->name('auth.user');
+    // ============================================
+    // AUTHENTICATION ROUTES (Public)
+    // ============================================
+    Route::prefix('auth')->group(function () {
+        // Registration & Login
+        Route::post('/register', [RegisterController::class, 'register'])
+            ->name('api.auth.register');
         
-        // Logout
-        Route::post('/logout', [LogoutController::class, 'logout'])->name('auth.logout');
-        Route::post('/logout-all', [LogoutController::class, 'logoutAll'])->name('auth.logout-all');
+        Route::post('/login', [LoginController::class, 'login'])
+            ->name('api.auth.login')
+            ->middleware('throttle:5,1'); // 5 attempts per minute
         
-        // Password Change (authenticated)
-        Route::put('/password/change', [PasswordResetController::class, 'changePassword'])->name('auth.password.change');
+        Route::post('/refresh', [LoginController::class, 'refresh'])
+            ->name('api.auth.refresh')
+            ->middleware('auth:sanctum');
         
-        // 2FA Management
-        Route::post('/2fa/enable', [AuthController::class, 'enable2FA'])->name('auth.2fa.enable');
-        Route::post('/2fa/confirm', [AuthController::class, 'confirm2FA'])->name('auth.2fa.confirm');
-        Route::post('/2fa/disable', [AuthController::class, 'disable2FA'])->name('auth.2fa.disable');
-        Route::post('/2fa/verify', [AuthController::class, 'verify2FA'])->name('auth.2fa.verify');
+        // Password Reset
+        Route::post('/password/email', [PasswordResetController::class, 'sendResetLink'])
+            ->name('api.auth.password.email')
+            ->middleware('throttle:3,1');
+        
+        Route::post('/password/reset', [PasswordResetController::class, 'resetPassword'])
+            ->name('api.auth.password.reset');
+        
+        Route::get('/password/verify-token/{token}', [PasswordResetController::class, 'verifyToken'])
+            ->name('api.auth.password.verify-token');
+        
+        // 2FA Verification (before full login)
+        Route::post('/verify-2fa', [LoginController::class, 'verify2FA'])
+            ->name('api.auth.verify-2fa');
+        
+        // Email Verification
+        Route::post('/email/verify/resend', [RegisterController::class, 'resendVerification'])
+            ->name('api.auth.email.verify.resend')
+            ->middleware('throttle:3,1');
+        
+        Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
+            ->name('api.auth.email.verify');
+
+        // Protected Authentication Routes
+        Route::middleware('auth:sanctum')->group(function () {
+            // Current User
+            Route::get('/user', [LoginController::class, 'user'])
+                ->name('api.auth.user');
+            
+            // Logout
+            Route::post('/logout', [LogoutController::class, 'logout'])
+                ->name('api.auth.logout');
+            
+            Route::post('/logout-all', [LogoutController::class, 'logoutAll'])
+                ->name('api.auth.logout-all');
+            
+            // Password Change (authenticated)
+            Route::put('/password/change', [PasswordResetController::class, 'changePassword'])
+                ->name('api.auth.password.change');
+            
+            // 2FA Management
+            Route::post('/2fa/enable', [AuthController::class, 'enable2FA'])
+                ->name('api.auth.2fa.enable');
+            
+            Route::post('/2fa/confirm', [AuthController::class, 'confirm2FA'])
+                ->name('api.auth.2fa.confirm');
+            
+            Route::post('/2fa/disable', [AuthController::class, 'disable2FA'])
+                ->name('api.auth.2fa.disable');
+            
+            Route::post('/2fa/verify', [AuthController::class, 'verify2FA'])
+                ->name('api.auth.2fa.verify');
+        });
+    });
+
+    // ============================================
+    // CATEGORY ROUTES
+    // ============================================
+    Route::prefix('categories')->group(function () {
+        // Public Routes - Available to everyone
+        Route::get('/', [CategoryController::class, 'index'])
+            ->name('api.categories.index');
+        
+        Route::get('/tree', [CategoryController::class, 'tree'])
+            ->name('api.categories.tree');
+        
+        Route::get('/{slug}', [CategoryController::class, 'show'])
+            ->name('api.categories.show');
+        
+        Route::get('/{slug}/products', [CategoryController::class, 'products'])
+            ->name('api.categories.products');
+        
+        // Protected Routes - Admin/Staff Only
+        Route::middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+            Route::post('/', [CategoryController::class, 'store'])
+                ->name('api.categories.store')
+                ->middleware('permission:categories.create');
+            
+            Route::put('/{category}', [CategoryController::class, 'update'])
+                ->name('api.categories.update')
+                ->middleware('permission:categories.edit');
+            
+            Route::delete('/{category}', [CategoryController::class, 'destroy'])
+                ->name('api.categories.destroy')
+                ->middleware('permission:categories.delete');
+            
+            Route::put('/reorder', [CategoryController::class, 'reorder'])
+                ->name('api.categories.reorder')
+                ->middleware('permission:categories.edit');
+        });
+    });
+
+    // ============================================
+    // PRODUCT ROUTES
+    // ============================================
+    Route::prefix('products')->group(function () {
+        // Public Routes - Available to everyone (only shows active products)
+        Route::get('/', [ProductController::class, 'index'])
+            ->name('api.products.index');
+        
+        Route::get('/featured', [ProductController::class, 'featured'])
+            ->name('api.products.featured');
+        
+        Route::get('/on-promotion', [ProductController::class, 'onPromotion'])
+            ->name('api.products.on-promotion');
+        
+        Route::get('/category/{categorySlug}', [ProductController::class, 'byCategory'])
+            ->name('api.products.by-category');
+        
+        Route::get('/{product:slug}', [ProductController::class, 'show'])
+            ->name('api.products.show');
+        
+        Route::post('/{product:slug}/availability', [ProductController::class, 'checkAvailability'])
+            ->name('api.products.availability');
+        
+        Route::get('/{product:slug}/related', [ProductController::class, 'related'])
+            ->name('api.products.related');
+        
+        // Protected Routes - Admin/Staff Only
+        Route::middleware(['auth:sanctum', 'role:admin|staff|sales'])->group(function () {
+            Route::post('/', [ProductController::class, 'store'])
+                ->name('api.products.store')
+                ->middleware('permission:products.create');
+            
+            Route::put('/{product}', [ProductController::class, 'update'])
+                ->name('api.products.update')
+                ->middleware('permission:products.edit');
+            
+            Route::delete('/{product}', [ProductController::class, 'destroy'])
+                ->name('api.products.destroy')
+                ->middleware('permission:products.delete');
+        });
+    });
+
+    // ============================================
+    // ADDON ROUTES
+    // ============================================
+    Route::prefix('addons')->group(function () {
+        // Public Routes
+        Route::get('/', [AddonController::class, 'index'])
+            ->name('api.addons.index');
+        
+        Route::get('/{addon:slug}', [AddonController::class, 'show'])
+            ->name('api.addons.show');
+        
+        Route::get('/product/{productId}', [AddonController::class, 'forProduct'])
+            ->name('api.addons.for-product');
+        
+        // Protected Routes - Admin/Staff Only
+        Route::middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+            Route::post('/', [AddonController::class, 'store'])
+                ->name('api.addons.store')
+                ->middleware('permission:products.create');
+            
+            Route::put('/{addon}', [AddonController::class, 'update'])
+                ->name('api.addons.update')
+                ->middleware('permission:products.edit');
+            
+            Route::delete('/{addon}', [AddonController::class, 'destroy'])
+                ->name('api.addons.destroy')
+                ->middleware('permission:products.delete');
+        });
+    });
+
+    // ============================================
+    // SUBSCRIPTIONS ROUTES (Multi-Tenant)
+    // ============================================
+    Route::prefix('subscriptions')->middleware('auth:sanctum')->group(function () {
+        // Client Routes - Users can view their own subscriptions
+        Route::get('/', [App\Http\Controllers\Api\SubscriptionController::class, 'index'])
+            ->name('api.subscriptions.index')
+            ->middleware('permission:subscriptions.view.own|subscriptions.view.all');
+        
+        Route::get('/{subscription}', [App\Http\Controllers\Api\SubscriptionController::class, 'show'])
+            ->name('api.subscriptions.show')
+            ->middleware('permission:subscriptions.view.own|subscriptions.view.all');
+        
+        Route::post('/', [App\Http\Controllers\Api\SubscriptionController::class, 'store'])
+            ->name('api.subscriptions.store')
+            ->middleware('permission:subscriptions.view.own|subscriptions.create');
+        
+        Route::put('/{subscription}', [App\Http\Controllers\Api\SubscriptionController::class, 'update'])
+            ->name('api.subscriptions.update')
+            ->middleware('permission:subscriptions.edit.own|subscriptions.edit.all');
+        
+        Route::post('/{subscription}/cancel', [App\Http\Controllers\Api\SubscriptionController::class, 'cancel'])
+            ->name('api.subscriptions.cancel')
+            ->middleware('permission:subscriptions.cancel.own|subscriptions.cancel.all');
+        
+        Route::post('/{subscription}/upgrade', [App\Http\Controllers\Api\SubscriptionController::class, 'upgrade'])
+            ->name('api.subscriptions.upgrade')
+            ->middleware('permission:subscriptions.upgrade');
+        
+        Route::post('/{subscription}/downgrade', [App\Http\Controllers\Api\SubscriptionController::class, 'downgrade'])
+            ->name('api.subscriptions.downgrade')
+            ->middleware('permission:subscriptions.downgrade');
+        
+        // Staff/Admin Only Routes
+        Route::middleware('role:admin|staff')->group(function () {
+            Route::post('/{subscription}/suspend', [App\Http\Controllers\Api\SubscriptionController::class, 'suspend'])
+                ->name('api.subscriptions.suspend')
+                ->middleware('permission:subscriptions.suspend');
+            
+            Route::post('/{subscription}/activate', [App\Http\Controllers\Api\SubscriptionController::class, 'activate'])
+                ->name('api.subscriptions.activate')
+                ->middleware('permission:subscriptions.activate');
+        });
+    });
+
+    // ============================================
+    // INVOICES ROUTES (Multi-Tenant)
+    // ============================================
+    Route::prefix('invoices')->middleware('auth:sanctum')->group(function () {
+        Route::get('/', [App\Http\Controllers\Api\InvoiceController::class, 'index'])
+            ->name('api.invoices.index')
+            ->middleware('permission:invoices.view.own|invoices.view.all');
+        
+        Route::get('/{invoice}', [App\Http\Controllers\Api\InvoiceController::class, 'show'])
+            ->name('api.invoices.show')
+            ->middleware('permission:invoices.view.own|invoices.view.all');
+        
+        Route::get('/{invoice}/download', [App\Http\Controllers\Api\InvoiceController::class, 'download'])
+            ->name('api.invoices.download')
+            ->middleware('permission:invoices.download');
+        
+        // Staff/Admin Only Routes
+        Route::middleware('role:admin|staff')->group(function () {
+            Route::post('/', [App\Http\Controllers\Api\InvoiceController::class, 'store'])
+                ->name('api.invoices.store')
+                ->middleware('permission:invoices.create');
+            
+            Route::put('/{invoice}', [App\Http\Controllers\Api\InvoiceController::class, 'update'])
+                ->name('api.invoices.update')
+                ->middleware('permission:invoices.edit');
+            
+            Route::post('/{invoice}/send', [App\Http\Controllers\Api\InvoiceController::class, 'send'])
+                ->name('api.invoices.send')
+                ->middleware('permission:invoices.send');
+            
+            Route::post('/{invoice}/mark-paid', [App\Http\Controllers\Api\InvoiceController::class, 'markPaid'])
+                ->name('api.invoices.mark-paid')
+                ->middleware('permission:invoices.mark.paid');
+            
+            Route::post('/{invoice}/void', [App\Http\Controllers\Api\InvoiceController::class, 'void'])
+                ->name('api.invoices.void')
+                ->middleware('permission:invoices.void');
+        });
+    });
+
+    // ============================================
+    // PAYMENT ROUTES (Multi-Tenant)
+    // ============================================
+    Route::prefix('payments')->middleware('auth:sanctum')->group(function () {
+        Route::get('/', [App\Http\Controllers\Api\PaymentController::class, 'index'])
+            ->name('api.payments.index')
+            ->middleware('permission:payments.view.own|payments.view.all');
+        
+        Route::get('/{payment}', [App\Http\Controllers\Api\PaymentController::class, 'show'])
+            ->name('api.payments.show')
+            ->middleware('permission:payments.view.own|payments.view.all');
+        
+        Route::post('/mpesa', [App\Http\Controllers\Api\PaymentController::class, 'initiateMpesa'])
+            ->name('api.payments.mpesa');
+        
+        Route::post('/card', [App\Http\Controllers\Api\PaymentController::class, 'initiateCard'])
+            ->name('api.payments.card');
+        
+        // Staff/Admin Only Routes
+        Route::middleware('role:admin|staff')->group(function () {
+            Route::post('/{payment}/verify', [App\Http\Controllers\Api\PaymentController::class, 'verify'])
+                ->name('api.payments.verify')
+                ->middleware('permission:payments.verify');
+            
+            Route::post('/{payment}/refund', [App\Http\Controllers\Api\PaymentController::class, 'refund'])
+                ->name('api.payments.refund')
+                ->middleware('permission:payments.refund');
+        });
+    });
+
+    // ============================================
+    // TICKETS ROUTES (Multi-Tenant)
+    // ============================================
+    Route::prefix('tickets')->middleware('auth:sanctum')->group(function () {
+        Route::get('/', [App\Http\Controllers\Api\TicketController::class, 'index'])
+            ->name('api.tickets.index')
+            ->middleware('permission:tickets.view.own|tickets.view.assigned|tickets.view.all');
+        
+        Route::get('/{ticket}', [App\Http\Controllers\Api\TicketController::class, 'show'])
+            ->name('api.tickets.show')
+            ->middleware('permission:tickets.view.own|tickets.view.all');
+        
+        Route::post('/', [App\Http\Controllers\Api\TicketController::class, 'store'])
+            ->name('api.tickets.store')
+            ->middleware('permission:tickets.create');
+        
+        Route::put('/{ticket}', [App\Http\Controllers\Api\TicketController::class, 'update'])
+            ->name('api.tickets.update')
+            ->middleware('permission:tickets.edit.own|tickets.edit.all');
+        
+        Route::post('/{ticket}/reply', [App\Http\Controllers\Api\TicketController::class, 'reply'])
+            ->name('api.tickets.reply');
+        
+        // Staff/Admin Only Routes
+        Route::middleware('role:admin|staff|technical_support')->group(function () {
+            Route::post('/{ticket}/assign', [App\Http\Controllers\Api\TicketController::class, 'assign'])
+                ->name('api.tickets.assign')
+                ->middleware('permission:tickets.assign');
+            
+            Route::post('/{ticket}/resolve', [App\Http\Controllers\Api\TicketController::class, 'resolve'])
+                ->name('api.tickets.resolve')
+                ->middleware('permission:tickets.resolve');
+            
+            Route::post('/{ticket}/close', [App\Http\Controllers\Api\TicketController::class, 'close'])
+                ->name('api.tickets.close')
+                ->middleware('permission:tickets.close');
+            
+            Route::post('/{ticket}/reopen', [App\Http\Controllers\Api\TicketController::class, 'reopen'])
+                ->name('api.tickets.reopen')
+                ->middleware('permission:tickets.reopen');
+            
+            Route::post('/{ticket}/internal-note', [App\Http\Controllers\Api\TicketController::class, 'addInternalNote'])
+                ->name('api.tickets.internal-note')
+                ->middleware('permission:tickets.internal.notes');
+        });
+    });
+
+    // ============================================
+    // USER MANAGEMENT ROUTES (Multi-Tenant)
+    // ============================================
+    Route::prefix('users')->middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+        Route::get('/', [App\Http\Controllers\Api\UserController::class, 'index'])
+            ->name('api.users.index')
+            ->middleware('permission:users.view.all|users.view.clients|users.view.staff');
+        
+        Route::get('/{user}', [App\Http\Controllers\Api\UserController::class, 'show'])
+            ->name('api.users.show')
+            ->middleware('permission:users.view.all|users.view.clients');
+        
+        Route::post('/', [App\Http\Controllers\Api\UserController::class, 'store'])
+            ->name('api.users.store')
+            ->middleware('permission:users.create');
+        
+        Route::put('/{user}', [App\Http\Controllers\Api\UserController::class, 'update'])
+            ->name('api.users.update')
+            ->middleware('permission:users.edit.all|users.edit.clients');
+        
+        Route::delete('/{user}', [App\Http\Controllers\Api\UserController::class, 'destroy'])
+            ->name('api.users.destroy')
+            ->middleware('permission:users.delete');
+        
+        Route::post('/{user}/suspend', [App\Http\Controllers\Api\UserController::class, 'suspend'])
+            ->name('api.users.suspend')
+            ->middleware('permission:users.suspend');
+        
+        Route::post('/{user}/activate', [App\Http\Controllers\Api\UserController::class, 'activate'])
+            ->name('api.users.activate')
+            ->middleware('permission:users.activate');
+        
+        // Admin Only
+        Route::middleware('role:admin')->group(function () {
+            Route::post('/{user}/impersonate', [App\Http\Controllers\Api\UserController::class, 'impersonate'])
+                ->name('api.users.impersonate')
+                ->middleware('permission:users.impersonate');
+        });
+    });
+
+    // ============================================
+    // REPORTS & ANALYTICS (Admin/Staff Only)
+    // ============================================
+    Route::prefix('reports')->middleware(['auth:sanctum', 'role:admin|staff|sales'])->group(function () {
+        Route::get('/dashboard', [App\Http\Controllers\Api\ReportController::class, 'dashboard'])
+            ->name('api.reports.dashboard')
+            ->middleware('permission:reports.view');
+        
+        Route::get('/revenue', [App\Http\Controllers\Api\ReportController::class, 'revenue'])
+            ->name('api.reports.revenue')
+            ->middleware('permission:reports.revenue');
+        
+        Route::get('/subscriptions', [App\Http\Controllers\Api\ReportController::class, 'subscriptions'])
+            ->name('api.reports.subscriptions')
+            ->middleware('permission:reports.subscriptions');
+        
+        Route::get('/tickets', [App\Http\Controllers\Api\ReportController::class, 'tickets'])
+            ->name('api.reports.tickets')
+            ->middleware('permission:reports.tickets');
+        
+        Route::post('/export', [App\Http\Controllers\Api\ReportController::class, 'export'])
+            ->name('api.reports.export')
+            ->middleware('permission:reports.export');
+    });
+
+    // ============================================
+    // COVERAGE CHECK (Public)
+    // ============================================
+    Route::prefix('coverage')->group(function () {
+        Route::post('/check', [App\Http\Controllers\Api\CoverageController::class, 'check'])
+            ->name('api.coverage.check');
+        
+        Route::get('/areas', [App\Http\Controllers\Api\CoverageController::class, 'areas'])
+            ->name('api.coverage.areas');
+        
+        // Admin/Staff Only
+        Route::middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+            Route::get('/', [App\Http\Controllers\Api\CoverageController::class, 'index'])
+                ->name('api.coverage.index')
+                ->middleware('permission:coverage.view');
+            
+            Route::post('/', [App\Http\Controllers\Api\CoverageController::class, 'store'])
+                ->name('api.coverage.store')
+                ->middleware('permission:coverage.create');
+            
+            Route::put('/{coverage}', [App\Http\Controllers\Api\CoverageController::class, 'update'])
+                ->name('api.coverage.update')
+                ->middleware('permission:coverage.edit');
+            
+            Route::delete('/{coverage}', [App\Http\Controllers\Api\CoverageController::class, 'destroy'])
+                ->name('api.coverage.destroy')
+                ->middleware('permission:coverage.delete');
+        });
+    });
+
+    // ============================================
+    // SETTINGS (Admin Only)
+    // ============================================
+    Route::prefix('settings')->middleware(['auth:sanctum', 'role:admin'])->group(function () {
+        Route::get('/', [App\Http\Controllers\Api\SettingsController::class, 'index'])
+            ->name('api.settings.index')
+            ->middleware('permission:settings.view');
+        
+        Route::put('/', [App\Http\Controllers\Api\SettingsController::class, 'update'])
+            ->name('api.settings.update')
+            ->middleware('permission:settings.edit');
+        
+        Route::get('/email-templates', [App\Http\Controllers\Api\SettingsController::class, 'emailTemplates'])
+            ->name('api.settings.email-templates')
+            ->middleware('permission:settings.email.templates');
+        
+        Route::put('/email-templates/{template}', [App\Http\Controllers\Api\SettingsController::class, 'updateEmailTemplate'])
+            ->name('api.settings.email-templates.update')
+            ->middleware('permission:settings.email.templates');
+    });
+
+    // ============================================
+    // MEDIA / FILE MANAGEMENT (Admin Only)
+    // ============================================
+    Route::prefix('media')->middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+        Route::get('/', [MediaController::class, 'index'])
+            ->name('api.media.index')
+            ->middleware('permission:media.view');
+        
+        Route::post('/', [MediaController::class, 'store'])
+            ->name('api.media.store')
+            ->middleware('permission:media.upload');
+        
+        Route::get('/folders', [MediaController::class, 'folders'])
+            ->name('api.media.folders');
+        
+        Route::post('/folders', [MediaController::class, 'createFolder'])
+            ->name('api.media.create-folder');
+        
+        Route::delete('/folders', [MediaController::class, 'deleteFolder'])
+            ->name('api.media.delete-folder');
+        
+        Route::get('/{media}', [MediaController::class, 'show'])
+            ->name('api.media.show');
+        
+        Route::put('/{media}', [MediaController::class, 'update'])
+            ->name('api.media.update')
+            ->middleware('permission:media.edit');
+        
+        Route::delete('/{media}', [MediaController::class, 'destroy'])
+            ->name('api.media.destroy')
+            ->middleware('permission:media.delete');
+        
+        Route::post('/bulk-delete', [MediaController::class, 'bulkDelete'])
+            ->name('api.media.bulk-delete')
+            ->middleware('permission:media.delete');
+    });
+
+    // Public media routes
+    Route::prefix('media')->group(function () {
+        Route::get('/public', [MediaController::class, 'publicIndex'])
+            ->name('api.media.public');
+    });
+
+    // ============================================
+    // BANNER / SLIDER MANAGEMENT (Admin Only)
+    // ============================================
+    Route::prefix('banners')->group(function () {
+        // Public routes for active banners
+        Route::get('/active', [BannerController::class, 'active'])
+            ->name('api.banners.active');
+        
+        // Admin/Staff routes
+        Route::middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+            Route::get('/', [BannerController::class, 'index'])
+                ->name('api.banners.index')
+                ->middleware('permission:banners.view');
+            
+            Route::post('/', [BannerController::class, 'store'])
+                ->name('api.banners.store')
+                ->middleware('permission:banners.create');
+            
+            Route::get('/positions', [BannerController::class, 'positions'])
+                ->name('api.banners.positions');
+            
+            Route::get('/{banner}', [BannerController::class, 'show'])
+                ->name('api.banners.show');
+            
+            Route::put('/{banner}', [BannerController::class, 'update'])
+                ->name('api.banners.update')
+                ->middleware('permission:banners.edit');
+            
+            Route::delete('/{banner}', [BannerController::class, 'destroy'])
+                ->name('api.banners.destroy')
+                ->middleware('permission:banners.delete');
+            
+            Route::post('/{banner}/toggle', [BannerController::class, 'toggleStatus'])
+                ->name('api.banners.toggle')
+                ->middleware('permission:banners.edit');
+            
+            Route::post('/reorder', [BannerController::class, 'reorder'])
+                ->name('api.banners.reorder')
+                ->middleware('permission:banners.edit');
+            
+            Route::post('/{banner}/duplicate', [BannerController::class, 'duplicate'])
+                ->name('api.banners.duplicate')
+                ->middleware('permission:banners.create');
+        });
+    });
+
+    // ============================================
+    // TESTIMONIAL MANAGEMENT (Admin/Staff + Public)
+    // ============================================
+    Route::prefix('testimonials')->group(function () {
+        // Public routes for approved testimonials
+        Route::get('/', [TestimonialController::class, 'publicIndex'])
+            ->name('api.testimonials.public');
+        
+        // Admin/Staff routes
+        Route::middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+            Route::get('/admin', [TestimonialController::class, 'index'])
+                ->name('api.testimonials.index')
+                ->middleware('permission:testimonials.view');
+            
+            Route::post('/', [TestimonialController::class, 'store'])
+                ->name('api.testimonials.store')
+                ->middleware('permission:testimonials.create');
+            
+            Route::get('/statistics', [TestimonialController::class, 'statistics'])
+                ->name('api.testimonials.statistics')
+                ->middleware('permission:testimonials.view');
+            
+            Route::get('/{testimonial}', [TestimonialController::class, 'show'])
+                ->name('api.testimonials.show');
+            
+            Route::put('/{testimonial}', [TestimonialController::class, 'update'])
+                ->name('api.testimonials.update')
+                ->middleware('permission:testimonials.edit');
+            
+            Route::delete('/{testimonial}', [TestimonialController::class, 'destroy'])
+                ->name('api.testimonials.destroy')
+                ->middleware('permission:testimonials.delete');
+            
+            Route::post('/{testimonial}/approve', [TestimonialController::class, 'approve'])
+                ->name('api.testimonials.approve')
+                ->middleware('permission:testimonials.approve');
+            
+            Route::post('/{testimonial}/reject', [TestimonialController::class, 'reject'])
+                ->name('api.testimonials.reject')
+                ->middleware('permission:testimonials.approve');
+            
+            Route::post('/{testimonial}/featured', [TestimonialController::class, 'toggleFeatured'])
+                ->name('api.testimonials.featured')
+                ->middleware('permission:testimonials.edit');
+            
+            Route::post('/bulk-approve', [TestimonialController::class, 'bulkApprove'])
+                ->name('api.testimonials.bulk-approve')
+                ->middleware('permission:testimonials.approve');
+            
+            Route::post('/bulk-delete', [TestimonialController::class, 'bulkDelete'])
+                ->name('api.testimonials.bulk-delete')
+                ->middleware('permission:testimonials.delete');
+        });
+    });
+
+    // ============================================
+    // FAQ / KNOWLEDGE BASE MANAGEMENT (Admin/Staff + Public)
+    // ============================================
+    Route::prefix('faqs')->group(function () {
+        // Public routes
+        Route::get('/', [FaqController::class, 'publicIndex'])
+            ->name('api.faqs.public');
+        
+        Route::get('/categories', [FaqController::class, 'categories'])
+            ->name('api.faqs.categories');
+        
+        // Admin/Staff routes
+        Route::middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+            Route::get('/admin', [FaqController::class, 'index'])
+                ->name('api.faqs.index')
+                ->middleware('permission:faqs.view');
+            
+            Route::post('/', [FaqController::class, 'store'])
+                ->name('api.faqs.store')
+                ->middleware('permission:faqs.create');
+            
+            Route::get('/statistics', [FaqController::class, 'statistics'])
+                ->name('api.faqs.statistics')
+                ->middleware('permission:faqs.view');
+            
+            Route::get('/{faq}', [FaqController::class, 'show'])
+                ->name('api.faqs.show');
+            
+            Route::put('/{faq}', [FaqController::class, 'update'])
+                ->name('api.faqs.update')
+                ->middleware('permission:faqs.edit');
+            
+            Route::delete('/{faq}', [FaqController::class, 'destroy'])
+                ->name('api.faqs.destroy')
+                ->middleware('permission:faqs.delete');
+            
+            Route::post('/{faq}/toggle', [FaqController::class, 'toggleStatus'])
+                ->name('api.faqs.toggle')
+                ->middleware('permission:faqs.edit');
+            
+            Route::post('/{faq}/view', [FaqController::class, 'view'])
+                ->name('api.faqs.view');
+            
+            Route::post('/reorder', [FaqController::class, 'reorder'])
+                ->name('api.faqs.reorder')
+                ->middleware('permission:faqs.edit');
+            
+            Route::post('/bulk-delete', [FaqController::class, 'bulkDelete'])
+                ->name('api.faqs.bulk-delete')
+                ->middleware('permission:faqs.delete');
+            
+            // Category routes
+            Route::post('/categories', [FaqController::class, 'storeCategory'])
+                ->name('api.faqs.categories.store')
+                ->middleware('permission:faqs.create');
+            
+            Route::put('/categories/{faqCategory}', [FaqController::class, 'updateCategory'])
+                ->name('api.faqs.categories.update')
+                ->middleware('permission:faqs.edit');
+            
+            Route::delete('/categories/{faqCategory}', [FaqController::class, 'destroyCategory'])
+                ->name('api.faqs.categories.destroy')
+                ->middleware('permission:faqs.delete');
+        });
     });
 });
 
 /*
 |--------------------------------------------------------------------------
-| Category API Routes
+| Webhook Routes (No Authentication)
 |--------------------------------------------------------------------------
 |
-| These routes handle category management including CRUD operations,
-| tree structure, and product relationships.
+| These routes are for payment gateway callbacks and should not require
+| authentication but should verify webhook signatures.
 |
 */
 
-Route::prefix('categories')->group(function () {
-    // Public routes
-    Route::get('/', [App\Http\Controllers\Api\CategoryController::class, 'index'])->name('categories.index');
-    Route::get('/tree', [App\Http\Controllers\Api\CategoryController::class, 'tree'])->name('categories.tree');
-    Route::get('/{slug}', [App\Http\Controllers\Api\CategoryController::class, 'show'])->name('categories.show');
-    Route::get('/{slug}/products', [App\Http\Controllers\Api\CategoryController::class, 'products'])->name('categories.products');
+Route::prefix('webhooks')->group(function () {
+    Route::post('/mpesa/callback', [App\Http\Controllers\Api\Webhook\MpesaController::class, 'callback'])
+        ->name('api.webhooks.mpesa.callback');
     
-    // Protected routes (admin/staff only)
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/', [App\Http\Controllers\Api\CategoryController::class, 'store'])->name('categories.store');
-        Route::put('/{category}', [App\Http\Controllers\Api\CategoryController::class, 'update'])->name('categories.update');
-        Route::delete('/{category}', [App\Http\Controllers\Api\CategoryController::class, 'destroy'])->name('categories.destroy');
-        Route::put('/reorder', [App\Http\Controllers\Api\CategoryController::class, 'reorder'])->name('categories.reorder');
-    });
-});
-
-/*
-|--------------------------------------------------------------------------
-| Product API Routes
-|--------------------------------------------------------------------------
-|
-| These routes handle product management including CRUD operations,
-| filtering, featured products, and availability checks.
-|
-*/
-
-Route::prefix('products')->group(function () {
-    // Public routes
-    Route::get('/', [App\Http\Controllers\Api\ProductController::class, 'index'])->name('products.index');
-    Route::get('/featured', [App\Http\Controllers\Api\ProductController::class, 'featured'])->name('products.featured');
-    Route::get('/on-promotion', [App\Http\Controllers\Api\ProductController::class, 'onPromotion'])->name('products.promotion');
-    Route::get('/category/{categorySlug}', [App\Http\Controllers\Api\ProductController::class, 'byCategory'])->name('products.category');
-    Route::get('/{product:slug}', [App\Http\Controllers\Api\ProductController::class, 'show'])->name('products.show');
-    Route::get('/{product:slug}/availability', [App\Http\Controllers\Api\ProductController::class, 'checkAvailability'])->name('products.availability');
-    Route::get('/{product:slug}/related', [App\Http\Controllers\Api\ProductController::class, 'related'])->name('products.related');
+    Route::post('/mpesa/validation', [App\Http\Controllers\Api\Webhook\MpesaController::class, 'validation'])
+        ->name('api.webhooks.mpesa.validation');
     
-    // Protected routes (admin/staff only)
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/', [App\Http\Controllers\Api\ProductController::class, 'store'])->name('products.store');
-        Route::put('/{product}', [App\Http\Controllers\Api\ProductController::class, 'update'])->name('products.update');
-        Route::delete('/{product}', [App\Http\Controllers\Api\ProductController::class, 'destroy'])->name('products.destroy');
-    });
+    Route::post('/stripe/webhook', [App\Http\Controllers\Api\Webhook\StripeController::class, 'webhook'])
+        ->name('api.webhooks.stripe');
 });
-
-/*
-|--------------------------------------------------------------------------
-| Addon API Routes
-|--------------------------------------------------------------------------
-|
-| These routes handle addon management including CRUD operations
-| and product addon associations.
-|
-*/
-
-Route::prefix('addons')->group(function () {
-    // Public routes
-    Route::get('/', [App\Http\Controllers\Api\AddonController::class, 'index'])->name('addons.index');
-    Route::get('/{addon:slug}', [App\Http\Controllers\Api\AddonController::class, 'show'])->name('addons.show');
-    Route::get('/product/{productId}', [App\Http\Controllers\Api\AddonController::class, 'forProduct'])->name('addons.product');
-    
-    // Protected routes (admin/staff only)
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/', [App\Http\Controllers\Api\AddonController::class, 'store'])->name('addons.store');
-        Route::put('/{addon}', [App\Http\Controllers\Api\AddonController::class, 'update'])->name('addons.update');
-        Route::delete('/{addon}', [App\Http\Controllers\Api\AddonController::class, 'destroy'])->name('addons.destroy');
-    });
-});
-

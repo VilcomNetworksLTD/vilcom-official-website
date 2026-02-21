@@ -7,10 +7,11 @@ import {
   Lock, 
   Loader2
 } from 'lucide-react';
-import { login, LoginCredentials, AuthResponse } from '@/services/auth';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Auth = () => {
   const navigate = useNavigate();
+  const { login, getDashboardUrl } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,15 +29,15 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const response = await login(loginForm as LoginCredentials);
-      
-      if (response.success) {
-        navigate('/');
+      await login(loginForm.email, loginForm.password);
+      // Redirect to appropriate dashboard based on user role
+      navigate(getDashboardUrl());
+    } catch (err: any) {
+      if (err.message === '2FA_REQUIRED') {
+        setError('Two-factor authentication is required. Please enter your 2FA code.');
       } else {
-        setError(response.message || 'Login failed. Please try again.');
+        setError(err.message || 'Login failed. Please check your credentials.');
       }
-    } catch (err) {
-      setError('An error occurred. Please check your connection.');
       console.error('Login error:', err);
     } finally {
       setIsLoading(false);

@@ -1,7 +1,9 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Code, Layout, ShoppingCart, Smartphone, Search, Check } from "lucide-react";
+import { ArrowRight, Code, Layout, ShoppingCart, Smartphone, Search, Check, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import FooterSection from "@/components/FooterSection";
+import { Product, productsApi } from "@/services/products";
 
 const services = [
   {
@@ -30,6 +32,21 @@ const services = [
   }
 ];
 
+// Helper to convert API product to service format
+const productToService = (product: Product) => {
+  return {
+    id: product.id,
+    slug: product.slug,
+    name: product.name,
+    description: product.short_description || product.description,
+    features: product.features || [],
+    price: product.price_one_time,
+    delivery_days: product.delivery_days,
+    pages_included: product.pages_included,
+    popular: product.badge === "Best Value" || product.badge === "Popular",
+  };
+};
+
 const process = [
   { step: "01", title: "Discovery", desc: "We learn about your business goals and requirements" },
   { step: "02", title: "Design", desc: "Create stunning visual designs for your approval" },
@@ -38,6 +55,48 @@ const process = [
 ];
 
 const WebDevelopment = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch web development products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await productsApi.getAll({
+          type: "web_development",
+          is_active: true,
+          per_page: 20,
+        });
+        setProducts(data || []);
+      } catch (err) {
+        console.error("Error fetching web development products:", err);
+        setError("Unable to load services");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  // Get services from products
+  const getServices = () => {
+    // If loading or error, show loading/error state
+    if (loading || error) {
+      return [];
+    }
+    
+    // If no products from API, use fallback services
+    if (products.length === 0) {
+      return services;
+    }
+    
+    return products.map(productToService);
+  };
+
+  const serviceList = getServices();
   return (
     <div className="min-h-screen gradient-bg relative overflow-hidden">
       {/* Background: Same as Plans/Signup - Dark Blue Gradient */}
@@ -66,32 +125,46 @@ const WebDevelopment = () => {
           </div>
 
           {/* Services Grid - Glass Cards */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-20">
-            {services.map((service) => (
-              <div 
-                key={service.title}
-                className="glass-dark backdrop-blur-xl rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all hover:scale-[1.02]"
-              >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-4 shadow-lg">
-                  <service.icon className="w-6 h-6 text-white" />
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+              <span className="ml-3 text-blue-200">Loading services...</span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-10">
+              <p className="text-red-400 mb-4">{error}</p>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-20">
+              {serviceList.map((service, idx) => (
+                <div 
+                  key={service.name}
+                  className="glass-dark backdrop-blur-xl rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all hover:scale-[1.02]"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-4 shadow-lg">
+                    {idx === 0 ? <Layout className="w-6 h-6 text-white" /> :
+                     idx === 1 ? <ShoppingCart className="w-6 h-6 text-white" /> :
+                     idx === 2 ? <Smartphone className="w-6 h-6 text-white" /> :
+                     <Search className="w-6 h-6 text-white" />}
+                  </div>
+                  <h3 className="font-heading text-xl font-bold text-white mb-3">
+                    {service.name}
+                  </h3>
+                  <p className="text-blue-200/70 text-sm mb-4">
+                    {service.description}
+                  </p>
+                  <ul className="space-y-2">
+                    {service.features.map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-xs text-blue-200/60">
+                        <Check className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <h3 className="font-heading text-xl font-bold text-white mb-3">
-                  {service.title}
-                </h3>
-                <p className="text-blue-200/70 text-sm mb-4">
-                  {service.description}
-                </p>
-                <ul className="space-y-2">
-                  {service.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2 text-xs text-blue-200/60">
-                      <Check className="w-3.5 h-3.5 text-pink-400 shrink-0" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Process Section - Glass Cards */}
           <div className="mb-20">

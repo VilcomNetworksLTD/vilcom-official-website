@@ -54,10 +54,22 @@ class UserResource extends JsonResource
             
             // Roles & Permissions
             'roles' => $this->whenLoaded('roles', function () {
-                return $this->roles->pluck('name');
+                return $this->roles->map(function ($role) {
+                    return [
+                        'id' => $role->id,
+                        'name' => $role->name,
+                        'guard_name' => $role->guard_name,
+                    ];
+                });
             }),
             'permissions' => $this->whenLoaded('permissions', function () {
-                return $this->getAllPermissions()->pluck('name');
+                return $this->getAllPermissions()->map(function ($permission) {
+                    return [
+                        'id' => $permission->id,
+                        'name' => $permission->name,
+                        'guard_name' => $permission->guard_name,
+                    ];
+                });
             }),
             
             // Staff Information (only for staff/admin)

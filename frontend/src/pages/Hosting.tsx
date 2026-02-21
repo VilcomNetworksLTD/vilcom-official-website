@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Search, Check, ArrowRight, Zap, Globe, Database, Server, Gift } from "lucide-react";
+import { Search, Check, ArrowRight, Zap, Globe, Database, Server, Gift, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import FooterSection from "@/components/FooterSection";
+import { Product, productsApi } from "@/services/products";
 
 const blobColors = [
   "bg-[hsl(200,90%,85%)/0.5]",
@@ -12,6 +13,7 @@ const blobColors = [
   "bg-[hsl(170,70%,78%)/0.45]",
 ];
 
+// Fallback data in case API fails
 const webHostingPlans = [
   { name: "Starter", price: "4,500", features: ["35GB NVMe SSD", "2GB RAM", "Free .co.ke domain", "Unlimited Bandwidth", "Free SSL", "Softaculous WordPress"] },
   { name: "Standard", price: "5,500", features: ["100GB NVMe SSD", "4GB RAM", "Free .co.ke domain", "Unlimited Bandwidth", "Free SSL", "Softaculous WordPress"], popular: true },
@@ -41,12 +43,95 @@ const domainPrices = [
   { ext: ".io", price: "4,500" },
 ];
 
+// Helper to convert API product to plan format
+const productToPlan = (product: Product) => {
+  const price = product.price_annually 
+    ? (product.price_annually / 12).toLocaleString() 
+    : product.price_monthly?.toLocaleString() || "0";
+  
+  return {
+    id: product.id,
+    slug: product.slug,
+    name: product.name,
+    price: price,
+    features: product.features || [],
+    popular: product.badge === "Best Value" || product.badge === "Popular",
+    is_featured: product.is_featured,
+    description: product.short_description || product.description,
+    storage: product.storage_gb,
+    bandwidth: product.bandwidth_gb,
+  };
+};
+
 const Hosting = () => {
   const [tab, setTab] = useState<"web" | "reseller" | "vps">("web");
   const [domainSearch, setDomainSearch] = useState("");
   const [domainResult, setDomainResult] = useState<"available" | "taken" | null>(null);
-  
-  const plans = tab === "web" ? webHostingPlans : tab === "reseller" ? resellerPlans : vpsPlans;
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({});
+
+  const toggleExpand = (planName: string) => {
+    setExpandedCards(prev => ({
+      ...prev,
+      [planName]: !prev[planName]
+    }));
+  };
+
+  // Fetch hosting products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await productsApi.getAll({
+          type: "hosting_package",
+          is_active: true,
+          per_page: 20,
+        });
+        setProducts(data || []);
+      } catch (err) {
+        console.error("Error fetching hosting products:", err);
+        setError("Unable to load hosting plans");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  // Get plans based on tab and products
+  const getPlans = () => {
+    // If loading or error, show loading/error state
+    if (loading || error) {
+      return [];
+    }
+    
+    // If no products from API, use fallback data
+    if (products.length === 0) {
+      return tab === "web" ? webHostingPlans : tab === "reseller" ? resellerPlans : vpsPlans;
+    }
+    
+    // Filter products by category based on tab
+    let filtered: Product[] = [];
+    if (tab === "web") {
+      filtered = products.filter(p => p.slug.includes("web-hosting"));
+    } else if (tab === "reseller") {
+      filtered = products.filter(p => p.slug.includes("reseller"));
+    } else {
+      filtered = products.filter(p => p.slug.includes("vps"));
+    }
+    
+    // If no filtered products, use fallback
+    if (filtered.length === 0) {
+      return tab === "web" ? webHostingPlans : tab === "reseller" ? resellerPlans : vpsPlans;
+    }
+    
+    return filtered.map(productToPlan);
+  };
+
+  const plans = getPlans();
 
   const handleDomainSearch = () => {
     if (domainSearch.trim()) {
@@ -182,15 +267,31 @@ const Hosting = () => {
             </div>
           </div>
 
-          {/* Plans Grid */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            {plans.map((plan, i) => (
-              <div
-                key={plan.name}
-                className={`glass-sky rounded-2xl p-6 relative transition-all duration-300 hover:scale-[1.02] ${
-                  plan.popular ? "golden-glow-sky" : ""
-                }`}
-              >
+          {loading && (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-sky-600" />
+              <span className="ml-3 text-slate-600">Loading hosting plans...</span>
+            </div>
+          )}
+
+          {!loading && error && (
+            <div className="text-center py-10">
+              <p className="text-red-500 mb-4">{error}</p>
+              <Button onClick={() => window.location.reload()}>
+                Try Again
+              </Button>
+            </div>
+          )}
+
+          {!loading && !error && (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+              {plans.map((plan, i) => (
+                <div
+                  key={plan.name}
+                  className={`glass-sky rounded-2xl p-6 relative transition-all duration-300 hover:scale-[1.02] ${
+                    plan.popular ? "golden-glow-sky" : ""
+                  }`}
+                >
                 <div className={`absolute -bottom-8 -right-8 w-36 h-36 ${blobColors[i % blobColors.length]} rounded-full blur-[40px]`} />
 
                 {plan.popular && (
@@ -206,13 +307,25 @@ const Hosting = () => {
                       {tab === "vps" ? "/mo" : "/yr"}
                     </span>
                   </div>
-                  <ul className="space-y-2 mb-6">
-                    {plan.features.map((f) => (
+                  <ul className="space-y-2 mb-4">
+                    {(expandedCards[plan.name] ? plan.features : plan.features.slice(0, 7)).map((f) => (
                       <li key={f} className="flex items-center gap-2 text-xs text-slate-700/90">
                         <Check className="w-3.5 h-3.5 text-cyan-500 shrink-0" /> {f}
                       </li>
                     ))}
                   </ul>
+                  {plan.features.length > 7 && (
+                    <button
+                      onClick={() => toggleExpand(plan.name)}
+                      className="flex items-center gap-1 text-xs text-sky-600 hover:text-sky-700 font-medium mb-4 transition-colors"
+                    >
+                      {expandedCards[plan.name] ? (
+                        <>Show less <ChevronUp className="w-3.5 h-3.5" /></>
+                      ) : (
+                        <>Show {plan.features.length - 7} more <ChevronDown className="w-3.5 h-3.5" /></>
+                      )}
+                    </button>
+                  )}
                   <Button
                     asChild
                     className={`w-full text-sm font-semibold border-0 rounded-xl py-5 transition-all btn-golden ${
@@ -227,6 +340,7 @@ const Hosting = () => {
               </div>
             ))}
           </div>
+          )}
 
           {/* Features Section */}
           <div className="mt-16">
