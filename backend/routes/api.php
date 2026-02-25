@@ -437,29 +437,42 @@ Route::prefix('v1')->group(function () {
     // COVERAGE CHECK (Public)
     // ============================================
     Route::prefix('coverage')->group(function () {
-        Route::post('/check', [App\Http\Controllers\Api\CoverageController::class, 'check'])
+        Route::post('/check', [App\Http\Controllers\Api\CoverageCheckerController::class, 'check'])
             ->name('api.coverage.check');
         
-        Route::get('/areas', [App\Http\Controllers\Api\CoverageController::class, 'areas'])
+        Route::get('/areas', [App\Http\Controllers\Api\CoverageCheckerController::class, 'publicAreas'])
             ->name('api.coverage.areas');
         
-        // Admin/Staff Only
-        Route::middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
-            Route::get('/', [App\Http\Controllers\Api\CoverageController::class, 'index'])
-                ->name('api.coverage.index')
-                ->middleware('permission:coverage.view');
+        Route::get('/geojson', [App\Http\Controllers\Api\CoverageCheckerController::class, 'geojson'])
+            ->name('api.coverage.geojson');
+        
+        Route::post('/interest', [App\Http\Controllers\Api\CoverageCheckerController::class, 'registerInterest'])
+            ->name('api.coverage.interest');
+        
+        // Admin/Staff Coverage Management
+        Route::middleware(['auth:sanctum', 'role:admin|staff'])->prefix('admin/coverage')->group(function () {
+            // Zone CRUD
+            Route::apiResource('zones', App\Http\Controllers\Api\Admin\CoverageZoneController::class);
             
-            Route::post('/', [App\Http\Controllers\Api\CoverageController::class, 'store'])
-                ->name('api.coverage.store')
-                ->middleware('permission:coverage.create');
+            // Zone Products Management
+            Route::get('zones/{zone}/products', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'zoneProducts']);
+            Route::post('zones/{zone}/products', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'attachProduct']);
+            Route::put('zones/{zone}/products/{product}', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'updateZoneProduct']);
+            Route::delete('zones/{zone}/products/{product}', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'detachProduct']);
             
-            Route::put('/{coverage}', [App\Http\Controllers\Api\CoverageController::class, 'update'])
-                ->name('api.coverage.update')
-                ->middleware('permission:coverage.edit');
+            // Zone Packages Management
+            Route::get('zones/{zone}/packages', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'zonePackages']);
+            Route::post('zones/{zone}/packages', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'storePackage']);
+            Route::put('zones/{zone}/packages/{package}', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'updatePackage']);
+            Route::delete('zones/{zone}/packages/{package}', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'destroyPackage']);
             
-            Route::delete('/{coverage}', [App\Http\Controllers\Api\CoverageController::class, 'destroy'])
-                ->name('api.coverage.destroy')
-                ->middleware('permission:coverage.delete');
+            // Interest Signups
+            Route::get('interest-signups', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'interestSignups']);
+            Route::put('interest-signups/{signup}/status', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'updateSignupStatus']);
+            
+            // Analytics & Logs
+            Route::get('analytics', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'analytics']);
+            Route::get('check-logs', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'checkLogs']);
         });
     });
 

@@ -54,6 +54,88 @@ interface DashboardLayoutProps {
   userType: 'client' | 'staff' | 'admin';
 }
 
+// Theme configurations for different dashboard types with glassmorphism
+const getThemeConfig = (userType: 'client' | 'staff' | 'admin') => {
+  switch (userType) {
+    case 'client':
+      return {
+        // Dark glassmorphism background with golden sidebar
+        background: 'bg-slate-950',
+        backgroundGradient: 'bg-gradient-to-br from-slate-950 via-blue-950/30 to-slate-900',
+        // Multicolor blurred background elements for client
+        meshGradient: true,
+        meshColors: ['from-amber-500/20', 'from-yellow-500/20', 'from-orange-500/10'],
+        cardBg: 'bg-white/10 backdrop-blur-md',
+        cardBorder: 'border-white/20',
+        cardHover: 'hover:bg-white/15 hover:border-white/30',
+        textPrimary: 'text-white',
+        textSecondary: 'text-slate-300',
+        textMuted: 'text-slate-400',
+        headerBg: 'bg-slate-900/60 backdrop-blur-lg',
+        // Golden/Yellow glassmorphism sidebar
+        sidebarBg: 'bg-gradient-to-b from-amber-900/80 to-yellow-900/70 backdrop-blur-xl border-r border-amber-500/30',
+        sidebarText: 'text-amber-100',
+        sidebarActive: 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-l-2 border-amber-400',
+        sidebarHover: 'hover:bg-white/10',
+        // Accent colors
+        accentColor: 'amber',
+        accentPrimary: '#F59E0B',
+        accentSecondary: '#D97706',
+      };
+    case 'admin':
+      return {
+        // Moroccan blue glassmorphism background with multicolor
+        background: 'bg-slate-950',
+        backgroundGradient: 'bg-gradient-to-br from-blue-950 via-slate-900 to-indigo-950',
+        // Multicolor blurred background elements
+        meshGradient: true,
+        meshColors: ['from-blue-500/20', 'from-indigo-500/20', 'from-cyan-500/10', 'from-purple-500/10'],
+        cardBg: 'bg-white/10 backdrop-blur-md',
+        cardBorder: 'border-white/20',
+        cardHover: 'hover:bg-white/15 hover:border-white/30',
+        textPrimary: 'text-white',
+        textSecondary: 'text-slate-300',
+        textMuted: 'text-slate-400',
+        headerBg: 'bg-slate-900/60 backdrop-blur-lg',
+        // Moroccan blue glassmorphism sidebar
+        sidebarBg: 'bg-gradient-to-b from-blue-900/80 to-indigo-900/70 backdrop-blur-xl border-r border-blue-500/30',
+        sidebarText: 'text-blue-100',
+        sidebarActive: 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border-l-2 border-blue-400',
+        sidebarHover: 'hover:bg-white/10',
+        // Accent colors
+        accentColor: 'blue',
+        accentPrimary: '#0047AB',
+        accentSecondary: '#003380',
+      };
+    case 'staff':
+    default:
+      return {
+        // Moroccan blue glassmorphism background with multicolor
+        background: 'bg-slate-950',
+        backgroundGradient: 'bg-gradient-to-br from-blue-950 via-slate-900 to-indigo-950',
+        // Multicolor blurred background elements
+        meshGradient: true,
+        meshColors: ['from-blue-500/20', 'from-indigo-500/20', 'from-cyan-500/10', 'from-purple-500/10'],
+        cardBg: 'bg-white/10 backdrop-blur-md',
+        cardBorder: 'border-white/20',
+        cardHover: 'hover:bg-white/15 hover:border-white/30',
+        textPrimary: 'text-white',
+        textSecondary: 'text-slate-300',
+        textMuted: 'text-slate-400',
+        headerBg: 'bg-slate-900/60 backdrop-blur-lg',
+        // Moroccan blue glassmorphism sidebar
+        sidebarBg: 'bg-gradient-to-b from-blue-900/80 to-indigo-900/70 backdrop-blur-xl border-r border-blue-500/30',
+        sidebarText: 'text-blue-100',
+        sidebarActive: 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border-l-2 border-blue-400',
+        sidebarHover: 'hover:bg-white/10',
+        // Accent colors
+        accentColor: 'blue',
+        accentPrimary: '#0047AB',
+        accentSecondary: '#003380',
+      };
+  }
+};
+
 // Client sidebar items
 const clientSections: SidebarSection[] = [
   {
@@ -183,12 +265,33 @@ const adminSections: SidebarSection[] = [
   },
 ];
 
+// Animated Mesh Gradient Background Component
+const MeshGradientBackground = ({ colors }: { colors: string[] }) => {
+  return (
+    <div className="fixed inset-0 overflow-hidden pointer-events-none">
+      <div className={`absolute inset-0 ${colors[0]} opacity-30 blur-[100px]`} style={{ animation: 'pulse 8s ease-in-out infinite' }} />
+      <div className={`absolute inset-0 ${colors[1]} opacity-30 blur-[100px]`} style={{ animation: 'pulse 10s ease-in-out infinite reverse' }} />
+      {colors[2] && <div className={`absolute inset-0 ${colors[2]} opacity-20 blur-[120px]`} style={{ animation: 'pulse 12s ease-in-out infinite' }} />}
+      {colors[3] && <div className={`absolute inset-0 ${colors[3]} opacity-20 blur-[100px]`} style={{ animation: 'pulse 14s ease-in-out infinite reverse' }} />}
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); opacity: 0.3; }
+          50% { transform: scale(1.1); opacity: 0.5; }
+        }
+      `}</style>
+    </div>
+  );
+};
+
 const DashboardLayout = ({ children, userType }: DashboardLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Get theme configuration based on user type
+  const theme = getThemeConfig(userType);
 
   // Get sidebar sections based on user type
   const getSections = () => {
@@ -213,8 +316,24 @@ const DashboardLayout = ({ children, userType }: DashboardLayoutProps) => {
 
   const sidebarWidth = collapsed ? 'w-16' : 'w-64';
 
+  // Get logo gradient based on user type
+  const getLogoGradient = () => {
+    switch (userType) {
+      case 'client':
+        return 'from-amber-500 to-yellow-600';
+      case 'admin':
+      case 'staff':
+        return 'from-blue-500 to-indigo-600';
+      default:
+        return 'from-cyan-500 to-blue-500';
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className={`min-h-screen flex ${theme.backgroundGradient} ${theme.background}`}>
+      {/* Mesh Gradient Background for glassmorphism effect */}
+      {theme.meshGradient && <MeshGradientBackground colors={theme.meshColors} />}
+
       {/* Mobile Overlay */}
       {mobileOpen && (
         <div 
@@ -223,39 +342,39 @@ const DashboardLayout = ({ children, userType }: DashboardLayoutProps) => {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Glassmorphism Sidebar */}
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-50 
         ${sidebarWidth} 
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        bg-slate-900 text-white transition-all duration-300 flex flex-col
+        ${theme.sidebarBg} text-white transition-all duration-300 flex flex-col
       `}>
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-700">
+        <div className={`h-16 flex items-center justify-between px-4 border-b ${userType === 'client' ? 'border-amber-500/30' : 'border-blue-500/30'}`}>
           {!collapsed && (
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center">
+              <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${getLogoGradient()} flex items-center justify-center`}>
                 <Zap className="w-5 h-5 text-white" />
               </div>
-              <span className="font-bold text-lg">VILCOM</span>
+              <span className={`font-bold text-lg ${theme.textPrimary}`}>VILCOM</span>
             </Link>
           )}
           {collapsed && (
-            <div className="w-8 h-8 mx-auto rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center">
+            <div className={`w-8 h-8 mx-auto rounded-lg bg-gradient-to-r ${getLogoGradient()} flex items-center justify-center`}>
               <Zap className="w-5 h-5 text-white" />
             </div>
           )}
           <button 
             onClick={() => setCollapsed(!collapsed)}
-            className="hidden lg:flex p-1 rounded hover:bg-slate-800"
+            className={`hidden lg:flex p-1 rounded ${theme.sidebarHover}`}
           >
-            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            {collapsed ? <ChevronRight className={`w-4 h-4 ${theme.sidebarText}`} /> : <ChevronLeft className={`w-4 h-4 ${theme.sidebarText}`} />}
           </button>
           <button 
             onClick={() => setMobileOpen(false)}
-            className="lg:hidden p-1 rounded hover:bg-slate-800"
+            className={`lg:hidden p-1 rounded ${theme.sidebarHover}`}
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className={`w-4 h-4 ${theme.sidebarText}`} />
           </button>
         </div>
 
@@ -264,7 +383,7 @@ const DashboardLayout = ({ children, userType }: DashboardLayoutProps) => {
           {sections.map((section, sectionIndex) => (
             <div key={sectionIndex} className="mb-4">
               {!collapsed && (
-                <h3 className="px-4 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <h3 className={`px-4 mb-2 text-xs font-semibold uppercase tracking-wider ${theme.textMuted}`}>
                   {section.title}
                 </h3>
               )}
@@ -276,8 +395,8 @@ const DashboardLayout = ({ children, userType }: DashboardLayoutProps) => {
                       className={`
                         flex items-center gap-3 px-3 py-2 rounded-lg transition-colors
                         ${isActive(item.href) 
-                          ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white' 
-                          : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                          ? theme.sidebarActive
+                          : `${theme.sidebarText} ${theme.sidebarHover}`
                         }
                         ${collapsed ? 'justify-center' : ''}
                       `}
@@ -303,26 +422,26 @@ const DashboardLayout = ({ children, userType }: DashboardLayoutProps) => {
         </nav>
 
         {/* User Section */}
-        <div className="border-t border-slate-700 p-4">
+        <div className={`border-t p-4 ${userType === 'client' ? 'border-amber-500/30' : 'border-blue-500/30'}`}>
           {!collapsed ? (
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center">
+              <div className={`w-10 h-10 rounded-full bg-gradient-to-r ${getLogoGradient()} flex items-center justify-center`}>
                 <User className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{user?.name}</p>
-                <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+                <p className={`text-sm font-medium truncate ${theme.textPrimary}`}>{user?.name}</p>
+                <p className={`text-xs truncate ${theme.textMuted}`}>{user?.email}</p>
               </div>
             </div>
           ) : (
-            <div className="w-10 h-10 mx-auto rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center mb-3">
+            <div className={`w-10 h-10 mx-auto rounded-full bg-gradient-to-r ${getLogoGradient()} flex items-center justify-center mb-3`}>
               <User className="w-5 h-5 text-white" />
             </div>
           )}
           <button
             onClick={handleLogout}
             className={`
-              w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-400 hover:bg-slate-800 transition-colors
+              w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors
               ${collapsed ? 'justify-center' : ''}
             `}
           >
@@ -333,17 +452,17 @@ const DashboardLayout = ({ children, userType }: DashboardLayoutProps) => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex-1 flex flex-col min-h-screen relative z-10">
         {/* Top Header */}
-        <header className="bg-white shadow-sm border-b lg:hidden">
+        <header className={`${theme.headerBg} shadow-sm border-b ${userType === 'client' ? 'border-amber-500/20' : 'border-blue-500/20'} lg:hidden`}>
           <div className="flex items-center justify-between px-4 h-16">
             <button
               onClick={() => setMobileOpen(true)}
-              className="p-2 rounded-lg hover:bg-gray-100"
+              className={`p-2 rounded-lg hover:bg-gray-100/50`}
             >
-              <Menu className="w-6 h-6" />
+              <Menu className={`w-6 h-6 ${theme.textPrimary}`} />
             </button>
-            <span className="font-bold text-lg">VILCOM</span>
+            <span className={`font-bold text-lg ${theme.textPrimary}`}>VILCOM</span>
             <div className="w-10" />
           </div>
         </header>

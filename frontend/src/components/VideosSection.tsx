@@ -16,12 +16,20 @@ const videos = [
 const VideosSection = () => {
   return (
     <section className="py-16 md:py-24 relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-100 via-slate-50 to-white" />
-      
-      {/* Decorative elements */}
-      <div className="absolute top-20 left-[20%] w-64 h-64 bg-sky-100 opacity-50 rounded-full blur-[80px]" />
-      <div className="absolute bottom-20 right-[15%] w-72 h-72 bg-blue-50 opacity-50 rounded-full blur-[100px]" />
+      {/* Background - matching glassmorphism theme */}
+      <div className="absolute inset-0">
+        <img
+          src="/hero.jpg"
+          alt=""
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-[hsl(220,30%,8%)/0.35]" />
+      </div>
+
+      {/* Multi-color radial glow accents */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full bg-[hsl(220,80%,40%)] opacity-15 blur-[150px]" />
+      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-[hsl(340,80%,60%)] opacity-15 blur-[120px]" />
+      <div className="absolute top-1/3 left-[10%] w-[350px] h-[350px] rounded-full bg-[hsl(30,100%,60%)] opacity-12 blur-[120px]" />
 
       <div className="relative z-10 container mx-auto px-4">
         <div className="text-center mb-12">
@@ -38,10 +46,10 @@ const VideosSection = () => {
           {videos.map((video) => (
             <div
               key={video.id}
-              className="group relative rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500"
+              className="glass-crystal group relative rounded-3xl overflow-hidden hover:scale-[1.02] transition-all duration-300"
             >
               {/* Video container with iframe for inline playback */}
-              <div className="relative aspect-video bg-slate-800">
+              <div className="relative aspect-video bg-slate-800 rounded-t-3xl">
                 <iframe
                   src={`https://www.youtube.com/embed/${video.id}?autoplay=0&rel=0`}
                   title={video.title}

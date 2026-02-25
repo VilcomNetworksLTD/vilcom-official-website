@@ -543,4 +543,36 @@ class Product extends Model implements HasMedia
         
         return $specs;
     }
+
+
+public function coverageZones()
+{
+    return $this->belongsToMany(CoverageZone::class, 'product_coverage_zones')
+                ->withPivot([
+                    'price_monthly', 'price_quarterly', 'price_semi_annually',
+                    'price_annually', 'price_one_time', 'setup_fee',
+                    'promotional_price', 'promotional_start', 'promotional_end',
+                    'is_available', 'capacity_limit', 'current_capacity',
+                    'speed_mbps', 'connection_type', 'notes',
+                ])
+                ->withTimestamps();
+}
+
+// Get effective price for a zone (falls back to product default)
+public function getPriceForZone(CoverageZone $zone, string $billing = 'monthly'): ?float
+{
+    $pivot = $this->coverageZones->find($zone->id)?->pivot;
+    $field = "price_{$billing}";
+    return $pivot?->$field ?? $this->$field;
+}
+
+// Check if product is available in a zone
+public function isAvailableInZone(CoverageZone $zone): bool
+{
+    if ($this->available_nationwide) return true;
+
+    $pivot = $this->coverageZones->find($zone->id)?->pivot;
+    return $pivot?->is_available ?? false;
+}
+
 }

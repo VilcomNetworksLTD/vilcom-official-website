@@ -11,7 +11,8 @@ import {
   GripVertical,
   ExternalLink,
   Calendar,
-  Users
+  Users,
+  X
 } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { bannerService, Banner } from '@/services/banners';
@@ -54,9 +55,12 @@ const BannerManagement = () => {
         position: positionFilter || undefined,
         status: statusFilter || undefined,
       });
-      setBanners(response.data);
+      // Handle both direct array and { data: [] } response formats
+      const bannersData = response.data || response;
+      setBanners(Array.isArray(bannersData) ? bannersData : []);
     } catch (error) {
       console.error('Failed to load banners:', error);
+      setBanners([]);
     } finally {
       setLoading(false);
     }
@@ -172,76 +176,76 @@ const BannerManagement = () => {
     <DashboardLayout userType="admin">
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Banner Management</h1>
-          <p className="text-gray-600">Manage your promotional banners and sliders</p>
+          <h1 className="text-2xl font-bold text-white">Banner Management</h1>
+          <p className="text-slate-400">Manage your promotional banners and sliders</p>
         </div>
         <button
           onClick={() => { resetForm(); setShowModal(true); }}
-          className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 border border-blue-500/30 text-blue-300 rounded-lg hover:bg-blue-500/30 backdrop-blur-sm transition-all"
         >
           <Plus className="w-4 h-4" />
           Add Banner
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+      {/* Filters - Glassmorphism */}
+      <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 mb-6">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
               placeholder="Search banners..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              className="pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder-slate-400"
             />
           </div>
           <select
             value={positionFilter}
             onChange={(e) => setPositionFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
           >
-            <option value="">All Positions</option>
+            <option value="" className="bg-slate-900">All Positions</option>
             {Object.entries(positions).map(([key, value]) => (
-              <option key={key} value={key}>{value}</option>
+              <option key={key} value={key} className="bg-slate-900">{value}</option>
             ))}
           </select>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
           >
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
+            <option value="" className="bg-slate-900">All Status</option>
+            <option value="active" className="bg-slate-900">Active</option>
+            <option value="inactive" className="bg-slate-900">Inactive</option>
           </select>
         </div>
       </div>
 
-      {/* Banner list */}
+      {/* Banner list - Glassmorphism */}
       <div className="space-y-4">
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
           </div>
         ) : banners.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-            <Image className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-1">No banners found</h3>
-            <p className="text-gray-500">Create your first banner to get started</p>
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-12 text-center">
+            <Image className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-white mb-1">No banners found</h3>
+            <p className="text-slate-400">Create your first banner to get started</p>
           </div>
         ) : (
           banners.map((banner) => (
-            <div key={banner.id} className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-shadow">
+            <div key={banner.id} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 hover:bg-white/15 hover:border-white/30 transition-all">
               <div className="flex gap-4">
                 {/* Banner image */}
-                <div className="w-48 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                <div className="w-48 h-24 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-lg overflow-hidden flex-shrink-0">
                   {banner.image ? (
                     <img src={banner.image} alt={banner.title} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Image className="w-8 h-8 text-gray-400" />
+                      <Image className="w-8 h-8 text-blue-400" />
                     </div>
                   )}
                 </div>
@@ -250,20 +254,20 @@ const BannerManagement = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="font-semibold text-gray-900">{banner.title}</h3>
-                      <p className="text-sm text-gray-500">{positions[banner.position] || banner.position}</p>
+                      <h3 className="font-semibold text-white">{banner.title}</h3>
+                      <p className="text-sm text-slate-400">{positions[banner.position] || banner.position}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleToggleStatus(banner.id)}
-                        className={`p-2 rounded-lg ${banner.is_active ? 'text-green-600' : 'text-gray-400'}`}
+                        className={`p-2 rounded-lg ${banner.is_active ? 'text-green-400 hover:bg-green-500/20' : 'text-slate-400 hover:bg-slate-500/20'}`}
                       >
                         {banner.is_active ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
                       </button>
                     </div>
                   </div>
                   
-                  <div className="flex flex-wrap gap-4 mt-3 text-sm text-gray-500">
+                  <div className="flex flex-wrap gap-4 mt-3 text-sm text-slate-400">
                     {banner.start_date && (
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
@@ -288,21 +292,21 @@ const BannerManagement = () => {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleDuplicate(banner.id)}
-                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                    className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all"
                     title="Duplicate"
                   >
                     <Copy className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => openEditModal(banner)}
-                    className="p-2 text-gray-400 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg"
+                    className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all"
                     title="Edit"
                   >
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(banner.id)}
-                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                    className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all"
                     title="Delete"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -314,104 +318,110 @@ const BannerManagement = () => {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modal - Glassmorphism */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900/90 backdrop-blur-xl border border-white/20 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-white/20 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-white">
                 {editingBanner ? 'Edit Banner' : 'Add New Banner'}
               </h3>
+              <button
+                onClick={() => { setShowModal(false); resetForm(); }}
+                className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Title *</label>
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subtitle</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Subtitle</label>
                 <input
                   type="text"
                   value={formData.subtitle}
                   onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Position *</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Position *</label>
                 <select
                   value={formData.position}
                   onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
                   required
                 >
                   {Object.entries(positions).map(([key, value]) => (
-                    <option key={key} value={key}>{value}</option>
+                    <option key={key} value={key} className="bg-slate-900">{value}</option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-300 mb-1">
                   Banner Image {editingBanner ? '' : '*'}
                 </label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => setFormData({ ...formData, image: e.target.files?.[0] || null })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white file:mr-4 file:py-1 file:px-4 file:rounded-lg file:border-0 file:bg-blue-500/20 file:text-blue-300 file:border file:border-blue-500/30"
                   required={!editingBanner}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Start Date</label>
                   <input
                     type="date"
                     value={formData.start_date}
                     onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">End Date</label>
                   <input
                     type="date"
                     value={formData.end_date}
                     onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">CTA Text</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">CTA Text</label>
                   <input
                     type="text"
                     value={formData.cta_text}
                     onChange={(e) => setFormData({ ...formData, cta_text: e.target.value })}
                     placeholder="e.g., Learn More"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">CTA URL</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">CTA URL</label>
                   <input
                     type="url"
                     value={formData.cta_url}
                     onChange={(e) => setFormData({ ...formData, cta_url: e.target.value })}
                     placeholder="https://"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
                   />
                 </div>
               </div>
@@ -422,18 +432,18 @@ const BannerManagement = () => {
                     type="checkbox"
                     checked={formData.target_logged_in}
                     onChange={(e) => setFormData({ ...formData, target_logged_in: e.target.checked })}
-                    className="w-4 h-4 rounded border-gray-300"
+                    className="w-4 h-4 rounded border-white/30 bg-white/10"
                   />
-                  <span className="text-sm text-gray-700">Show to logged in users</span>
+                  <span className="text-sm text-slate-300">Show to logged in users</span>
                 </label>
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={formData.target_guests}
                     onChange={(e) => setFormData({ ...formData, target_guests: e.target.checked })}
-                    className="w-4 h-4 rounded border-gray-300"
+                    className="w-4 h-4 rounded border-white/30 bg-white/10"
                   />
-                  <span className="text-sm text-gray-700">Show to guests</span>
+                  <span className="text-sm text-slate-300">Show to guests</span>
                 </label>
               </div>
 
@@ -442,22 +452,22 @@ const BannerManagement = () => {
                   type="checkbox"
                   checked={formData.is_active}
                   onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="w-4 h-4 rounded border-gray-300"
+                  className="w-4 h-4 rounded border-white/30 bg-white/10"
                 />
-                <span className="text-sm text-gray-700">Active</span>
+                <span className="text-sm text-slate-300">Active</span>
               </label>
 
-              <div className="flex justify-end gap-2 pt-4 border-t">
+              <div className="flex justify-end gap-2 pt-4 border-t border-white/20">
                 <button
                   type="button"
                   onClick={() => { setShowModal(false); resetForm(); }}
-                  className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"
+                  className="px-4 py-2 border border-white/20 rounded-lg text-slate-300 hover:bg-white/10 transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600"
+                  className="px-4 py-2 bg-blue-500/20 border border-blue-500/30 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-all"
                 >
                   {editingBanner ? 'Update' : 'Create'} Banner
                 </button>

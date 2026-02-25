@@ -77,7 +77,7 @@ return new class extends Migration
             $table->json('technical_specs')->nullable(); // Technical specifications
             
             // Availability
-            $table->json('coverage_areas')->nullable(); // County/town IDs or names
+            $table->json('coverage_areas')->nullable(); // Coverage areas for this product (JSON array)
             $table->boolean('available_nationwide')->default(false);
             
             // Stock/Capacity Management

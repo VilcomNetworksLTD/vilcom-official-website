@@ -9,7 +9,8 @@ import {
   Eye,
   ChevronDown,
   ChevronUp,
-  Folder
+  Folder,
+  X
 } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { faqService, Faq, FaqCategory, FaqStats } from '@/services/faqs';
@@ -55,9 +56,12 @@ const FaqManagement = () => {
         category_id: categoryFilter ? Number(categoryFilter) : undefined,
         status: statusFilter || undefined,
       });
-      setFaqs(response.data);
+      // Handle both direct array and { data: [] } response formats
+      const faqsData = response.data || response;
+      setFaqs(Array.isArray(faqsData) ? faqsData : []);
     } catch (error) {
       console.error('Failed to load FAQs:', error);
+      setFaqs([]);
     } finally {
       setLoading(false);
     }
@@ -177,20 +181,20 @@ const FaqManagement = () => {
     <DashboardLayout userType="admin">
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">FAQ Management</h1>
-          <p className="text-gray-600">Manage your frequently asked questions</p>
+          <h1 className="text-2xl font-bold text-white">FAQ Management</h1>
+          <p className="text-slate-400">Manage your frequently asked questions</p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setShowCategoryModal(true)}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 rounded-lg hover:bg-white/20 text-slate-300 transition-all"
           >
             <Folder className="w-4 h-4" />
             Categories
           </button>
           <button
             onClick={() => { resetForm(); setShowModal(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 border border-blue-500/30 text-blue-300 rounded-lg hover:bg-blue-500/30 backdrop-blur-sm transition-all"
           >
             <Plus className="w-4 h-4" />
             Add FAQ
@@ -198,88 +202,88 @@ const FaqManagement = () => {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats - Glassmorphism */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
-            <p className="text-sm text-gray-500">Total FAQs</p>
-            <p className="text-2xl font-bold text-gray-900">{stats.total_faqs}</p>
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+            <p className="text-sm text-slate-400">Total FAQs</p>
+            <p className="text-2xl font-bold text-white">{stats.total_faqs}</p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
-            <p className="text-sm text-gray-500">Active</p>
-            <p className="text-2xl font-bold text-green-600">{stats.active_faqs}</p>
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+            <p className="text-sm text-slate-400">Active</p>
+            <p className="text-2xl font-bold text-green-400">{stats.active_faqs}</p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
-            <p className="text-sm text-gray-500">Inactive</p>
-            <p className="text-2xl font-bold text-gray-600">{stats.inactive_faqs}</p>
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+            <p className="text-sm text-slate-400">Inactive</p>
+            <p className="text-2xl font-bold text-slate-400">{stats.inactive_faqs}</p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
-            <p className="text-sm text-gray-500">Total Views</p>
-            <p className="text-2xl font-bold text-blue-600">{stats.total_views}</p>
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+            <p className="text-sm text-slate-400">Total Views</p>
+            <p className="text-2xl font-bold text-blue-400">{stats.total_views}</p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
-            <p className="text-sm text-gray-500">Categories</p>
-            <p className="text-2xl font-bold text-purple-600">{stats.total_categories}</p>
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+            <p className="text-sm text-slate-400">Categories</p>
+            <p className="text-2xl font-bold text-purple-400">{stats.total_categories}</p>
           </div>
         </div>
       )}
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+      {/* Filters - Glassmorphism */}
+      <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 mb-6">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
               placeholder="Search FAQs..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              className="pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder-slate-400"
             />
           </div>
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
           >
-            <option value="">All Categories</option>
+            <option value="" className="bg-slate-900">All Categories</option>
             {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
+              <option key={cat.id} value={cat.id} className="bg-slate-900">{cat.name}</option>
             ))}
           </select>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
           >
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
+            <option value="" className="bg-slate-900">All Status</option>
+            <option value="active" className="bg-slate-900">Active</option>
+            <option value="inactive" className="bg-slate-900">Inactive</option>
           </select>
         </div>
       </div>
 
-      {/* FAQs list */}
+      {/* FAQs list - Glassmorphism */}
       <div className="space-y-3">
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
           </div>
         ) : faqs.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-            <h3 className="text-lg font-medium text-gray-900 mb-1">No FAQs found</h3>
-            <p className="text-gray-500">Create your first FAQ to get started</p>
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-12 text-center">
+            <h3 className="text-lg font-medium text-white mb-1">No FAQs found</h3>
+            <p className="text-slate-400">Create your first FAQ to get started</p>
           </div>
         ) : (
           faqs.map((faq) => (
-            <div key={faq.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+            <div key={faq.id} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl overflow-hidden">
               <div 
-                className="p-4 cursor-pointer hover:bg-gray-50"
+                className="p-4 cursor-pointer hover:bg-white/5 transition-colors"
                 onClick={() => toggleExpand(faq.id)}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3">
-                    <button className="mt-1 text-gray-400">
+                    <button className="mt-1 text-blue-400">
                       {expandedFaqs.includes(faq.id) ? (
                         <ChevronUp className="w-5 h-5" />
                       ) : (
@@ -287,9 +291,9 @@ const FaqManagement = () => {
                       )}
                     </button>
                     <div>
-                      <h3 className="font-semibold text-gray-900">{faq.question}</h3>
+                      <h3 className="font-semibold text-white">{faq.question}</h3>
                       {faq.category && (
-                        <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
+                        <span className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30">
                           {faq.category.name}
                         </span>
                       )}
@@ -298,19 +302,19 @@ const FaqManagement = () => {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={(e) => { e.stopPropagation(); handleToggleStatus(faq.id); }}
-                      className={`p-2 rounded-lg ${faq.is_active ? 'text-green-600' : 'text-gray-400'}`}
+                      className={`p-2 rounded-lg ${faq.is_active ? 'text-green-400 hover:bg-green-500/20' : 'text-slate-400 hover:bg-slate-500/20'}`}
                     >
                       {faq.is_active ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); openEditModal(faq); }}
-                      className="p-2 text-gray-400 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg"
+                      className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(faq.id); }}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                      className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -321,9 +325,9 @@ const FaqManagement = () => {
               {/* Expanded content */}
               {expandedFaqs.includes(faq.id) && (
                 <div className="px-4 pb-4 pt-0 pl-12">
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-gray-600 whitespace-pre-wrap">{faq.answer}</p>
-                    <div className="mt-3 flex items-center gap-4 text-sm text-gray-500">
+                  <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                    <p className="text-slate-300 whitespace-pre-wrap">{faq.answer}</p>
+                    <div className="mt-3 flex items-center gap-4 text-sm text-slate-500">
                       <span className="flex items-center gap-1">
                         <Eye className="w-4 h-4" />
                         {faq.views} views
@@ -337,48 +341,54 @@ const FaqManagement = () => {
         )}
       </div>
 
-      {/* FAQ Modal */}
+      {/* FAQ Modal - Glassmorphism */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900/90 backdrop-blur-xl border border-white/20 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-white/20 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-white">
                 {editingFaq ? 'Edit FAQ' : 'Add New FAQ'}
               </h3>
+              <button
+                onClick={() => { setShowModal(false); resetForm(); }}
+                className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Question *</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Question *</label>
                 <input
                   type="text"
                   value={formData.question}
                   onChange={(e) => setFormData({ ...formData, question: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Answer *</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Answer *</label>
                 <textarea
                   value={formData.answer}
                   onChange={(e) => setFormData({ ...formData, answer: e.target.value })}
                   rows={6}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Category</label>
                 <select
                   value={formData.category_id || ''}
                   onChange={(e) => setFormData({ ...formData, category_id: e.target.value ? Number(e.target.value) : null })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
                 >
-                  <option value="">No Category</option>
+                  <option value="" className="bg-slate-900">No Category</option>
                   {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    <option key={cat.id} value={cat.id} className="bg-slate-900">{cat.name}</option>
                   ))}
                 </select>
               </div>
@@ -388,22 +398,22 @@ const FaqManagement = () => {
                   type="checkbox"
                   checked={formData.is_active}
                   onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="w-4 h-4 rounded border-gray-300"
+                  className="w-4 h-4 rounded border-white/30 bg-white/10"
                 />
-                <span className="text-sm text-gray-700">Active</span>
+                <span className="text-sm text-slate-300">Active</span>
               </label>
 
-              <div className="flex justify-end gap-2 pt-4 border-t">
+              <div className="flex justify-end gap-2 pt-4 border-t border-white/20">
                 <button
                   type="button"
                   onClick={() => { setShowModal(false); resetForm(); }}
-                  className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"
+                  className="px-4 py-2 border border-white/20 rounded-lg text-slate-300 hover:bg-white/10 transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600"
+                  className="px-4 py-2 bg-blue-500/20 border border-blue-500/30 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-all"
                 >
                   {editingFaq ? 'Update' : 'Create'} FAQ
                 </button>
@@ -413,24 +423,30 @@ const FaqManagement = () => {
         </div>
       )}
 
-      {/* Category Modal */}
+      {/* Category Modal - Glassmorphism */}
       {showCategoryModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-md">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold">Manage Categories</h3>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900/90 backdrop-blur-xl border border-white/20 rounded-xl w-full max-w-md">
+            <div className="p-6 border-b border-white/20 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-white">Manage Categories</h3>
+              <button
+                onClick={() => setShowCategoryModal(false)}
+                className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
             <div className="p-6">
               {/* Create category form */}
-              <form onSubmit={handleCategorySubmit} className="mb-6 pb-6 border-b border-gray-200">
-                <h4 className="font-medium text-gray-900 mb-3">Add New Category</h4>
+              <form onSubmit={handleCategorySubmit} className="mb-6 pb-6 border-b border-white/20">
+                <h4 className="font-medium text-white mb-3">Add New Category</h4>
                 <div className="space-y-3">
                   <input
                     type="text"
                     placeholder="Category name"
                     value={categoryFormData.name}
                     onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder-slate-400"
                     required
                   />
                   <input
@@ -438,11 +454,11 @@ const FaqManagement = () => {
                     placeholder="Description (optional)"
                     value={categoryFormData.description}
                     onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder-slate-400"
                   />
                   <button
                     type="submit"
-                    className="w-full px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600"
+                    className="w-full px-4 py-2 bg-blue-500/20 border border-blue-500/30 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-all"
                   >
                     Add Category
                   </button>
@@ -451,19 +467,19 @@ const FaqManagement = () => {
 
               {/* Category list */}
               <div>
-                <h4 className="font-medium text-gray-900 mb-3">Existing Categories</h4>
+                <h4 className="font-medium text-white mb-3">Existing Categories</h4>
                 <div className="space-y-2">
                   {categories.map(cat => (
-                    <div key={cat.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={cat.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
                       <div>
-                        <p className="font-medium text-gray-900">{cat.name}</p>
+                        <p className="font-medium text-white">{cat.name}</p>
                         {cat.description && (
-                          <p className="text-sm text-gray-500">{cat.description}</p>
+                          <p className="text-sm text-slate-400">{cat.description}</p>
                         )}
                       </div>
                       <button
                         onClick={() => handleDeleteCategory(cat.id)}
-                        className="p-2 text-gray-400 hover:text-red-600"
+                        className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -472,10 +488,10 @@ const FaqManagement = () => {
                 </div>
               </div>
             </div>
-            <div className="p-4 border-t">
+            <div className="p-4 border-t border-white/20">
               <button
                 onClick={() => setShowCategoryModal(false)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"
+                className="w-full px-4 py-2 border border-white/20 rounded-lg text-slate-300 hover:bg-white/10 transition-all"
               >
                 Close
               </button>

@@ -31,15 +31,14 @@ const services = [
 const ServicesSection = () => {
   return (
     <section className="py-24 relative overflow-hidden">
-      {/* Vibrant multi-color background blobs */}
-      <div className="absolute inset-0">
-        <div className="absolute top-20 left-[10%] w-72 h-72 bg-[hsl(340,80%,55%)] opacity-20 rounded-full blur-[100px]" />
-        <div className="absolute top-60 right-[15%] w-80 h-80 bg-[hsl(30,100%,55%)] opacity-18 rounded-full blur-[100px]" />
-        <div className="absolute bottom-40 left-[30%] w-96 h-96 bg-[hsl(200,90%,50%)] opacity-12 rounded-full blur-[120px]" />
-        <div className="absolute bottom-20 right-[10%] w-64 h-64 bg-[hsl(320,70%,50%)] opacity-15 rounded-full blur-[80px]" />
-        <div className="absolute top-[50%] left-[50%] w-80 h-80 bg-[hsl(45,100%,50%)] opacity-10 rounded-full blur-[100px]" />
-        <div className="absolute top-[20%] left-[60%] w-60 h-60 bg-sky-200 opacity-30 rounded-full blur-[80px]" />
-      </div>
+      {/* Dark background with glassmorphism effect - no image */}
+      <div className="absolute inset-0 bg-[hsl(220,30%,8%)]" />
+
+      {/* Multi-color radial glow accents */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full bg-[hsl(220,80%,40%)] opacity-15 blur-[150px]" />
+      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-[hsl(340,80%,60%)] opacity-15 blur-[120px]" />
+      <div className="absolute top-1/3 left-[10%] w-[350px] h-[350px] rounded-full bg-[hsl(30,100%,60%)] opacity-12 blur-[120px]" />
+      <div className="absolute bottom-[20%] left-[60%] w-[300px] h-[300px] rounded-full bg-[hsl(320,70%,60%)] opacity-10 blur-[100px]" />
 
       <div className="relative z-10 container mx-auto px-4">
         {/* COMMENTED OUT: Connectivity Gallery */}
@@ -111,11 +110,11 @@ const ServicesSection = () => {
             <Link
               key={service.title}
               to={service.to}
-              className="glass rounded-2xl p-8 group hover:caustic-glow transition-all duration-500 cursor-pointer relative overflow-hidden"
+              className="glass-crystal rounded-2xl p-8 group hover:scale-[1.02] transition-all duration-300 cursor-pointer relative overflow-hidden"
             >
               <div className={`absolute -bottom-6 -left-6 w-40 h-40 ${service.blob} rounded-full blur-[50px]`} />
               <div className="relative z-10">
-                <div className="w-14 h-14 rounded-xl bg-white/60 backdrop-blur-sm flex items-center justify-center mb-6 group-hover:bg-white/70 transition-colors border border-white/50">
+                <div className="w-14 h-14 rounded-xl bg-white/30 backdrop-blur-sm flex items-center justify-center mb-6 group-hover:bg-white/40 transition-colors border border-white/20">
                   <service.icon className={`w-7 h-7 ${service.iconColor}`} />
                 </div>
                 <h3 className="font-heading text-xl font-bold text-slate-800 mb-3">{service.title}</h3>
