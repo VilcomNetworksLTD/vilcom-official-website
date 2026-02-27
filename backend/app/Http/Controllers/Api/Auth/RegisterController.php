@@ -65,9 +65,6 @@ class RegisterController extends Controller
             // Assign default 'client' role
             $user->assignRole('client');
 
-            // Generate API token
-            $token = $user->createToken('auth_token', ['*'], now()->addDays(30))->plainTextToken;
-
             // Log activity
             UserActivity::create([
                 'user_id' => $user->id,
@@ -90,13 +87,18 @@ class RegisterController extends Controller
 
             DB::commit();
 
+            // Return success WITHOUT token - user must verify email first
             return response()->json([
                 'success' => true,
                 'message' => 'Registration successful! Please check your email to verify your account.',
                 'data' => [
-                    'user' => new UserResource($user->load('roles')),
-                    'token' => $token,
-                    'expires_at' => now()->addDays(30)->toIso8601String(),
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'status' => $user->status,
+                    ],
+                    'requires_verification' => true,
                 ],
             ], 201);
 

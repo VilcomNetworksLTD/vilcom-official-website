@@ -5,7 +5,6 @@ namespace App\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\Facades\Lang;
 
 class PasswordResetNotification extends Notification
 {
@@ -40,16 +39,13 @@ class PasswordResetNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject(Lang::get('Reset Your Password'))
-            ->greeting(Lang::get('Hello :name,', ['name' => $notifiable->name]))
-            ->line(Lang::get('You are receiving this email because we received a password reset request for your account.'))
-            ->action(
-                Lang::get('Reset Password'),
-                $this->resetUrl
-            )
-            ->line(Lang::get('This password reset link will expire in :count minutes.', ['count' => config('auth.passwords.users.expire', 60)]))
-            ->line(Lang::get('If you did not request a password reset, no further action is required.'))
-            ->salutation(Lang::get('Best regards,' . "\n" . 'The Vilcom Networks Team'));
+            ->subject('Reset Your Password - Vilcom Network')
+            ->greeting('Hello ' . $notifiable->name . ',')
+            ->line('You are receiving this email because we received a password reset request for your account.')
+            ->action('Reset Password', $this->resetUrl)
+            ->line('This password reset link will expire in 60 minutes.')
+            ->line('If you did not request a password reset, please ignore this email.')
+            ->salutation('Best regards,' . "\n" . 'The Vilcom Network Team');
     }
 
     /**

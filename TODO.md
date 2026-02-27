@@ -1,11 +1,30 @@
-# Roles and Permissions Module Implementation
+# TODO: Terms and Privacy Policy Registration Fix
 
-## Backend Tasks
-- [x] 1. Create RoleController (API)
-- [x] 2. Add API routes for roles and permissions
+## Task
+Add Terms and Privacy Policy acceptance to the registration form to fix the 422 error when registering.
 
-## Frontend Tasks
-- [x] 3. Create roles.ts service
-- [x] 4. Create RolesManagement.tsx page
-- [x] 5. Add route in App.tsx
+## Steps
+
+- [x] 1. Create Terms and Conditions page (Terms.tsx)
+- [x] 2. Create Privacy Policy page (PrivacyPolicy.tsx)
+- [x] 3. Add routes in App.tsx for /terms and /privacy
+- [x] 4. Update Signup.tsx to add checkboxes and required fields
+- [x] 5. Update Navbar.tsx to add links to terms and privacy policy
+- [x] 6. Update email notifications with clean formatting
+
+## Status: COMPLETED
+
+## Additional Configuration Files Added
+
+### Payment Gateway Config Files:
+- `backend/config/mpesa.php` - M-Pesa configuration
+- `backend/config/pesapal.php` - Pesapal configuration  
+- `backend/config/flutterwave.php` - Flutterwave configuration
+
+### Webhook Controllers Created:
+- `backend/app/Http/Controllers/Api/Webhook/PesapalController.php`
+- `backend/app/Http/Controllers/Api/Webhook/FlutterwaveController.php`
+
+### API Routes Updated:
+- Added routes for Pesapal IPN and Flutterwave Webhooks
 

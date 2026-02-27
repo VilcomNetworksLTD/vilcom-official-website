@@ -20,6 +20,9 @@ import Certifications from "./pages/Certifications";
 import ContactUs from "./pages/ContactUs";
 import FAQs from "./pages/FAQs";
 import About from "./pages/About";
+import Terms from "./pages/Terms";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import EmailVerify from "./pages/EmailVerify";
 import Portfolio from "./pages/Portfolio";
 import Gallery from "./pages/Gallery";
 import Media from "./pages/Media";
@@ -65,6 +68,9 @@ const App = () => (
             <Route path="/contact-us" element={<ContactUs />} />
             <Route path="/faqs" element={<FAQs />} />
             <Route path="/about" element={<About />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/email/verify" element={<EmailVerify />} />
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/media" element={<Media />} />

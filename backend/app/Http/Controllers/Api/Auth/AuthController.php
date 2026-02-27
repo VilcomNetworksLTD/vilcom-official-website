@@ -48,6 +48,12 @@ class AuthController extends Controller
 
         $user->markEmailAsVerified();
 
+        // Update user status to active after email verification
+        $user->update(['status' => 'active']);
+
+        // Generate API token after email verification
+        $token = $user->createToken('auth_token', ['*'], now()->addDays(30))->plainTextToken;
+
         // Log activity
         UserActivity::create([
             'user_id' => $user->id,
@@ -59,9 +65,11 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Email verified successfully.',
+            'message' => 'Email verified successfully. You can now access your account.',
             'data' => [
                 'user' => new UserResource($user->load('roles')),
+                'token' => $token,
+                'expires_at' => now()->addDays(30)->toIso8601String(),
             ],
         ]);
     }

@@ -353,8 +353,18 @@ Route::prefix('v1')->group(function () {
         Route::post('/mpesa', [App\Http\Controllers\Api\PaymentController::class, 'initiateMpesa'])
             ->name('api.payments.mpesa');
         
+        Route::post('/pesapal', [App\Http\Controllers\Api\PaymentController::class, 'initiatePesapal'])
+            ->name('api.payments.pesapal');
+        
+        Route::post('/flutterwave', [App\Http\Controllers\Api\PaymentController::class, 'initiateFlutterwave'])
+            ->name('api.payments.flutterwave');
+        
         Route::post('/card', [App\Http\Controllers\Api\PaymentController::class, 'initiateCard'])
             ->name('api.payments.card');
+        
+        Route::post('/manual', [App\Http\Controllers\Api\PaymentController::class, 'recordManual'])
+            ->name('api.payments.manual')
+            ->middleware('role:admin|staff');
         
         // Staff/Admin Only Routes
         Route::middleware('role:admin|staff')->group(function () {
@@ -863,12 +873,22 @@ Route::prefix('v1')->group(function () {
 */
 
 Route::prefix('webhooks')->group(function () {
+    // M-Pesa Webhooks
     Route::post('/mpesa/callback', [App\Http\Controllers\Api\Webhook\MpesaController::class, 'callback'])
         ->name('api.webhooks.mpesa.callback');
     
     Route::post('/mpesa/validation', [App\Http\Controllers\Api\Webhook\MpesaController::class, 'validation'])
         ->name('api.webhooks.mpesa.validation');
     
+    // Stripe Webhook
     Route::post('/stripe/webhook', [App\Http\Controllers\Api\Webhook\StripeController::class, 'webhook'])
         ->name('api.webhooks.stripe');
+    
+    // Pesapal IPN
+    Route::get('/pesapal/ipn', [App\Http\Controllers\Api\Webhook\PesapalController::class, 'ipn'])
+        ->name('api.webhooks.pesapal.ipn');
+    
+    // Flutterwave Webhook
+    Route::post('/flutterwave/webhook', [App\Http\Controllers\Api\Webhook\FlutterwaveController::class, 'webhook'])
+        ->name('api.webhooks.flutterwave');
 });

@@ -14,13 +14,12 @@ import {
   Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
 import { Product, getProductDetails } from "@/services/api";
+import api from "@/lib/axios";
 
 const Signup = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { register, getDashboardUrl } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +64,8 @@ const Signup = () => {
     postalCode: "",
     smsNotifications: true,
     marketingConsent: false,
+    termsAccepted: false,
+    privacyAccepted: false,
   });
 
   const update = (field: string, value: string | boolean) =>
@@ -84,6 +85,16 @@ const Signup = () => {
       return;
     }
 
+    if (!form.termsAccepted) {
+      setError("You must accept the terms and conditions");
+      return;
+    }
+
+    if (!form.privacyAccepted) {
+      setError("You must accept the privacy policy");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -100,6 +111,8 @@ const Signup = () => {
         postal_code: form.postalCode,
         sms_notifications: form.smsNotifications,
         marketing_consent: form.marketingConsent,
+        terms_accepted: form.termsAccepted,
+        privacy_accepted: form.privacyAccepted,
         // Include selected product for later subscription creation
         selected_product_id: selectedProduct?.id,
         selected_product_slug: selectedProduct?.slug,
@@ -113,7 +126,8 @@ const Signup = () => {
         });
       }
 
-      await register(registerData);
+      // Make API call directly - do NOT login user, just register
+      await api.post("/api/v1/auth/register", registerData);
 
       // Store selected product info in session storage for after verification
       if (selectedProduct) {
@@ -128,12 +142,8 @@ const Signup = () => {
         );
       }
 
-      // Registration successful
+      // Registration successful - show success message, do NOT redirect to dashboard
       setSuccess(true);
-      setTimeout(() => {
-        // Redirect to appropriate dashboard based on user role
-        navigate(getDashboardUrl());
-      }, 2000);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "An error occurred. Please check your connection.";
       setError(errorMessage);
@@ -546,6 +556,40 @@ const Signup = () => {
                 <label htmlFor="marketingConsent" className="text-sm text-blue-200/70">
                   Receive marketing offers and promotions
                 </label>
+              </div>
+
+              {/* Terms and Privacy Policy */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="termsAccepted"
+                    checked={form.termsAccepted}
+                    onChange={(e) => update("termsAccepted", e.target.checked)}
+                    className="w-4 h-4 mt-0.5 rounded border-white/30 bg-white/10 text-cyan-400 focus:ring-cyan-400/30"
+                  />
+                  <label htmlFor="termsAccepted" className="text-sm text-blue-200/70">
+                    I agree to the{" "}
+                    <Link to="/terms" target="_blank" className="text-cyan-300 hover:text-cyan-200 underline">
+                      Terms and Conditions
+                    </Link>
+                  </label>
+                </div>
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="privacyAccepted"
+                    checked={form.privacyAccepted}
+                    onChange={(e) => update("privacyAccepted", e.target.checked)}
+                    className="w-4 h-4 mt-0.5 rounded border-white/30 bg-white/10 text-cyan-400 focus:ring-cyan-400/30"
+                  />
+                  <label htmlFor="privacyAccepted" className="text-sm text-blue-200/70">
+                    I agree to the{" "}
+                    <Link to="/privacy" target="_blank" className="text-cyan-300 hover:text-cyan-200 underline">
+                      Privacy Policy
+                    </Link>
+                  </label>
+                </div>
               </div>
 
               {/* Submit Button */}
