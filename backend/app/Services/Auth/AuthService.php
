@@ -1,0 +1,362 @@
+<?php
+
+namespace App\Services\Auth;
+
+use App\Models\User;
+use App\Notifications\WelcomeNotification;
+use App\Notifications\EmailVerificationNotification;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
+
+class AuthService
+{
+    /**
+     * Send welcome email to newly registered user
+     *
+     * @param User $user
+     * @return void
+     */
+    public function sendWelcomeEmail(User $user): void
+    {
+        try {
+            if ($user->getNotificationPreferences('email')) {
+                $user->notify(new WelcomeNotification());
+                
+                Log::info('Welcome email sent', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to send welcome email', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Send email verification notification
+     *
+     * @param User $user
+     * @return void
+     */
+    public function sendEmailVerification(User $user): void
+    {
+        try {
+            $user->sendEmailVerificationNotification();
+            
+            Log::info('Verification email sent', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send verification email', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Send welcome SMS to newly registered user
+     *
+     * @param User $user
+     * @return void
+     */
+    public function sendWelcomeSms(User $user): void
+    {
+        try {
+            if (!$user->getNotificationPreferences('sms')) {
+                return;
+            }
+
+            $message = "Welcome to Vilcom Networks, {$user->name}! Your account has been created successfully. Visit https://vilcom.co.ke to explore our services.";
+            
+            $this->sendSms($user->formatted_phone, $message);
+            
+            Log::info('Welcome SMS sent', [
+                'user_id' => $user->id,
+                'phone' => $user->formatted_phone,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send welcome SMS', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Send SMS using Africa's Talking
+     *
+     * @param string $phone
+     * @param string $message
+     * @return bool
+     */
+    private function sendSms(string $phone, string $message): bool
+    {
+        try {
+            // Initialize Africa's Talking
+            $username = config('services.africastalking.username');
+            $apiKey = config('services.africastalking.api_key');
+            $from = config('services.africastalking.from', 'VILCOM');
+
+            if (!$username || !$apiKey) {
+                Log::warning('Africa\'s Talking credentials not configured');
+                return false;
+            }
+
+            // Initialize the SDK
+            $AT = new \AfricasTalking\SDK\AfricasTalking($username, $apiKey);
+            $sms = $AT->sms();
+
+            // Send SMS
+            $result = $sms->send([
+                'to' => $phone,
+                'message' => $message,
+                'from' => $from,
+            ]);
+
+            Log::info('SMS sent via Africa\'s Talking', [
+                'phone' => $phone,
+                'result' => $result,
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('SMS sending failed', [
+                'phone' => $phone,
+                'error' => $e->getMessage(),
+            ]);
+            
+            return false;
+        }
+    }
+
+    /**
+     * Generate and send password reset token
+     *
+     * @param User $user
+     * @return string
+     */
+    public function generatePasswordResetToken(User $user): string
+    {
+        $token = bin2hex(random_bytes(32));
+        
+        $user->update([
+            'password_reset_token' => hash('sha256', $token),
+            'password_reset_expires_at' => now()->addHours(2),
+        ]);
+
+        return $token;
+    }
+
+    /**
+     * Validate password reset token
+     *
+     * @param string $token
+     * @return User|null
+     */
+    public function validatePasswordResetToken(string $token): ?User
+    {
+        $hashedToken = hash('sha256', $token);
+        
+        return User::where('password_reset_token', $hashedToken)
+            ->where('password_reset_expires_at', '>', now())
+            ->first();
+    }
+
+    /**
+     * Clear password reset token
+     *
+     * @param User $user
+     * @return void
+     */
+    public function clearPasswordResetToken(User $user): void
+    {
+        $user->update([
+            'password_reset_token' => null,
+            'password_reset_expires_at' => null,
+        ]);
+    }
+
+    /**
+     * Enable two-factor authentication for user
+     *
+     * @param User $user
+     * @return array
+     */
+    public function enableTwoFactor(User $user): array
+    {
+        // Generate a proper TOTP secret using Google2FA
+        $google2fa = new \PragmaRX\Google2FA\Google2FA();
+        $secret = $google2fa->generateSecretKey(20);
+        
+        // Generate recovery codes
+        $recoveryCodes = $this->generateRecoveryCodes();
+        
+        // Store encrypted secret and recovery codes
+        $user->update([
+            'two_factor_secret' => encrypt($secret),
+            'two_factor_recovery_codes' => encrypt(json_encode($recoveryCodes)),
+            'two_factor_enabled' => true,
+        ]);
+
+        // Generate QR code URL
+        $qrCodeUrl = $this->generateQrCodeUrl($user, $secret);
+
+        return [
+            'secret' => $secret,
+            'qr_code_url' => $qrCodeUrl,
+            'recovery_codes' => $recoveryCodes,
+        ];
+    }
+
+    /**
+     * Disable two-factor authentication
+     *
+     * @param User $user
+     * @return void
+     */
+    public function disableTwoFactor(User $user): void
+    {
+        $user->update([
+            'two_factor_secret' => null,
+            'two_factor_recovery_codes' => null,
+            'two_factor_enabled' => false,
+            'two_factor_confirmed_at' => null,
+        ]);
+    }
+
+    /**
+     * Verify a TOTP code
+     *
+     * @param User $user
+     * @param string $code
+     * @return bool
+     */
+    public function verifyTwoFactorCode(User $user, string $code): bool
+    {
+        try {
+            // Use Google2FA for TOTP verification
+            $google2fa = new \PragmaRX\Google2FA\Google2FA();
+            
+            // Get the stored secret (it's encrypted)
+            $secret = $user->two_factor_secret;
+            
+            // If secret is null or empty, 2FA is not properly set up
+            if (empty($secret)) {
+                return false;
+            }
+            
+            // Decrypt the secret
+            try {
+                $secret = decrypt($user->two_factor_secret);
+            } catch (\Exception $e) {
+                Log::error('2FA secret decryption failed', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+                return false;
+            }
+            
+            // Verify the TOTP code
+            $valid = $google2fa->verifyKey($secret, $code);
+            
+            return $valid;
+        } catch (\Exception $e) {
+            Log::error('2FA verification failed', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+            
+            // In development, accept any 6-digit code for testing
+            if (app()->environment('local')) {
+                return strlen($code) === 6 && is_numeric($code);
+            }
+            
+            return false;
+        }
+    }
+
+    /**
+     * Verify a recovery code
+     *
+     * @param User $user
+     * @param string $code
+     * @return bool
+     */
+    public function verifyRecoveryCode(User $user, string $code): bool
+    {
+        try {
+            $storedCodes = json_decode(decrypt($user->two_factor_recovery_codes), true);
+            
+            if (!is_array($storedCodes)) {
+                return false;
+            }
+            
+            // Find and remove the used recovery code
+            $index = array_search(strtoupper($code), array_map('strtoupper', $storedCodes));
+            
+            if ($index !== false) {
+                // Remove the used code
+                unset($storedCodes[$index]);
+                
+                // Update remaining codes
+                $user->update([
+                    'two_factor_recovery_codes' => encrypt(json_encode(array_values($storedCodes))),
+                ]);
+                
+                return true;
+            }
+            
+            return false;
+        } catch (\Exception $e) {
+            Log::error('Recovery code verification failed', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Generate recovery codes for 2FA
+     *
+     * @return array
+     */
+    private function generateRecoveryCodes(): array
+    {
+        $codes = [];
+        for ($i = 0; $i < 10; $i++) {
+            $codes[] = strtoupper(bin2hex(random_bytes(4)));
+        }
+        return $codes;
+    }
+
+    /**
+     * Generate QR code URL for 2FA setup
+     *
+     * @param User $user
+     * @param string $secret
+     * @return string
+     */
+    private function generateQrCodeUrl(User $user, string $secret): string
+    {
+        $companyName = config('app.name', 'Vilcom Networks');
+        $accountName = $user->email;
+        
+        $google2fa = new \PragmaRX\Google2FA\Google2FA();
+        
+        $qrCodeUrl = $google2fa->getQRCodeUrl(
+            $companyName,
+            $accountName,
+            $secret
+        );
+        
+        // Return as data URL for direct display using qrserver API
+        return 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . urlencode($qrCodeUrl);
+    }
+}
+

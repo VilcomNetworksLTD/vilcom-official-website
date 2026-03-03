@@ -430,40 +430,52 @@ Route::prefix('v1')->group(function () {
     // ============================================
     Route::prefix('users')->middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
         Route::get('/', [App\Http\Controllers\Api\UserController::class, 'index'])
-            ->name('api.users.index')
-            ->middleware('permission:users.view.all|users.view.clients|users.view.staff');
+            ->name('api.users.index');
+        
+        Route::get('/statistics', [App\Http\Controllers\Api\UserController::class, 'statistics'])
+            ->name('api.users.statistics');
+        
+        Route::get('/roles', [App\Http\Controllers\Api\UserController::class, 'roles'])
+            ->name('api.users.roles');
+        
+        Route::get('/departments', [App\Http\Controllers\Api\UserController::class, 'departments'])
+            ->name('api.users.departments');
         
         Route::get('/{user}', [App\Http\Controllers\Api\UserController::class, 'show'])
-            ->name('api.users.show')
-            ->middleware('permission:users.view.all|users.view.clients');
+            ->name('api.users.show');
         
         Route::post('/', [App\Http\Controllers\Api\UserController::class, 'store'])
-            ->name('api.users.store')
-            ->middleware('permission:users.create');
+            ->name('api.users.store');
         
         Route::put('/{user}', [App\Http\Controllers\Api\UserController::class, 'update'])
-            ->name('api.users.update')
-            ->middleware('permission:users.edit.all|users.edit.clients');
+            ->name('api.users.update');
         
         Route::delete('/{user}', [App\Http\Controllers\Api\UserController::class, 'destroy'])
-            ->name('api.users.destroy')
-            ->middleware('permission:users.delete');
+            ->name('api.users.destroy');
         
         Route::post('/{user}/suspend', [App\Http\Controllers\Api\UserController::class, 'suspend'])
-            ->name('api.users.suspend')
-            ->middleware('permission:users.suspend');
+            ->name('api.users.suspend');
         
         Route::post('/{user}/activate', [App\Http\Controllers\Api\UserController::class, 'activate'])
-            ->name('api.users.activate')
-            ->middleware('permission:users.activate');
+            ->name('api.users.activate');
         
-        // Admin Only
-        Route::middleware('role:admin')->group(function () {
+        // Admin Only Routes
+        Route::middleware(['role:admin'])->group(function () {
             Route::post('/{user}/impersonate', [App\Http\Controllers\Api\UserController::class, 'impersonate'])
-                ->name('api.users.impersonate')
-                ->middleware('permission:users.impersonate');
+                ->name('api.users.impersonate');
+            
+            Route::post('/stop-impersonating', [App\Http\Controllers\Api\UserController::class, 'stopImpersonating'])
+                ->name('api.users.stop-impersonating');
+            
+            Route::get('/impersonation-status', [App\Http\Controllers\Api\UserController::class, 'impersonationStatus'])
+                ->name('api.users.impersonation-status');
         });
     });
+    
+    // Check impersonation status (accessible to impersonated users)
+    Route::get('/users/impersonation-status', [App\Http\Controllers\Api\UserController::class, 'impersonationStatus'])
+        ->name('api.users.impersonation-status')
+        ->middleware('auth:sanctum');
 
     // ============================================
     // CLIENTS MANAGEMENT ROUTES (Admin/Staff Only)

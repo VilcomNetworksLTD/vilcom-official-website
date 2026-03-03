@@ -127,7 +127,8 @@ const Signup = () => {
       }
 
       // Make API call directly - do NOT login user, just register
-      await api.post("/api/v1/auth/register", registerData);
+      // Note: axios baseURL already includes /api/v1, so we use relative path
+      await api.post("/auth/register", registerData);
 
       // Store selected product info in session storage for after verification
       if (selectedProduct) {

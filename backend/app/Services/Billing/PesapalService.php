@@ -8,10 +8,10 @@ use Illuminate\Support\Facades\Http;
 class PesapalService
 {
     protected string $baseUrl;
-    protected string $consumerKey;
-    protected string $consumerSecret;
-    protected string $ipnUrl;
-    protected string $callbackUrl;
+    protected ?string $consumerKey;
+    protected ?string $consumerSecret;
+    protected ?string $ipnUrl;
+    protected ?string $callbackUrl;
 
     public function __construct()
     {
@@ -20,10 +20,18 @@ class PesapalService
         $this->baseUrl         = $sandbox
             ? 'https://cybqa.pesapal.com/pesapalv3'
             : 'https://pay.pesapal.com/v3';
-        $this->consumerKey     = config('pesapal.consumer_key');
-        $this->consumerSecret  = config('pesapal.consumer_secret');
-        $this->ipnUrl          = config('pesapal.ipn_url');
-        $this->callbackUrl     = config('pesapal.callback_url');
+        $this->consumerKey     = config('pesapal.consumer_key') ?? '';
+        $this->consumerSecret  = config('pesapal.consumer_secret') ?? '';
+        $this->ipnUrl          = config('pesapal.ipn_url') ?? '';
+        $this->callbackUrl     = config('pesapal.callback_url') ?? '';
+    }
+
+    /**
+     * Check if Pesapal is configured
+     */
+    public function isConfigured(): bool
+    {
+        return !empty($this->consumerKey) && !empty($this->consumerSecret);
     }
 
     // ── Auth ──────────────────────────────────────────────────────────────────

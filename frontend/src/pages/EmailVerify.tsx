@@ -22,7 +22,7 @@ const EmailVerify = () => {
       }
 
       try {
-        const response = await api.get(`/api/v1/auth/email/verify/${id}/${hash}`);
+        const response = await api.get(`/auth/email/verify/${id}/${hash}`);
         
         if (response.data.success) {
           setStatus("success");

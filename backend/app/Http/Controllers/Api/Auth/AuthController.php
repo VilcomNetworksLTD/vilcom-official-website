@@ -51,6 +51,9 @@ class AuthController extends Controller
         // Update user status to active after email verification
         $user->update(['status' => 'active']);
 
+        // Send welcome email AFTER successful verification
+        $this->authService->sendWelcomeEmail($user);
+
         // Generate API token after email verification
         $token = $user->createToken('auth_token', ['*'], now()->addDays(30))->plainTextToken;
 

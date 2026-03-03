@@ -77,8 +77,8 @@ class RegisterController extends Controller
             // Send verification email
             $this->authService->sendEmailVerification($user);
 
-            // Send welcome email
-            $this->authService->sendWelcomeEmail($user);
+            // Send welcome email AFTER email verification (not here)
+            // The welcome email will be sent in AuthController::verifyEmail() after successful verification
 
             // Send SMS notification (if opted in)
             if ($request->sms_notifications) {

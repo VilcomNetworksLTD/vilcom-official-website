@@ -9,13 +9,13 @@ use Illuminate\Support\Facades\Log;
 class MpesaService
 {
     protected string $baseUrl;
-    protected string $consumerKey;
-    protected string $consumerSecret;
-    protected string $shortcode;
-    protected string $passkey;
-    protected string $callbackUrl;
-    protected string $c2bValidationUrl;
-    protected string $c2bConfirmationUrl;
+    protected ?string $consumerKey;
+    protected ?string $consumerSecret;
+    protected ?string $shortcode;
+    protected ?string $passkey;
+    protected ?string $callbackUrl;
+    protected ?string $c2bValidationUrl;
+    protected ?string $c2bConfirmationUrl;
 
     public function __construct()
     {
@@ -24,11 +24,21 @@ class MpesaService
         $this->baseUrl            = $env === 'production'
             ? 'https://api.safaricom.co.ke'
             : 'https://sandbox.safaricom.co.ke';
-        $this->consumerKey        = config('mpesa.consumer_key');
-        $this->consumerSecret     = config('mpesa.consumer_secret');
-        $this->shortcode          = config('mpesa.shortcode');
-        $this->passkey            = config('mpesa.passkey');
-        $this->callbackUrl        = config('mpesa.stk_callback_url');
+        $this->consumerKey        = config('mpesa.consumer_key') ?? '';
+        $this->consumerSecret     = config('mpesa.consumer_secret') ?? '';
+        $this->shortcode          = config('mpesa.shortcode') ?? '';
+        $this->passkey            = config('mpesa.passkey') ?? '';
+        $this->callbackUrl        = config('mpesa.stk_callback_url') ?? '';
+        $this->c2bValidationUrl   = config('mpesa.c2b_validation_url') ?? '';
+        $this->c2bConfirmationUrl  = config('mpesa.c2b_confirmation_url') ?? '';
+    }
+
+    /**
+     * Check if M-Pesa is configured
+     */
+    public function isConfigured(): bool
+    {
+        return !empty($this->consumerKey) && !empty($this->consumerSecret);
     }
 
     // ── OAuth Token ───────────────────────────────────────────────────────────

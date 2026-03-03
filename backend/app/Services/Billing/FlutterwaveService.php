@@ -7,13 +7,21 @@ use Illuminate\Support\Facades\Http;
 class FlutterwaveService
 {
     protected string $baseUrl  = 'https://api.flutterwave.com/v3';
-    protected string $secretKey;
-    protected string $publicKey;
+    protected ?string $secretKey;
+    protected ?string $publicKey;
 
     public function __construct()
     {
-        $this->secretKey = config('flutterwave.secret_key');
-        $this->publicKey = config('flutterwave.public_key');
+        $this->secretKey = config('flutterwave.secret_key') ?? '';
+        $this->publicKey = config('flutterwave.public_key') ?? '';
+    }
+
+    /**
+     * Check if Flutterwave is configured
+     */
+    public function isConfigured(): bool
+    {
+        return !empty($this->secretKey) && !empty($this->publicKey);
     }
 
     protected function client(): \Illuminate\Http\Client\PendingRequest

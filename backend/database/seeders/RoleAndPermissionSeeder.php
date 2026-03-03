@@ -105,13 +105,13 @@ class RoleAndPermissionSeeder extends Seeder
         // Create permissions
         $this->command->info('Creating permissions...');
         foreach ($permissions as $name) {
-            Permission::create(['name' => $name, 'guard_name' => 'web']);
+            Permission::firstOrCreate(['name' => $name, 'guard_name' => 'web']);
         }
-        $this->command->info('✓ Permissions created: ' . count($permissions));
+        $this->command->info('✓ Permissions created: ' . Permission::count());
 
         // CLIENT ROLE
         $this->command->info('Creating CLIENT role...');
-        $clientRole = Role::create(['name' => 'client', 'guard_name' => 'web']);
+        $clientRole = Role::firstOrCreate(['name' => 'client', 'guard_name' => 'web']);
         $clientPermissions = [
             'users.view.own', 'users.edit.own',
             'subscriptions.view.own', 'subscriptions.edit.own', 'subscriptions.cancel.own', 'subscriptions.upgrade', 'subscriptions.downgrade',
@@ -125,7 +125,7 @@ class RoleAndPermissionSeeder extends Seeder
 
         // STAFF ROLE
         $this->command->info('Creating STAFF role...');
-        $staffRole = Role::create(['name' => 'staff', 'guard_name' => 'web']);
+        $staffRole = Role::firstOrCreate(['name' => 'staff', 'guard_name' => 'web']);
         $staffPermissions = [
             'users.view.own', 'users.edit.own', 'users.view.clients', 'users.edit.clients',
             'products.view.all',
@@ -145,25 +145,25 @@ class RoleAndPermissionSeeder extends Seeder
 
         // ADMIN ROLE
         $this->command->info('Creating ADMIN role...');
-        $adminRole = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
         $adminRole->givePermissionTo(Permission::all());
         $this->command->info('✓ ADMIN role created with ALL permissions');
 
         // SALES ROLE
         $this->command->info('Creating SALES role...');
-        $salesRole = Role::create(['name' => 'sales', 'guard_name' => 'web']);
+        $salesRole = Role::firstOrCreate(['name' => 'sales', 'guard_name' => 'web']);
         $salesRole->givePermissionTo(array_merge($staffPermissions, ['users.create', 'analytics.clients', 'reports.revenue']));
         $this->command->info('✓ SALES role created');
 
         // TECHNICAL SUPPORT ROLE
         $this->command->info('Creating TECHNICAL_SUPPORT role...');
-        $techRole = Role::create(['name' => 'technical_support', 'guard_name' => 'web']);
+        $techRole = Role::firstOrCreate(['name' => 'technical_support', 'guard_name' => 'web']);
         $techRole->givePermissionTo(array_merge($staffPermissions, ['kb.create', 'kb.edit', 'faqs.create', 'faqs.edit']));
         $this->command->info('✓ TECHNICAL_SUPPORT role created');
 
         // WEB DEVELOPER ROLE
         $this->command->info('Creating WEB_DEVELOPER role...');
-        $webDevRole = Role::create(['name' => 'web_developer', 'guard_name' => 'web']);
+        $webDevRole = Role::firstOrCreate(['name' => 'web_developer', 'guard_name' => 'web']);
         $webDevRole->givePermissionTo([
             'users.view.own', 'users.edit.own',
             'portfolio.view', 'portfolio.create', 'portfolio.edit',
@@ -175,7 +175,7 @@ class RoleAndPermissionSeeder extends Seeder
 
         // CONTENT MANAGER ROLE
         $this->command->info('Creating CONTENT_MANAGER role...');
-        $cmRole = Role::create(['name' => 'content_manager', 'guard_name' => 'web']);
+        $cmRole = Role::firstOrCreate(['name' => 'content_manager', 'guard_name' => 'web']);
         $cmRole->givePermissionTo([
             'users.view.own', 'users.edit.own',
             'pages.view', 'pages.create', 'pages.edit', 'pages.publish',
