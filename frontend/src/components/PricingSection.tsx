@@ -17,6 +17,7 @@ const PricingSection = () => {
   const [businessProducts, setBusinessProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"home" | "business">("home");
 
   // Fetch products from API
   useEffect(() => {
@@ -131,8 +132,34 @@ const PricingSection = () => {
       <div className="absolute inset-0 bg-sky-100/20 backdrop-blur-[2px]" />
 
       <div className="relative z-10 container mx-auto px-4">
-        {/* Home Fibre Plans */}
-        {displayHomePlans.length > 0 && (
+        {/* Tab Toggle Buttons */}
+        <div className="flex justify-center mb-12">
+          <div className="inline-flex glass-sky rounded-full p-1.5">
+            <button
+              onClick={() => setActiveTab("home")}
+              className={`px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 ${
+                activeTab === "home"
+                  ? "bg-sky-600 text-white shadow-lg"
+                  : "text-slate-600 hover:text-sky-700 hover:bg-white/50"
+              }`}
+            >
+              Home Fibre
+            </button>
+            <button
+              onClick={() => setActiveTab("business")}
+              className={`px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 ${
+                activeTab === "business"
+                  ? "bg-sky-600 text-white shadow-lg"
+                  : "text-slate-600 hover:text-sky-700 hover:bg-white/50"
+              }`}
+            >
+              Business Fibre
+            </button>
+          </div>
+        </div>
+
+        {/* Plans based on active tab */}
+        {activeTab === "home" && displayHomePlans.length > 0 && (
           <div className="mb-16">
             <div className="text-center mb-12">
               <span className="text-sky-700 text-sm font-bold uppercase tracking-[0.3em]">Home Fibre</span>
@@ -210,8 +237,7 @@ const PricingSection = () => {
           </div>
         )}
 
-        {/* Business Fibre Plans */}
-        {displayBusinessPlans.length > 0 && (
+        {activeTab === "business" && displayBusinessPlans.length > 0 && (
           <div>
             <div className="text-center mb-12">
               <span className="text-sky-700 text-sm font-bold uppercase tracking-[0.3em]">Business Fibre</span>

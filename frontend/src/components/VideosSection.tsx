@@ -16,20 +16,13 @@ const videos = [
 const VideosSection = () => {
   return (
     <section className="py-16 md:py-24 relative overflow-hidden">
-      {/* Background - matching glassmorphism theme */}
-      <div className="absolute inset-0">
-        <img
-          src="/hero.jpg"
-          alt=""
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-[hsl(220,30%,8%)/0.35]" />
-      </div>
+      {/* Solid dark background - no image */}
+      <div className="absolute inset-0 bg-[hsl(220,30%,15%)]" />
 
       {/* Multi-color radial glow accents */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full bg-[hsl(220,80%,40%)] opacity-15 blur-[150px]" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-[hsl(340,80%,60%)] opacity-15 blur-[120px]" />
-      <div className="absolute top-1/3 left-[10%] w-[350px] h-[350px] rounded-full bg-[hsl(30,100%,60%)] opacity-12 blur-[120px]" />
+      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-[hsl(30,100%,55%)] opacity-15 blur-[120px]" />
+      <div className="absolute top-1/3 left-[10%] w-[350px] h-[350px] rounded-full bg-[hsl(220,80%,50%)] opacity-12 blur-[120px]" />
 
       <div className="relative z-10 container mx-auto px-4">
         <div className="text-center mb-12">

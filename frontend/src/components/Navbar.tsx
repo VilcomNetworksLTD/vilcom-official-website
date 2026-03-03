@@ -31,6 +31,10 @@ const navLinks: NavItem[] = [
     dropdown: [
       { label: "Fibre Solutions", to: "/plans" },
       { label: "Vuta WiFi", to: "/fiber" },
+      { label: "Enterprise Connectivity", to: "/plans" },
+      { label: "Cloud Solutions", to: "/cloud-solutions" },
+      { label: "Cyber Security", to: "/cyber-security" },
+      { label: "Smart Integration", to: "/smart-integration" },
       { 
         label: "Hosting Services", 
         to: "/hosting",
@@ -39,9 +43,19 @@ const navLinks: NavItem[] = [
           { label: "Reseller Hosting", to: "/hosting?tab=reseller" },
           { label: "VPS Hosting", to: "/hosting?tab=vps" },
           { label: "Domains", to: "/domains" },
-          { label: "Web Development", to: "/web-development" },
         ]
       },
+      { 
+        label: "Software Development", 
+        to: "/software-development",
+      },
+      { label: "ERP As A Service", to: "/erp-service" },
+      { label: "ISP Billing As A Service", to: "/isp-billing" },
+      { label: "ISP CPE As A Service", to: "/isp-cpe" },
+      { label: "ISP Device Management", to: "/isp-device-management" },
+      { label: "Firewall Solutions", to: "/firewall-solutions" },
+      { label: "Deep Packet Inspection", to: "/deep-packet-inspection" },
+      { label: "Satellite Connectivity", to: "/satellite-connectivity" },
     ]
   },
   { label: "Careers", to: "/careers" },

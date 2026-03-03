@@ -6,45 +6,49 @@
 
 @layer base {
   :root {
-    --background: 210 40% 96%;
-    --foreground: 222 47% 11%;
+    --background: 220 30% 96%;
+    --foreground: 220 30% 15%;
 
     --card: 0 0% 100% / 0.7;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 220 30% 15%;
 
     --popover: 0 0% 100% / 0.85;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 220 30% 15%;
 
+    /* Royal Blue palette - Primary */
     --primary: 220 80% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 30% 92%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 220 30% 90%;
+    --secondary-foreground: 220 30% 15%;
 
-    --muted: 210 25% 93%;
-    --muted-foreground: 215 20% 45%;
+    --muted: 220 25% 90%;
+    --muted-foreground: 220 30% 45%;
 
-    --accent: 45 100% 55%;
-    --accent-foreground: 222 47% 11%;
+    /* Orange - Accent */
+    --accent: 30 100% 55%;
+    --accent-foreground: 220 30% 15%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 85%;
-    --input: 214 32% 85%;
+    --border: 220 20% 85%;
+    --input: 220 20% 85%;
     --ring: 220 80% 50%;
 
     --radius: 1rem;
 
     /* Royal Blue palette */
-    --royal: 225 73% 57%;
-    --royal-deep: 230 80% 42%;
+    --royal: 220 80% 50%;
+    --royal-deep: 220 30% 15%;
+    --navy: 220 30% 15%;
+    --orange: 30 100% 55%;
     --sky: 200 85% 60%;
     --sky-light: 200 90% 75%;
     --sky-lighter: 200 100% 90%;
-    --golden: 45 100% 55%;
-    --golden-light: 42 100% 70%;
-    --golden-dark: 40 100% 45%;
+    --golden: 30 100% 55%;
+    --golden-light: 30 100% 70%;
+    --golden-dark: 30 100% 45%;
 
     /* Daylight Glass tokens */
     --glass-bg: 0 0% 100% / 0.55;
@@ -54,9 +58,10 @@
     --glass-blur: 20px;
 
     /* Gradients */
-    --gradient-sky: linear-gradient(160deg, hsl(200 90% 95%) 0%, hsl(210 80% 88%) 50%, hsl(220 70% 92%) 100%);
-    --gradient-royal: linear-gradient(135deg, hsl(220 80% 50%), hsl(230 80% 42%));
-    --gradient-golden: linear-gradient(135deg, hsl(45 100% 55%), hsl(40 100% 50%));
+    --gradient-sky: linear-gradient(160deg, hsl(220 30% 96%) 0%, hsl(220 30% 90%) 50%, hsl(220 30% 85%) 100%);
+    --gradient-royal: linear-gradient(135deg, hsl(220 80% 50%), hsl(220 30% 15%));
+    --gradient-orange: linear-gradient(135deg, hsl(30 100% 55%), hsl(30 100% 45%));
+    --gradient-navy: linear-gradient(135deg, hsl(220 30% 15%), hsl(220 30% 10%));
 
     --sidebar-background: 0 0% 100% / 0.6;
     --sidebar-foreground: 222 47% 11%;

@@ -13,6 +13,17 @@ import StaffInviteAccept from "./pages/StaffInviteAccept";
 import NotFound from "./pages/NotFound";
 import Hosting from "./pages/Hosting";
 import WebDevelopment from "./pages/WebDevelopment";
+import CloudSolutions from "./pages/CloudSolutions";
+import CyberSecurity from "./pages/CyberSecurity";
+import SmartIntegration from "./pages/SmartIntegration";
+import SoftwareDevelopment from "./pages/SoftwareDevelopment";
+import ErpService from "./pages/ErpService";
+import IspBilling from "./pages/IspBilling";
+import IspCpe from "./pages/IspCpe";
+import IspDeviceManagement from "./pages/IspDeviceManagement";
+import FirewallSolutions from "./pages/FirewallSolutions";
+import DeepPacketInspection from "./pages/DeepPacketInspection";
+import SatelliteConnectivity from "./pages/SatelliteConnectivity";
 import Domains from "./pages/Domains";
 import Blog from "./pages/Blog";
 import Careers from "./pages/Careers";
@@ -57,6 +68,17 @@ const App = () => (
             <Route path="/coverage" element={<Coverage />} />
             <Route path="/hosting" element={<Hosting />} />
             <Route path="/web-development" element={<WebDevelopment />} />
+            <Route path="/cloud-solutions" element={<CloudSolutions />} />
+            <Route path="/cyber-security" element={<CyberSecurity />} />
+            <Route path="/smart-integration" element={<SmartIntegration />} />
+            <Route path="/software-development" element={<SoftwareDevelopment />} />
+            <Route path="/erp-service" element={<ErpService />} />
+            <Route path="/isp-billing" element={<IspBilling />} />
+            <Route path="/isp-cpe" element={<IspCpe />} />
+            <Route path="/isp-device-management" element={<IspDeviceManagement />} />
+            <Route path="/firewall-solutions" element={<FirewallSolutions />} />
+            <Route path="/deep-packet-inspection" element={<DeepPacketInspection />} />
+            <Route path="/satellite-connectivity" element={<SatelliteConnectivity />} />
             <Route path="/domains" element={<Domains />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/auth" element={<Auth />} />
