@@ -159,23 +159,24 @@ const Blog = () => {
   const featuredPost = blogPosts.find(post => post.featured);
 
   return (
-    <div className="min-h-screen gradient-bg relative overflow-hidden">
-      {/* Hero background image */}
-      <div className="absolute inset-0">
-        <img
-          src="/hero.jpg"
-          alt=""
-          className="w-full h-full object-cover"
-        />
-        {/* Bright overlay for glassmorphism effect */}
-        <div className="absolute inset-0 bg-[hsl(220,30%,8%)/0.35]" />
-      </div>
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Deep royal Blue-to-light navy blue gradient background - same as ServicesSection */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(219,74%,22%)] via-[hsl(235,95%,32%)] to-[hsl(221,89%,48%)]" />
 
-      {/* Multi-color radial glow accents */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full bg-[hsl(220,80%,40%)] opacity-15 blur-[150px]" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-[hsl(340,80%,60%)] opacity-15 blur-[120px]" />
-      <div className="absolute top-1/3 left-[10%] w-[350px] h-[350px] rounded-full bg-[hsl(30,100%,60%)] opacity-12 blur-[120px]" />
-      <div className="absolute bottom-[20%] left-[60%] w-[300px] h-[300px] rounded-full bg-[hsl(320,70%,60%)] opacity-10 blur-[100px]" />
+      {/* Soft blurred glowing blobs in warm orange, peach, and light teal - same as ServicesSection */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full bg-[hsl(25,90%,60%)] opacity-20 blur-[180px]" />
+      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-[hsl(35,85%,65%)] opacity-15 blur-[150px]" />
+      <div className="absolute top-1/3 left-[10%] w-[300px] h-[300px] rounded-full bg-[hsl(170,60%,50%)] opacity-10 blur-[120px]" />
+      <div className="absolute bottom-[20%] left-[60%] w-[250px] h-[250px] rounded-full bg-[hsl(30,100%,55%)] opacity-12 blur-[100px]" />
+      <div className="absolute top-[60%] left-[20%] w-[200px] h-[200px] rounded-full bg-[hsl(45,90%,65%)] opacity-10 blur-[80px]" />
+      <div className="absolute top-[15%] right-[30%] w-[150px] h-[150px] rounded-full bg-[hsl(160,50%,55%)] opacity-8 blur-[60px]" />
+
+      {/* Artistic VILCOM text watermark - adjusted for dark background */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+        <h1 className="font-heading text-[10rem] lg:text-[14rem] font-black text-transparent bg-clip-text bg-gradient-to-b from-white/8 via-white/5 to-white/3 tracking-widest select-none transform rotate-[-5deg] scale-150 whitespace-nowrap blur-[1px]">
+          VILCOM
+        </h1>
+      </div>
 
       <Navbar />
       
@@ -183,10 +184,10 @@ const Blog = () => {
         <div className="container mx-auto px-4">
           {/* Header Section */}
           <div className="text-center mb-12">
-            <h1 className="font-heading text-5xl md:text-6xl font-bold text-slate-800 mb-4">
-              Our <span className="text-gradient-royal">Blog</span>
+            <h1 className="font-heading text-5xl md:text-6xl font-bold text-white mb-4">
+              Our <span className="text-white">Blog</span>
             </h1>
-            <p className="text-slate-600 max-w-2xl mx-auto text-lg font-medium">
+            <p className="text-white/80 max-w-2xl mx-auto text-lg font-medium">
               Insights, updates, and stories from the world of connectivity and technology
             </p>
           </div>
@@ -197,13 +198,13 @@ const Blog = () => {
             <div className="flex flex-col md:flex-row gap-4 mb-10">
               {/* Search Input */}
               <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
                 <input
                   type="text"
                   placeholder="Search articles..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 bg-white/60 backdrop-blur-md rounded-xl border border-white/40 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-300/50 transition-all"
+                  className="w-full pl-12 pr-4 py-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-sky-400/50 focus:border-sky-300/50 transition-all"
                 />
               </div>
               
@@ -219,7 +220,7 @@ const Blog = () => {
                     className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                       selectedCategory === category
                         ? "gradient-royal text-white shadow-lg"
-                        : "bg-white/50 text-slate-600 hover:bg-white/70 hover:text-slate-800 border border-white/40"
+                        : "bg-white/10 text-white hover:bg-white/20 border border-white/20"
                     }`}
                   >
                     {category}
@@ -250,8 +251,8 @@ const Blog = () => {
                     
                     {/* Content */}
                     <div className="p-6 md:p-8 flex flex-col justify-center">
-                      <div className="flex items-center gap-3 text-xs text-slate-500 mb-3">
-                        <span className="bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full font-medium">
+                      <div className="flex items-center gap-3 text-xs text-white/60 mb-3">
+                        <span className="bg-white/20 text-white px-2.5 py-1 rounded-full font-medium">
                           {featuredPost.category}
                         </span>
                         <span className="flex items-center gap-1">
@@ -259,20 +260,20 @@ const Blog = () => {
                           {featuredPost.date}
                         </span>
                       </div>
-                      <h2 className="font-heading text-2xl md:text-3xl font-bold text-slate-800 mb-3 group-hover:text-blue-700 transition-colors">
+                      <h2 className="font-heading text-2xl md:text-3xl font-bold text-white mb-3 group-hover:text-blue-400 transition-colors">
                         {featuredPost.title}
                       </h2>
-                      <p className="text-slate-600 mb-4 line-clamp-3">
+                      <p className="text-white/70 mb-4 line-clamp-3">
                         {featuredPost.excerpt}
                       </p>
                       <div className="flex items-center justify-between mt-auto">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold">
+                          <div className="w-8 h-8 rounded-full gradient-royal flex items-center justify-center text-white text-sm font-bold">
                             {featuredPost.author.charAt(0)}
                           </div>
-                          <span className="text-sm text-slate-600 font-medium">{featuredPost.author}</span>
+                          <span className="text-sm text-white/80 font-medium">{featuredPost.author}</span>
                         </div>
-                        <span className="text-xs text-slate-400">{featuredPost.readTime}</span>
+                        <span className="text-xs text-white/50">{featuredPost.readTime}</span>
                       </div>
                     </div>
                   </div>
@@ -304,30 +305,30 @@ const Blog = () => {
 
                   {/* Content */}
                   <div className="p-5">
-                    <div className="flex items-center gap-2 text-xs text-slate-500 mb-2">
+                    <div className="flex items-center gap-2 text-xs text-white/50 mb-2">
                       <Calendar className="w-3.5 h-3.5" />
                       {post.date}
                     </div>
-                    <h3 className="font-heading text-lg font-bold text-slate-800 mb-2 group-hover:text-blue-700 transition-colors line-clamp-2">
+                    <h3 className="font-heading text-lg font-bold text-white mb-2 group-hover:text-blue-400 transition-colors line-clamp-2">
                       {post.title}
                     </h3>
-                    <p className="text-slate-600 text-sm mb-4 line-clamp-2">
+                    <p className="text-white/70 text-sm mb-4 line-clamp-2">
                       {post.excerpt}
                     </p>
                     
                     {/* Footer */}
-                    <div className="flex items-center justify-between pt-3 border-t border-slate-200/30">
+                    <div className="flex items-center justify-between pt-3 border-t border-white/10">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                        <div className="w-6 h-6 rounded-full gradient-royal flex items-center justify-center text-white text-xs font-bold">
                           {post.author.charAt(0)}
                         </div>
-                        <span className="text-xs text-slate-600 font-medium">{post.author}</span>
+                        <span className="text-xs text-white/80 font-medium">{post.author}</span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <button className="text-slate-400 hover:text-red-500 transition-colors">
+                        <button className="text-white/40 hover:text-red-400 transition-colors">
                           <Heart className="w-4 h-4" />
                         </button>
-                        <button className="text-slate-400 hover:text-blue-500 transition-colors">
+                        <button className="text-white/40 hover:text-blue-400 transition-colors">
                           <Share2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -340,11 +341,11 @@ const Blog = () => {
             {/* No Results */}
             {currentPosts.length === 0 && (
               <div className="text-center py-16">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Search className="w-10 h-10 text-blue-400" />
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/10 flex items-center justify-center">
+                  <Search className="w-10 h-10 text-white/40" />
                 </div>
-                <h3 className="font-heading text-xl font-bold text-slate-700 mb-2">No articles found</h3>
-                <p className="text-slate-500">Try adjusting your search or filter criteria</p>
+                <h3 className="font-heading text-xl font-bold text-white mb-2">No articles found</h3>
+                <p className="text-white/50">Try adjusting your search or filter criteria</p>
               </div>
             )}
 
@@ -356,7 +357,7 @@ const Blog = () => {
                   size="icon"
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="w-10 h-10 rounded-full border-slate-200/50 bg-white/50 hover:bg-white"
+                  className="w-10 h-10 rounded-full border-white/20 bg-white/10 text-white hover:bg-white/20"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
@@ -369,7 +370,7 @@ const Blog = () => {
                     className={`w-10 h-10 rounded-full ${
                       currentPage === page
                         ? "gradient-royal text-white"
-                        : "border-slate-200/50 bg-white/50 hover:bg-white"
+                        : "border-white/20 bg-white/10 text-white hover:bg-white/20"
                     }`}
                   >
                     {page}
@@ -381,7 +382,7 @@ const Blog = () => {
                   size="icon"
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="w-10 h-10 rounded-full border-slate-200/50 bg-white/50 hover:bg-white"
+                  className="w-10 h-10 rounded-full border-white/20 bg-white/10 text-white hover:bg-white/20"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </Button>
@@ -392,17 +393,17 @@ const Blog = () => {
           {/* Newsletter Section */}
           <div className="max-w-3xl mx-auto">
             <div className="glass-bubble rounded-3xl p-8 md:p-12 text-center">
-              <h2 className="font-heading text-3xl font-bold text-slate-800 mb-3">
+              <h2 className="font-heading text-3xl font-bold text-white mb-3">
                 Stay Connected
               </h2>
-              <p className="text-slate-600 mb-6 max-w-md mx-auto">
+              <p className="text-white/70 mb-6 max-w-md mx-auto">
                 Subscribe to our newsletter for the latest updates, insights, and exclusive offers
               </p>
               <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
                 <input
                   type="email"
                   placeholder="Enter your email"
-                  className="flex-1 px-5 py-3 bg-white/70 backdrop-blur-md rounded-xl border border-white/50 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-300/50 transition-all"
+                  className="flex-1 px-5 py-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-sky-400/50 focus:border-sky-300/50 transition-all"
                 />
                 <Button className="gradient-royal text-white font-semibold px-6 py-3 rounded-xl royal-glow">
                   Subscribe

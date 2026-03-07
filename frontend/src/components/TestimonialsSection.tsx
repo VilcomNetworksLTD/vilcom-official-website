@@ -1,4 +1,5 @@
-import { Star } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Star, ChevronLeft, ChevronRight, Quote } from "lucide-react";
 
 const testimonials = [
   {
@@ -29,53 +30,168 @@ const testimonials = [
     rating: 5,
     avatarGradient: "bg-gradient-to-br from-[hsl(170,70%,40%)] to-[hsl(200,80%,40%)]",
   },
+  {
+    name: "Sarah J.",
+    role: "Restaurant Owner, CBD",
+    quote: "Our restaurant's online ordering system runs flawlessly thanks to Vilcom's reliable connection.",
+    rating: 5,
+    avatarGradient: "bg-gradient-to-br from-[hsl(260,70%,50%)] to-[hsl(280,60%,40%)]",
+  },
+  {
+    name: "Michael T.",
+    role: "IT Manager, Gigiri",
+    quote: "Enterprise connectivity at its best. The dedicated support team is always ready to help.",
+    rating: 5,
+    avatarGradient: "bg-gradient-to-br from-[hsl(190,80%,45%)] to-[hsl(210,70%,35%)]",
+  },
 ];
 
 const TestimonialsSection = () => {
-  return (
-    <section className="py-16 md:py-24 relative overflow-hidden">
-      {/* Dark background with glassmorphism effect - no image */}
-      <div className="absolute inset-0 bg-[hsl(220,30%,8%)]" />
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
 
-      {/* Multi-color radial glow accents */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full bg-[hsl(220,80%,40%)] opacity-15 blur-[150px]" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-[hsl(340,80%,60%)] opacity-15 blur-[120px]" />
-      <div className="absolute top-1/3 left-[10%] w-[350px] h-[350px] rounded-full bg-[hsl(30,100%,60%)] opacity-12 blur-[120px]" />
-      <div className="absolute bottom-[20%] left-[60%] w-[300px] h-[300px] rounded-full bg-[hsl(320,70%,60%)] opacity-10 blur-[100px]" />
+  const visibleTestimonials = 3;
+
+  const nextSlide = () => {
+    if (isAnimating) return;
+    setIsAnimating(true);
+    setCurrentIndex((prev) => (prev + 1) % testimonials.length);
+    setTimeout(() => setIsAnimating(false), 500);
+  };
+
+  const prevSlide = () => {
+    if (isAnimating) return;
+    setIsAnimating(true);
+    setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+    setTimeout(() => setIsAnimating(false), 500);
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      nextSlide();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [isAnimating]);
+
+  const getVisibleItems = () => {
+    const items = [];
+    for (let i = 0; i < visibleTestimonials; i++) {
+      const index = (currentIndex + i) % testimonials.length;
+      items.push({ ...testimonials[index], position: i });
+    }
+    return items;
+  };
+
+  return (
+    <section className="py-24 relative overflow-hidden">
+      {/* Dark blue gradient background - matching ServicePage */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(235,85%,25%)] via-[hsl(235,80%,30%)] to-[hsl(225,70%,40%)]" />
+      
+      {/* Animated fluid shapes */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] rounded-full bg-gradient-to-br from-blue-400/30 to-cyan-300/20 blur-[100px]" />
+        <div className="absolute top-[30%] right-[-15%] w-[60%] h-[60%] rounded-full bg-gradient-to-br from-indigo-400/25 to-purple-300/20 blur-[100px]" />
+        <div className="absolute bottom-[-20%] left-[20%] w-[65%] h-[65%] rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-400/15 blur-[100px]" />
+      </div>
 
       <div className="relative z-10 container mx-auto px-4">
-        <div className="text-center mb-10 md:mb-16">
-          <span className="text-[hsl(340,80%,50%)] text-sm font-semibold uppercase tracking-widest">Testimonials</span>
-          <h2 className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-slate-800 mt-3">
-            Loved by <span className="text-gradient-royal">Thousands</span>
+        <div className="text-center mb-16">
+          <span className="text-white/70 text-sm font-semibold uppercase tracking-widest">Testimonials</span>
+          <h2 className="font-heading text-4xl md:text-5xl font-bold text-white mt-3">
+            Loved by <span className="text-white">Thousands</span>
           </h2>
         </div>
 
-        {/* Mobile: horizontal scroll | Desktop: grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          {testimonials.map((t) => (
-            <div
-              key={t.name}
-              className="glass-crystal rounded-2xl md:rounded-[40px] p-6 md:p-8 flex flex-col items-center text-center hover:scale-[1.02] transition-all duration-300"
-            >
-              <div className={`w-14 h-14 md:w-16 md:h-16 rounded-full ${t.avatarGradient} flex items-center justify-center mb-3 md:mb-4 text-white font-heading font-bold text-lg md:text-xl`}>
-                {t.name.charAt(0)}
-              </div>
+        {/* Sliding Testimonial Carousel */}
+        <div className="relative max-w-6xl mx-auto">
+          {/* Navigation Arrows */}
+          <button 
+            onClick={prevSlide}
+            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-12 z-20 w-12 h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <button 
+            onClick={nextSlide}
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-12 z-20 w-12 h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
 
-              <div className="flex gap-1 mb-3 md:mb-4">
-                {Array.from({ length: t.rating }).map((_, i) => (
-                  <Star key={i} className="w-4 h-4 fill-[hsl(30,100%,50%)] text-[hsl(30,100%,50%)]" />
-                ))}
-              </div>
+          {/* Carousel Container */}
+          <div className="overflow-hidden py-8">
+            <div className="flex items-center justify-center gap-4 md:gap-6 transition-all duration-500 ease-out">
+              {getVisibleItems().map((item, idx) => {
+                const isCenter = idx === 1;
+                return (
+                  <div
+                    key={`${currentIndex}-${idx}`}
+                    className={`relative transition-all duration-500 ease-out ${
+                      isCenter 
+                        ? 'w-full md:w-[400px] opacity-100 scale-100 z-10' 
+                        : 'w-full md:w-[300px] opacity-40 scale-90 blur-[1px] hidden md:block'
+                    }`}
+                    style={{
+                      transform: isCenter ? 'scale(1)' : 'scale(0.85)',
+                    }}
+                  >
+                    <div className={`glass-dark backdrop-blur-xl rounded-3xl p-6 md:p-8 border ${
+                      isCenter ? 'border-white/20' : 'border-white/10'
+                    }`}>
+                      {/* Quote Icon */}
+                      <div className="absolute -top-4 left-6 w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+                        <Quote className="w-5 h-5 text-white" />
+                      </div>
+                      
+                      {/* Stars */}
+                      <div className="flex gap-1 mb-4 mt-2">
+                        {Array.from({ length: item.rating }).map((_, i) => (
+                          <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                        ))}
+                      </div>
 
-              <p className="text-sm text-slate-600 leading-relaxed mb-4 md:mb-5 italic">"{t.quote}"</p>
+                      {/* Quote */}
+                      <p className={`text-sm md:text-base leading-relaxed mb-6 ${isCenter ? 'text-blue-200/90' : 'text-blue-200/60'}`}>
+                        "{item.quote}"
+                      </p>
 
-              <div>
-                <div className="font-heading font-bold text-slate-800 text-sm">{t.name}</div>
-                <div className="text-xs text-slate-500">{t.role}</div>
-              </div>
+                      {/* Author */}
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-full ${item.avatarGradient} flex items-center justify-center text-white font-bold`}>
+                          {item.name.charAt(0)}
+                        </div>
+                        <div>
+                          <div className="font-heading font-bold text-white">{item.name}</div>
+                          <div className="text-xs text-blue-200/60">{item.role}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          ))}
+          </div>
+
+          {/* Dots Indicator */}
+          <div className="flex justify-center gap-2 mt-8">
+            {testimonials.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  if (!isAnimating) {
+                    setIsAnimating(true);
+                    setCurrentIndex(idx);
+                    setTimeout(() => setIsAnimating(false), 500);
+                  }
+                }}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  idx === currentIndex 
+                    ? 'w-8 bg-gradient-to-r from-purple-500 to-pink-500' 
+                    : 'bg-white/30 hover:bg-white/50'
+                }`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>

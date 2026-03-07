@@ -22,6 +22,7 @@ const CyberSecurity = () => {
       icon={<Shield className="w-10 h-10" />}
       iconBgColor="bg-gradient-to-br from-[hsl(220,80%,50%)] to-[hsl(220,30%,50%)]"
       iconColor="text-white"
+      blobColor="bg-blue-500/20"
     />
   );
 };

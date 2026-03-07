@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft, Wifi, Shield, CheckCircle, Clock, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import FooterSection from "@/components/FooterSection";
 
 const Terms = () => {
   return (
@@ -271,22 +272,7 @@ const Terms = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-700/50 bg-slate-900 py-8 mt-12">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Wifi className="w-5 h-5 text-cyan-400" />
-              <span className="text-white font-semibold">Vilcom<span className="text-cyan-400">Network</span></span>
-            </div>
-            <div className="flex items-center gap-6 text-sm text-slate-400">
-              <Link to="/terms" className="hover:text-white transition-colors">Terms</Link>
-              <Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
-              <Link to="/contact-us" className="hover:text-white transition-colors">Contact</Link>
-            </div>
-            <p className="text-sm text-slate-500">© {new Date().getFullYear()} Vilcom Network. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <FooterSection />
     </div>
   );
 };

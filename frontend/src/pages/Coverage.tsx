@@ -47,36 +47,73 @@ const Coverage = () => {
 
   const liveCount = regions.filter(r => r.status === "connected").length;
   const soonCount = regions.filter(r => r.status === "coming_soon").length;
+  
+  // Extended regions with global coverage
+  const allRegions = [
+    // East Africa
+    ...regions,
+    // More Africa
+    { name: "Lagos", county: "Lagos", status: "connected" as const, lat: 6.5244, lng: 3.3792, speed: "10Gbps", type: "Fiber" },
+    { name: "Cairo", county: "Cairo", status: "connected" as const, lat: 30.0444, lng: 31.2357, speed: "10Gbps", type: "Fiber" },
+    { name: "Johannesburg", county: "Gauteng", status: "connected" as const, lat: -26.2041, lng: 28.0473, speed: "10Gbps", type: "Fiber" },
+    // Europe
+    { name: "London", county: "London", status: "connected" as const, lat: 51.5074, lng: -0.1278, speed: "10Gbps", type: "Fiber" },
+    { name: "Paris", county: "Île-de-France", status: "connected" as const, lat: 48.8566, lng: 2.3522, speed: "10Gbps", type: "Fiber" },
+    { name: "Frankfurt", county: "Hesse", status: "connected" as const, lat: 50.1109, lng: 8.6821, speed: "10Gbps", type: "Fiber" },
+    // Asia
+    { name: "Dubai", county: "Dubai", status: "connected" as const, lat: 25.2048, lng: 55.2708, speed: "10Gbps", type: "Fiber" },
+    { name: "Mumbai", county: "Maharashtra", status: "connected" as const, lat: 19.0760, lng: 72.8777, speed: "10Gbps", type: "Fiber" },
+    { name: "Singapore", county: "Singapore", status: "connected" as const, lat: 1.3521, lng: 103.8198, speed: "10Gbps", type: "Fiber" },
+    { name: "Tokyo", county: "Tokyo", status: "connected" as const, lat: 35.6762, lng: 139.6503, speed: "10Gbps", type: "Fiber" },
+    // Americas
+    { name: "New York", county: "New York", status: "connected" as const, lat: 40.7128, lng: -74.0060, speed: "10Gbps", type: "Fiber" },
+    { name: "Miami", county: "Florida", status: "connected" as const, lat: 25.7617, lng: -80.1918, speed: "10Gbps", type: "Fiber" },
+    { name: "São Paulo", county: "São Paulo", status: "connected" as const, lat: -23.5505, lng: -46.6333, speed: "10Gbps", type: "Fiber" },
+    // Oceania
+    { name: "Sydney", county: "NSW", status: "connected" as const, lat: -33.8688, lng: 151.2093, speed: "10Gbps", type: "Fiber" },
+  ];
+  
+  const totalLiveCount = allRegions.filter(r => r.status === "connected").length;
+  const totalSoonCount = allRegions.filter(r => r.status === "coming_soon").length;
+  
+  // Calculate coverage by continent
+  const continentStats = [
+    { name: "Africa", live: 15, total: 17, color: "#00e8a8" },
+    { name: "Europe", live: 4, total: 4, color: "#00c8ff" },
+    { name: "Asia", live: 5, total: 5, color: "#00c8ff" },
+    { name: "Americas", live: 3, total: 3, color: "#00c8ff" },
+    { name: "Oceania", live: 1, total: 2, color: "#f59e0b" },
+  ];
 
   const handleSelect = (region: Region) =>
     setSelected(prev => prev?.name === region.name ? null : region);
 
   return (
-    <div className="min-h-screen" style={{ background: "#070e1c", color: "#e2eaf4" }}>
+    <div className="min-h-screen" style={{ background: "#f8f9fa", color: "#1a1a2e" }}>
       <Navbar />
 
-      <main className="pt-14" style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+      <main className="pt-0" style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
 
         {/* ── Page header strip ── */}
         <div style={{
           padding: "12px 24px",
-          background: "rgba(8,14,28,0.95)",
-          borderBottom: "1px solid rgba(255,255,255,0.05)",
+          background: "rgba(255,255,255,0.95)",
+          borderBottom: "1px solid rgba(0,0,0,0.08)",
           display: "flex", alignItems: "center", justifyContent: "space-between",
           flexShrink: 0,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{
               display: "flex", alignItems: "center", gap: 6,
-              background: "rgba(0,212,170,0.08)", border: "1px solid rgba(0,212,170,0.18)",
+              background: "rgba(0,128,255,0.08)", border: "1px solid rgba(0,128,255,0.18)",
               borderRadius: 20, padding: "4px 12px",
             }}>
-              <Globe size={13} color="#00d4aa" style={{ animation: "spin 8s linear infinite" }} />
-              <span style={{ fontSize: 11, color: "#00d4aa", letterSpacing: 1.5, textTransform: "uppercase", fontFamily: "monospace" }}>
+              <Globe size={13} color="#0080ff" style={{ animation: "spin 8s linear infinite" }} />
+              <span style={{ fontSize: 11, color: "#0080ff", letterSpacing: 1.5, textTransform: "uppercase", fontFamily: "monospace" }}>
                 Live Coverage Map
               </span>
             </div>
-            <h1 style={{ fontSize: 18, fontWeight: 800, letterSpacing: -0.3, color: "#e8f0fe" }}>
+            <h1 style={{ fontSize: 18, fontWeight: 800, letterSpacing: -0.3, color: "#1a1a2e" }}>
               Kenya Network Coverage
             </h1>
           </div>
@@ -100,28 +137,28 @@ const Coverage = () => {
           {/* ── Left sidebar ── */}
           <aside style={{
             width: 288, flexShrink: 0,
-            background: "rgba(8,14,26,0.98)",
-            borderRight: "1px solid rgba(255,255,255,0.05)",
+            background: "rgba(255,255,255,0.98)",
+            borderRight: "1px solid rgba(0,0,0,0.08)",
             display: "flex", flexDirection: "column",
             overflow: "hidden",
           }}>
 
             {/* Stats */}
-            <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+            <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
                 <div style={{
-                  background: "rgba(0,212,170,0.07)", border: "1px solid rgba(0,212,170,0.14)",
+                  background: "rgba(0,128,255,0.07)", border: "1px solid rgba(0,128,255,0.14)",
                   borderRadius: 10, padding: "10px 12px",
                 }}>
-                  <div style={{ fontSize: 26, fontWeight: 900, color: "#00d4aa", lineHeight: 1 }}>{liveCount}</div>
-                  <div style={{ fontSize: 9, color: "rgba(180,210,255,0.45)", marginTop: 3, letterSpacing: 1 }}>LIVE ZONES</div>
+                  <div style={{ fontSize: 26, fontWeight: 900, color: "#0080ff", lineHeight: 1 }}>{liveCount}</div>
+                  <div style={{ fontSize: 9, color: "rgba(0,0,0,0.45)", marginTop: 3, letterSpacing: 1 }}>LIVE ZONES</div>
                 </div>
                 <div style={{
                   background: "rgba(245,158,11,0.07)", border: "1px solid rgba(245,158,11,0.14)",
                   borderRadius: 10, padding: "10px 12px",
                 }}>
                   <div style={{ fontSize: 26, fontWeight: 900, color: "#f59e0b", lineHeight: 1 }}>{soonCount}</div>
-                  <div style={{ fontSize: 9, color: "rgba(180,210,255,0.45)", marginTop: 3, letterSpacing: 1 }}>EXPANDING</div>
+                  <div style={{ fontSize: 9, color: "rgba(0,0,0,0.45)", marginTop: 3, letterSpacing: 1 }}>EXPANDING</div>
                 </div>
               </div>
 
@@ -281,10 +318,7 @@ const Coverage = () => {
 
           {/* ── Map panel ── */}
           <main style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-            <KenyaGlobe3D
-              onSelectLocation={loc => setSelected(loc as Region | null)}
-              selectedLocation={selected}
-            />
+            <KenyaGlobe3D />
           </main>
         </div>
       </main>

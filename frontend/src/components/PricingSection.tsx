@@ -5,10 +5,10 @@ import { Link } from "react-router-dom";
 import { Product, getInternetPlans } from "@/services/products";
 
 const blobColors = [
-  "bg-[hsl(200,90%,85%)/0.5]",
-  "bg-[hsl(45,100%,80%)/0.5]",
+  "bg-[hsl(232, 89%, 55%)/0.5]",
+  "bg-[hsl(38, 83%, 54%)/0.5]",
   "bg-[hsl(280,70%,82%)/0.5]",
-  "bg-[hsl(170,70%,78%)/0.45]",
+  "bg-[hsl(226, 84%, 29%)/0.45]",
 ];
 
 const PricingSection = () => {
@@ -62,7 +62,7 @@ const PricingSection = () => {
       features: features,
       popular: product.badge === "Best Value" || product.badge === "Popular",
       slug: product.slug,
-      titleColor: prefix === "home" ? "text-yellow-400" : "text-violet-400",
+      titleColor: prefix === "home" ? "text-green-400" : "text-green-400",
     };
   };
 

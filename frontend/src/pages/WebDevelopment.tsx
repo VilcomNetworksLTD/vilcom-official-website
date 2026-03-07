@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Code, Layout, ShoppingCart, Smartphone, Search, Check, Loader2 } from "lucide-react";
+import { ArrowRight, Code, Layout, ShoppingCart, Smartphone, Search, Check, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import FooterSection from "@/components/FooterSection";
 import { Product, productsApi } from "@/services/products";
@@ -58,6 +58,14 @@ const WebDevelopment = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({});
+
+  const toggleExpand = (serviceKey: string) => {
+    setExpandedCards(prev => ({
+      ...prev,
+      [serviceKey]: !prev[serviceKey]
+    }));
+  };
 
   // Fetch web development products from API
   useEffect(() => {
@@ -154,34 +162,65 @@ const WebDevelopment = () => {
                     {service.description}
                   </p>
                   <ul className="space-y-2">
-                    {service.features.map((feature) => (
-                      <li key={feature} className="flex items-center gap-2 text-xs text-blue-200/60">
-                        <Check className="w-3.5 h-3.5 text-pink-400 shrink-0" />
-                        {feature}
-                      </li>
-                    ))}
+                    {(() => {
+                      const isExpanded = expandedCards[service.name] || false;
+                      const displayFeatures = isExpanded ? service.features : service.features.slice(0, 7);
+                      return displayFeatures.map((feature) => (
+                        <li key={feature} className="flex items-center gap-2 text-sm text-blue-200/60">
+                          <Check className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+                          {feature}
+                        </li>
+                      ));
+                    })()}
                   </ul>
+                  {service.features.length > 7 && (
+                    <button
+                      onClick={() => toggleExpand(service.name)}
+                      className="flex items-center gap-1 text-sm text-pink-400 hover:text-pink-300 font-medium mt-3 transition-colors"
+                    >
+                      {expandedCards[service.name] ? (
+                        <>Show less <ChevronUp className="w-4 h-4" /></>
+                      ) : (
+                        <>Show {service.features.length - 7} more <ChevronDown className="w-4 h-4" /></>
+                      )}
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
           )}
 
-          {/* Process Section - Glass Cards */}
+          {/* Process Section - Animated Glass Cards with Vibrating String Effect */}
           <div className="mb-20">
             <h2 className="font-heading text-3xl font-bold text-white text-center mb-12">
               Our Development Process
             </h2>
             
+            {/* Animated connecting line - vibrating string effect */}
+            <div className="relative max-w-5xl mx-auto mb-8 px-4 lg:px-16">
+              <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-1 -translate-y-1/2">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/60 to-purple-500/0 animate-string-pulse rounded-full" />
+                <div className="absolute inset-0 bg-gradient-to-r from-pink-500/0 via-pink-500/40 to-pink-500/0 animate-string-pulse delay-75 rounded-full" />
+                {/* Water drop particles */}
+                <div className="absolute top-1/2 left-[25%] w-2 h-2 bg-cyan-400 rounded-full animate-ping" />
+                <div className="absolute top-1/2 left-[50%] w-2 h-2 bg-purple-400 rounded-full animate-ping delay-100" />
+                <div className="absolute top-1/2 left-[75%] w-2 h-2 bg-pink-400 rounded-full animate-ping delay-200" />
+              </div>
+            </div>
+            
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
               {process.map((item, index) => (
                 <div key={item.step} className="relative">
-                  {/* Connector line */}
-                  {index < process.length - 1 && (
-                    <div className="hidden lg:block absolute top-8 left-1/2 w-full h-px bg-gradient-to-r from-purple-500/50 to-transparent" />
-                  )}
+                  {/* Animated glow effect */}
+                  <div className="absolute -inset-2 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-purple-500/20 rounded-3xl blur-xl animate-pulse-process" style={{ animationDelay: `${index * 0.3}s` }} />
                   
-                  <div className="text-center">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4 shadow-lg relative z-10">
+                  <div className="relative text-center">
+                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4 shadow-lg relative z-10 ${
+                      index === 0 ? 'animate-vibrate' : 
+                      index === 1 ? 'animate-vibrate-delay-1' : 
+                      index === 2 ? 'animate-vibrate-delay-2' : 
+                      'animate-vibrate'
+                    }`}>
                       <span className="text-2xl font-bold text-white">{item.step}</span>
                     </div>
                     <h4 className="font-heading text-lg font-semibold text-white mb-2">

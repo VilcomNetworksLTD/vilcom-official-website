@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { Menu, X, Wifi, ChevronDown, ChevronRight, User, LogOut } from "lucide-react";
+import { Menu, X, Wifi, ChevronDown, ChevronRight, User, LogOut, Images, Briefcase, Newspaper, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -12,6 +12,7 @@ interface NavSubItem {
 interface NavDropdownItem {
   label: string;
   to: string;
+  icon?: React.ElementType;
   subdropdown?: NavSubItem[];
 }
 
@@ -23,7 +24,16 @@ interface NavItem {
 
 const navLinks: NavItem[] = [
   { label: "Home", to: "/" },
-  { label: "About", to: "/about" },
+  { 
+    label: "About", 
+    to: "/about",
+    dropdown: [
+      { label: "Company Overview", to: "/about", icon: Building2 },
+      { label: "Gallery", to: "/gallery", icon: Images },
+      { label: "Portfolio", to: "/portfolio", icon: Briefcase },
+      { label: "Media Features", to: "/media", icon: Newspaper },
+    ]
+  },
   { label: "Coverage", to: "/coverage" },
   { 
     label: "Products & Services", 
@@ -45,10 +55,7 @@ const navLinks: NavItem[] = [
           { label: "Domains", to: "/domains" },
         ]
       },
-      { 
-        label: "Software Development", 
-        to: "/software-development",
-      },
+      { label: "Web Development", to: "/web-development" },
       { label: "ERP As A Service", to: "/erp-service" },
       { label: "ISP Billing As A Service", to: "/isp-billing" },
       { label: "ISP CPE As A Service", to: "/isp-cpe" },
@@ -67,10 +74,10 @@ const navLinks: NavItem[] = [
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [subdropdownOpen, setSubdropdownOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const subdropdownRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
@@ -112,7 +119,7 @@ const Navbar = () => {
                 
                 {/* User Dropdown Menu */}
                 {userMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-56 glass-dark backdrop-blur-2xl rounded-xl shadow-2xl border border-white/20 py-2 animate-in fade-in slide-in-from-top-2 duration-200 z-50">
+                  <div className="absolute right-0 top-full mt-2 w-56 glass-dark-strong rounded-xl shadow-2xl border border-white/20 py-2 animate-in fade-in slide-in-from-top-2 duration-200 z-50">
                     <div className="px-4 py-2 border-b border-white/10">
                       <p className="text-sm font-medium text-white">{user.name}</p>
                       <p className="text-xs text-slate-400">{user.email}</p>
@@ -160,7 +167,7 @@ const Navbar = () => {
       </div>
 
       {/* Main Navbar */}
-      <nav className="fixed top-10 left-0 right-0 z-50 glass border-b border-white/40">
+      <nav className="fixed top-10 left-0 right-0 z-50 glass-navbar">
         <div className="container mx-auto flex items-center justify-between h-20 px-4">
           <Link to="/" className="flex items-center gap-2 font-heading font-bold text-xl text-foreground">
             <div className="w-9 h-9 rounded-lg gradient-royal flex items-center justify-center shadow-lg">
@@ -176,13 +183,13 @@ const Navbar = () => {
                 <div 
                   key={link.to} 
                   className="relative"
-                  ref={dropdownRef}
+                  ref={(el) => { if (el) dropdownRefs.current.set(link.label, el); }}
                   onMouseEnter={() => {
-                    setDropdownOpen(true);
+                    setOpenDropdown(link.label);
                     setSubdropdownOpen(false);
                   }}
                   onMouseLeave={() => {
-                    setDropdownOpen(false);
+                    setOpenDropdown(null);
                     setSubdropdownOpen(false);
                   }}
                 >
@@ -190,16 +197,22 @@ const Navbar = () => {
                     className={`px-5 py-3 rounded-lg text-base font-bold transition-colors flex items-center gap-1 ${
                       link.dropdown.some(item => isActive(item.to) || (item.subdropdown && item.subdropdown.some(sub => isActive(sub.to))))
                         ? "text-primary bg-primary/10"
-                        : "text-slate-800 hover:text-primary hover:bg-primary/5"
+                        : "text-white hover:text-primary hover:bg-white/10"
                     }`}
                   >
                     {link.label}
-                    <ChevronDown className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-4 h-4 transition-transform ${openDropdown === link.label ? 'rotate-180' : ''}`} />
                   </button>
                   
                   {/* Dropdown Menu */}
-                  {dropdownOpen && (
-                    <div className="absolute top-full left-0 mt-1 w-64 glass-dark backdrop-blur-2xl rounded-xl shadow-2xl border border-white/20 py-3 animate-in fade-in slide-in-from-top-2 duration-200 z-50">
+                  {openDropdown === link.label && (
+                    <div className={`absolute top-full left-0 mt-1 ${
+                      link.label === "About" ? "w-72" : "w-64"
+                    } ${
+                      link.label === "About" 
+                        ? "glass-bubble-dark rounded-2xl" 
+                        : "glass-dark-strong rounded-xl"
+                    } shadow-2xl border border-white/20 py-3 animate-in fade-in slide-in-from-top-2 duration-200 z-50`}>
                       {link.dropdown.map((item) => (
                         item.subdropdown ? (
                           <div 
@@ -222,13 +235,13 @@ const Navbar = () => {
                             
                             {/* Subdropdown Menu */}
                             {subdropdownOpen && (
-                              <div className="absolute top-0 left-full ml-1 w-56 glass-dark backdrop-blur-2xl rounded-xl shadow-2xl border border-white/20 py-3 animate-in fade-in slide-in-from-left-2 duration-200 z-50">
+                              <div className="absolute top-0 left-full ml-1 w-56 glass-dark-strong rounded-xl shadow-2xl border border-white/20 py-3 animate-in fade-in slide-in-from-left-2 duration-200 z-50">
                                 {item.subdropdown.map((subitem) => (
                                   <Link
                                     key={subitem.to}
                                     to={subitem.to}
                                     onClick={() => {
-                                      setDropdownOpen(false);
+                                      setOpenDropdown(null);
                                       setSubdropdownOpen(false);
                                     }}
                                     className={`block px-5 py-3 text-base font-semibold transition-colors ${
@@ -248,15 +261,22 @@ const Navbar = () => {
                             key={item.to}
                             to={item.to}
                             onClick={() => {
-                              setDropdownOpen(false);
+                              setOpenDropdown(null);
                               setSubdropdownOpen(false);
                             }}
-                            className={`block px-5 py-3 text-base font-semibold transition-colors ${
+                            className={`flex items-center gap-3 px-5 py-3 text-base font-semibold transition-colors ${
                               isActive(item.to)
                                 ? "text-primary bg-primary/20"
                                 : "text-white hover:bg-white/20"
                             }`}
                           >
+                            {item.icon && (
+                              <item.icon className={`w-5 h-5 ${
+                                link.label === "About" 
+                                  ? "text-sky-400" 
+                                  : "text-primary"
+                              }`} />
+                            )}
                             {item.label}
                           </Link>
                         )
@@ -271,7 +291,7 @@ const Navbar = () => {
                   className={`px-5 py-3 rounded-lg text-base font-bold transition-colors ${
                     isActive(link.to)
                       ? "text-primary bg-primary/10"
-                      : "text-slate-800 hover:text-primary hover:bg-primary/5"
+                      : "text-white hover:text-primary hover:bg-white/10"
                   }`}
                 >
                   {link.label}
@@ -293,13 +313,13 @@ const Navbar = () => {
               link.dropdown ? (
                 <div key={link.to} className="border-b border-slate-200/20">
                   <button
-                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    onClick={() => setOpenDropdown(openDropdown === link.label ? null : link.label)}
                     className="flex items-center justify-between w-full py-3 text-sm font-medium text-slate-700"
                   >
                     {link.label}
-                    <ChevronDown className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-4 h-4 transition-transform ${openDropdown === link.label ? 'rotate-180' : ''}`} />
                   </button>
-                  {dropdownOpen && (
+                  {openDropdown === link.label && (
                     <div className="pl-4 pb-2 space-y-1">
                       {link.dropdown.map((item) => (
                         item.subdropdown ? (
@@ -317,9 +337,9 @@ const Navbar = () => {
                                   <Link
                                     key={subitem.to}
                                     to={subitem.to}
-                                    onClick={() => {
+                            onClick={() => {
                                       setOpen(false);
-                                      setDropdownOpen(false);
+                                      setOpenDropdown(null);
                                       setSubdropdownOpen(false);
                                     }}
                                     className={`block py-2 text-sm font-medium ${
@@ -340,14 +360,15 @@ const Navbar = () => {
                             to={item.to}
                             onClick={() => {
                               setOpen(false);
-                              setDropdownOpen(false);
+                              setOpenDropdown(null);
                             }}
-                            className={`block py-2 text-sm font-medium ${
+                            className={`flex items-center gap-2 py-2 text-sm font-medium ${
                               isActive(item.to)
                                 ? "text-primary"
                                 : "text-slate-500 hover:text-primary"
                             }`}
                           >
+                            {item.icon && <item.icon className="w-4 h-4" />}
                             {item.label}
                           </Link>
                         )

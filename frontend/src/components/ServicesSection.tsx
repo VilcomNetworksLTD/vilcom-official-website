@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Wifi, Server, Globe, ArrowRight, Cloud, Shield, Cpu, Smartphone, Briefcase, CreditCard, Plug, Monitor, Lock, Satellite } from "lucide-react";
+import { Wifi, Server, Globe, ArrowRight, Cloud, Shield, Cpu, Smartphone, Briefcase, CreditCard, Plug, Monitor, Lock, Satellite, ChevronDown, ChevronUp } from "lucide-react";
 
 const services = [
   {
@@ -49,11 +50,11 @@ const services = [
   },
   {
     icon: Smartphone,
-    title: "Software Development",
+    title: "Web Development",
     description: "Android, iOS, & Web Development - Custom app and web solutions tailored for your business needs.",
     blob: "bg-[hsl(30,100%,50%)/0.2]",
     iconColor: "text-[hsl(30,100%,50%)]",
-    to: "/software-development",
+    to: "/web-development",
   },
   {
     icon: Briefcase,
@@ -114,6 +115,13 @@ const services = [
 ];
 
 const ServicesSection = () => {
+  const [showAll, setShowAll] = useState(false);
+  
+  // Number of services to show initially (3 rows)
+  const initialVisibleCount = 9; // 3 rows x 3 columns on lg
+  const visibleServices = showAll ? services : services.slice(0, initialVisibleCount);
+  const hiddenCount = services.length - initialVisibleCount;
+
   return (
     <section className="py-24 relative overflow-hidden">
       {/* Deep royal Blue-to-light navy blue gradient background */}
@@ -155,61 +163,6 @@ const ServicesSection = () => {
       </div>
 
       <div className="relative z-10 container mx-auto px-4">
-        {/* COMMENTED OUT: Connectivity Gallery */}
-        {/*
-        <div className="text-center mb-16">
-          <span className="text-[hsl(30,100%,45%)] text-sm font-semibold uppercase tracking-widest">Connectivity Everywhere</span>
-          <h2 className="font-heading text-4xl lg:text-5xl font-bold text-slate-800 mt-3">
-            Connecting <span className="text-gradient-royal">Kenya</span>
-          </h2>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-24">
-          {gallery.map((item) => (
-            <div
-              key={item.label}
-              className="glass rounded-3xl p-1 group hover:caustic-glow transition-all duration-500"
-            >
-              <div className={`bg-gradient-to-br ${item.gradient} rounded-2xl h-48 flex items-end p-6 relative overflow-hidden`}>
-                <div className="absolute inset-0 bg-white/20 backdrop-blur-[2px]" />
-                <div className="relative z-10">
-                  <h3 className="font-heading text-2xl font-bold text-slate-800">{item.label}</h3>
-                  <p className="text-slate-700 text-sm">{item.subtitle}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        */}
-
-        {/* COMMENTED OUT: Feature Tiles - Why Choose Us */}
-        {/*
-        <div className="text-center mb-12">
-          <span className="text-[hsl(340,80%,50%)] text-sm font-semibold uppercase tracking-widest">Why Choose Us</span>
-          <h2 className="font-heading text-4xl lg:text-5xl font-bold text-slate-800 mt-3">
-            Built for <span className="text-gradient-royal">Performance</span>
-          </h2>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-24">
-          {features.map((feature) => (
-            <div
-              key={feature.title}
-              className="glass rounded-2xl p-8 text-center group hover:royal-glow transition-all duration-500 relative overflow-hidden"
-            >
-              <div className={`absolute -top-8 -right-8 w-32 h-32 ${feature.accent} rounded-full blur-[40px]`} />
-              <div className="relative z-10">
-                <div className={`w-16 h-16 mx-auto rounded-2xl ${feature.iconGradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-                  <feature.icon className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="font-heading text-xl font-bold text-slate-800 mb-3">{feature.title}</h3>
-                <p className="text-slate-600 text-sm leading-relaxed">{feature.description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-        */}
-
         {/* Our Services */}
         <div className="text-center mb-12">
           <span className="text-white/70 text-sm font-semibold uppercase tracking-widest">Our Services</span>
@@ -220,7 +173,7 @@ const ServicesSection = () => {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {services.map((service) => (
+          {visibleServices.map((service) => (
             <Link
               key={service.title}
               to={service.to}
@@ -266,6 +219,31 @@ const ServicesSection = () => {
             </Link>
           ))}
         </div>
+
+        {/* View Full List / Show Less Button */}
+        {hiddenCount > 0 && (
+          <div className="flex justify-center mt-12">
+            <button
+              onClick={() => setShowAll(!showAll)}
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-white font-semibold transition-all duration-300 hover:scale-105"
+              style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+              }}
+            >
+              {showAll ? (
+                <>
+                  Show Less <ChevronUp className="w-5 h-5" />
+                </>
+              ) : (
+                <>
+                  View Full List ({hiddenCount} more) <ChevronDown className="w-5 h-5" />
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );
