@@ -43,6 +43,7 @@ import ClientDashboard from "./pages/clients/ClientDashboard";
 import StaffDashboard from "./pages/staff/StaffDashboard";
 import AdminDashboard from "./pages/staff/AdminDashboard";
 import DashboardRedirect from "./pages/DashboardRedirect";
+import CookieConsent from "./components/CookieConsent";
 import CategoryManagement from "./pages/admin/CategoryManagement";
 import ProductManagement from "./pages/admin/ProductManagement";
 import BannerManagement from "./pages/admin/BannerManagement";
@@ -64,6 +65,7 @@ const App = () => (
       <Sonner />
       <AuthProvider>
         <BrowserRouter>
+          <CookieConsent />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/plans" element={<Plans />} />
