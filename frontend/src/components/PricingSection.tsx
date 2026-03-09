@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Check, Zap, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -10,6 +10,55 @@ const blobColors = [
   "bg-[hsl(280,70%,82%)/0.5]",
   "bg-[hsl(226, 84%, 29%)/0.45]",
 ];
+
+// Helper function to get dynamic grid classes based on number of items
+// Returns grid classes and whether we need offset for pyramid layout
+const getDynamicGridClasses = (itemCount: number): { gridClasses: string; isPyramid: boolean } => {
+  if (itemCount <= 1) {
+    return { gridClasses: "grid grid-cols-1 max-w-md mx-auto", isPyramid: false };
+  }
+  if (itemCount === 2) {
+    return { gridClasses: "grid grid-cols-1 md:grid-cols-2 max-w-3xl mx-auto", isPyramid: false };
+  }
+  if (itemCount === 3) {
+    return { gridClasses: "grid grid-cols-1 md:grid-cols-3 max-w-4xl mx-auto", isPyramid: false };
+  }
+  if (itemCount === 4) {
+    return { gridClasses: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto", isPyramid: false };
+  }
+  if (itemCount === 5) {
+    return { gridClasses: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto", isPyramid: true };
+  }
+  if (itemCount === 6) {
+    return { gridClasses: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto", isPyramid: false };
+  }
+  if (itemCount === 7) {
+    return { gridClasses: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto", isPyramid: true };
+  }
+  if (itemCount === 8) {
+    return { gridClasses: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto", isPyramid: false };
+  }
+  // 9+ items
+  return { gridClasses: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto", isPyramid: false };
+};
+
+// Helper to determine if a card should be offset for pyramid layout
+const isOffsetCard = (index: number, totalCount: number, isPyramid: boolean, cols: number): boolean => {
+  if (!isPyramid) return false;
+  
+  // For pyramid layout, offset cards in the second row to center them
+  const firstRowCount = Math.min(cols, totalCount);
+  const secondRowStartIndex = firstRowCount;
+  
+  // If this card is in the second row, check if it needs offset
+  if (index >= secondRowStartIndex) {
+    const secondRowCount = totalCount - firstRowCount;
+    const offsetAmount = (cols - secondRowCount) / 2;
+    const cardPositionInRow = index - secondRowStartIndex;
+    return cardPositionInRow < offsetAmount;
+  }
+  return false;
+};
 
 const PricingSection = () => {
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({});
@@ -74,6 +123,35 @@ const PricingSection = () => {
   const displayBusinessPlans = businessProducts.length > 0 
     ? businessProducts.map((p, i) => ({ ...productToPlan(p, "business"), colorIndex: i }))
     : [];
+
+  // Compute dynamic grid classes based on plan count
+  const homeGridConfig = useMemo(() => getDynamicGridClasses(displayHomePlans.length), [displayHomePlans.length]);
+  const businessGridConfig = useMemo(() => getDynamicGridClasses(displayBusinessPlans.length), [displayBusinessPlans.length]);
+  
+  // Get number of columns for pyramid offset calculation
+  const homeCols = useMemo(() => {
+    const count = displayHomePlans.length;
+    if (count <= 1) return 1;
+    if (count === 2) return 2;
+    if (count === 3) return 3;
+    if (count === 4) return 4;
+    if (count === 5) return 3;
+    if (count === 6) return 3;
+    if (count === 7) return 4;
+    return 4;
+  }, [displayHomePlans.length]);
+  
+  const businessCols = useMemo(() => {
+    const count = displayBusinessPlans.length;
+    if (count <= 1) return 1;
+    if (count === 2) return 2;
+    if (count === 3) return 3;
+    if (count === 4) return 4;
+    if (count === 5) return 3;
+    if (count === 6) return 3;
+    if (count === 7) return 4;
+    return 4;
+  }, [displayBusinessPlans.length]);
 
   if (loading) {
     return (
@@ -171,7 +249,7 @@ const PricingSection = () => {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            <div className={`${homeGridConfig.gridClasses} gap-6`}>
               {displayHomePlans.map((plan) => (
                 <div
                   key={plan.id}
@@ -199,7 +277,7 @@ const PricingSection = () => {
                       <span className="text-muted-foreground text-xs ml-1">/mo</span>
                     </div>
                     
-                    <ul className="space-y-2.5 mb-4">
+                    <ul className="space-y-2.5 mb-4 min-h-[196px]">
                       {(() => {
                         const isExpanded = expandedCards[`home-${plan.id}`] || false;
                         const displayFeatures = isExpanded ? plan.features : plan.features.slice(0, 7);
@@ -249,7 +327,7 @@ const PricingSection = () => {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            <div className={`${businessGridConfig.gridClasses} gap-6`}>
               {displayBusinessPlans.map((plan) => (
                 <div
                   key={plan.id}
@@ -277,10 +355,10 @@ const PricingSection = () => {
                       <span className="text-muted-foreground text-xs ml-1">/mo</span>
                     </div>
                     
-                    <ul className="space-y-2.5 mb-4">
+                    <ul className="space-y-2.5 mb-4 min-h-[168px]">
                       {(() => {
                         const isExpanded = expandedCards[`business-${plan.id}`] || false;
-                        const displayFeatures = isExpanded ? plan.features : plan.features.slice(0, 7);
+                        const displayFeatures = isExpanded ? plan.features : plan.features.slice(0, 6);
                         return displayFeatures.map((feature, idx) => (
                           <li key={idx} className="flex items-center gap-2.5 text-sm text-foreground/90">
                             <Check className="w-4 h-4 text-primary shrink-0" /> {feature}
@@ -288,7 +366,7 @@ const PricingSection = () => {
                         ));
                       })()}
                     </ul>
-                    {plan.features.length > 7 && (
+                    {plan.features.length > 6 && (
                       <button
                         onClick={() => toggleExpand(`business-${plan.id}`)}
                         className="flex items-center gap-1 text-sm text-primary hover:text-sky-700 font-medium mb-4 transition-colors"
@@ -296,7 +374,7 @@ const PricingSection = () => {
                         {expandedCards[`business-${plan.id}`] ? (
                           <>Show less <ChevronUp className="w-4 h-4" /></>
                         ) : (
-                          <>Show {plan.features.length - 7} more <ChevronDown className="w-4 h-4" /></>
+                          <>Show {plan.features.length - 6} more <ChevronDown className="w-4 h-4" /></>
                         )}
                       </button>
                     )}
