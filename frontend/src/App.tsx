@@ -10,6 +10,7 @@ import Coverage from "./pages/Coverage";
 import Signup from "./pages/Signup";
 import Auth from "./pages/Auth";
 import Quote from "./pages/Quote";
+import Booking from "./pages/Booking";
 import StaffInviteAccept from "./pages/StaffInviteAccept";
 import NotFound from "./pages/NotFound";
 import Hosting from "./pages/Hosting";
@@ -84,7 +85,9 @@ const App = () => (
             <Route path="/domains" element={<Domains />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/quote" element={<Quote />} />
+<Route path="/quote" element={<Quote />} />
+            <Route path="/book" element={<Booking />} />
+            <Route path="/booking" element={<Booking />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/signup/:planId" element={<Signup />} />
             <Route path="/invite/:token" element={<StaffInviteAccept />} />

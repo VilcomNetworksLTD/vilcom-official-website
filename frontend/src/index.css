@@ -430,6 +430,20 @@
 }
 
 @layer utilities {
+  /* Radiant glowing V animation */
+  @keyframes radiant-glow {
+    0%, 100% { 
+      filter: drop-shadow(0 0 8px rgba(6, 182,212, 0.8)) drop-shadow(0 0 15px rgba(6, 182,212, 0.5));
+    }
+    50% { 
+      filter: drop-shadow(0 0 12px rgba(6, 182,212, 1)) drop-shadow(0 0 25px rgba(139, 92, 246, 0.7)) drop-shadow(0 0 35px rgba(6, 182,212, 0.4));
+    }
+  }
+  
+  .animate-radiant-glow {
+    animation: radiant-glow 3s ease-in-out infinite;
+  }
+
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }

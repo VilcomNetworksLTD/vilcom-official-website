@@ -66,7 +66,7 @@ const navLinks: NavItem[] = [
     ]
   },
   { label: "Careers", to: "/careers" },
-  { label: "Certifications", to: "/certifications" },
+{ label: "Certifications", to: "/certifications" },
   { label: "FAQs", to: "/faqs" },
   { label: "Blog", to: "/blog" },
   { label: "Contact Us", to: "/contact-us" },
@@ -150,11 +150,19 @@ const Navbar = () => {
               </div>
             ) : (
               <>
+
+<Link to="/book">
+                  <Button size="sm" className="gradient-royal text-white font-semibold shadow-lg royal-glow border-0 text-xs px-4">
+                    Book Now
+                  </Button>
+                </Link>
+
                 <Link to="/auth">
                   <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white hover:bg-slate-800 text-xs font-medium">
                     Login
                   </Button>
                 </Link>
+
                 <Link to="/signup">
                   <Button size="sm" className="gradient-royal text-white font-semibold shadow-lg royal-glow border-0 text-xs px-4">
                     Get Started
@@ -169,11 +177,14 @@ const Navbar = () => {
       {/* Main Navbar */}
       <nav className="fixed top-10 left-0 right-0 z-50 glass-navbar">
         <div className="container mx-auto flex items-center justify-between h-20 px-4">
-          <Link to="/" className="flex items-center gap-2 font-heading font-bold text-xl text-foreground">
-            <div className="w-9 h-9 rounded-lg gradient-royal flex items-center justify-center shadow-lg">
-              <Wifi className="w-5 h-5 text-white" />
-            </div>
-            <span>Vilcom<span className="text-gradient-royal">Network</span></span>
+          <Link to="/" className="flex flex-col items-start gap-0 group">
+            <span className="font-['Cinzel'] text-4xl font-black tracking-widest italic">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 drop-shadow-[0_0_15px_rgba(6,182,212,0.8)] group-hover:drop-shadow-[0_0_25px_rgba(6,182,212,1)] transition-all duration-300 animate-radiant-glow">V</span>
+              <span className="text-white">ILCOM</span>
+            </span>
+            <span className="text-[10px] tracking-[0.25em] text-slate-400 font-medium -mt-1">
+              Smart • Secure • Reliable
+            </span>
           </Link>
 
           {/* Desktop */}

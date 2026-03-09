@@ -71,13 +71,23 @@ const FooterSection = () => {
 
             {/* Quick Links */}
             <div>
-              <h4 className="font-heading font-bold text-slate-800 mb-5 text-lg">Quick Links</h4>
+<h4 className="font-heading font-bold text-slate-800 mb-5 text-lg">Quick Links</h4>
               <div className="space-y-3">
-                {["Coverage Map", "Home Plans", "Business Plans", "Web Hosting"].map((link) => (
-                  <Link key={link} to={link === "Web Hosting" ? "/hosting" : "/plans"} className="block text-base text-slate-600 hover:text-primary transition-colors">
-                    {link}
-                  </Link>
-                ))}
+                <Link to="/coverage" className="block text-base text-slate-600 hover:text-primary transition-colors">
+                  Coverage Map
+                </Link>
+                <Link to="/plans" className="block text-base text-slate-600 hover:text-primary transition-colors">
+                  Home Plans
+                </Link>
+                <Link to="/plans" className="block text-base text-slate-600 hover:text-primary transition-colors">
+                  Business Plans
+                </Link>
+                <Link to="/hosting" className="block text-base text-slate-600 hover:text-primary transition-colors">
+                  Web Hosting
+                </Link>
+                <Link to="/book" className="block text-base text-primary hover:text-primary/80 transition-colors font-semibold">
+                  Book Appointment
+                </Link>
               </div>
             </div>
 

@@ -11,10 +11,10 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, 
-        HasFactory, 
-        Notifiable, 
-        HasRoles, 
+    use HasApiTokens,
+        HasFactory,
+        Notifiable,
+        HasRoles,
         SoftDeletes;
 
     /**
@@ -29,54 +29,54 @@ class User extends Authenticatable
         'password',
         'phone',
         'secondary_phone',
-        
+
         // Address
         'address',
         'city',
         'county',
         'postal_code',
         'country',
-        
+
         // Business Info
         'company_name',
         'company_registration',
         'tax_pin',
         'customer_type',
-        
+
         // Profile
         'avatar',
         'bio',
         'date_of_birth',
         'gender',
-        
+
         // Status
         'status',
         'suspended_at',
         'suspension_reason',
-        
+
         // Security
         'two_factor_secret',
         'two_factor_recovery_codes',
         'two_factor_enabled',
         'two_factor_confirmed_at',
-        
+
         // Preferences
         'preferences',
         'timezone',
         'language',
-        
+
         // Staff fields
         'employee_id',
         'department',
         'commission_rate',
         'is_team_leader',
         'reports_to',
-        
+
         // Tracking
         'last_login_at',
         'last_login_ip',
         'last_login_user_agent',
-        
+
         // Verification
         'email_verified_at',
         'phone_verified_at',
@@ -125,11 +125,11 @@ class User extends Authenticatable
     {
         return LogOptions::defaults()
             ->logOnly([
-                'name', 
-                'email', 
-                'phone', 
-                'status', 
-                'address', 
+                'name',
+                'email',
+                'phone',
+                'status',
+                'address',
                 'customer_type',
                 'department',
             ])
@@ -227,6 +227,22 @@ class User extends Authenticatable
     public function domains()
     {
         return $this->hasMany(Domain::class);
+    }
+
+    /**
+     * Get the user's bookings
+     */
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
+    }
+
+    /**
+     * Get the user's staff availability (if staff member)
+     */
+    public function availabilities()
+    {
+        return $this->hasMany(StaffAvailability::class);
     }
 
     // ============================================
@@ -352,12 +368,12 @@ class User extends Authenticatable
         if (!$this->phone) {
             return null;
         }
-        
+
         // Convert to international format
         if (substr($this->phone, 0, 1) === '0') {
             return '+254' . substr($this->phone, 1);
         }
-        
+
         return $this->phone;
     }
 
@@ -369,7 +385,7 @@ class User extends Authenticatable
         if ($this->avatar) {
             return url('storage/' . $this->avatar);
         }
-        
+
         // Generate initials avatar
         $initials = $this->getInitials();
         return "https://ui-avatars.com/api/?name={$initials}&size=200&background=random";
@@ -585,7 +601,7 @@ class User extends Authenticatable
             $current['notifications'] ?? [],
             $preferences
         );
-        
+
         $this->update(['preferences' => $current]);
     }
 
