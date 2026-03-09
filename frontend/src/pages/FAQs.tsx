@@ -42,8 +42,9 @@ const faqCategories = [
       {
         question: "How do I contact Vilcom support?",
         answer: [
-          "Safaricom: 0111 028800 (Call only) or 0726 888777 (WhatsApp/Call).",
-          "Airtel: 0755 055555 (WhatsApp/SMS).",
+          "Safaricom: 0111 028800 (Helpline Call Only).",
+          "Safaricom: 0726888777 (WhatsApp).",
+          "Airtel: 0755055555 (WhatsApp/SMS).",
           "Email: customercare@vilcom.co.ke.",
           "Social media: @vilcomnetworks on Facebook, Instagram, and Twitter.",
         ],
@@ -535,7 +536,7 @@ const FAQs = () => {
                   Contact Us
                 </Link>
                 <a
-                  href="tel:+254111028800"
+                  href="tel:0111028800"
                   className="inline-flex items-center gap-2 px-6 py-3 glass-crystal text-white font-semibold rounded-xl hover:bg-white/20 transition-all duration-200 hover:-translate-y-0.5"
                 >
                   <Phone className="w-5 h-5" />

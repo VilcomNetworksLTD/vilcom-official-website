@@ -80,6 +80,7 @@ class Product extends Model implements HasMedia
         // Status
         'is_active',
         'is_featured',
+        'is_quote_based',
         'requires_approval',
         'sort_order',
         
@@ -112,6 +113,7 @@ class Product extends Model implements HasMedia
             'cost_per_sms' => 'decimal:4',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
+            'is_quote_based' => 'boolean',
             'requires_approval' => 'boolean',
             'ssl_included' => 'boolean',
             'backup_included' => 'boolean',
@@ -293,6 +295,22 @@ class Product extends Model implements HasMedia
         });
     }
 
+    /**
+     * Scope to get quote-based products
+     */
+    public function scopeQuoteBased($query)
+    {
+        return $query->where('is_quote_based', true);
+    }
+
+    /**
+     * Scope to get non-quote-based products
+     */
+    public function scopeNotQuoteBased($query)
+    {
+        return $query->where('is_quote_based', false);
+    }
+
     // ============================================
     // ACCESSORS & MUTATORS
     // ============================================
@@ -407,6 +425,82 @@ class Product extends Model implements HasMedia
         
         $coverageAreas = $this->coverage_areas ?? [];
         return in_array($area, $coverageAreas);
+    }
+
+    /**
+     * Check if product requires a quote (quote-based pricing)
+     */
+    public function isQuoteBased(): bool
+    {
+        return (bool) $this->is_quote_based;
+    }
+
+    /**
+     * Get comprehensive price display information for frontend
+     * This helps the frontend know how to display pricing for each product
+     */
+    public function getPriceDisplayInfo(): array
+    {
+        $isQuoteBased = $this->isQuoteBased();
+        
+        // Determine the primary price to display
+        $primaryPrice = null;
+        $primaryLabel = '';
+        
+        if (!$isQuoteBased) {
+            // Has fixed pricing - determine best price to show
+            if ($this->price_annually) {
+                $primaryPrice = $this->price_annually / 12; // Show monthly equivalent
+                $primaryLabel = '/month (billed annually)';
+            } elseif ($this->price_monthly) {
+                $primaryPrice = $this->price_monthly;
+                $primaryLabel = '/month';
+            } elseif ($this->price_one_time) {
+                $primaryPrice = $this->price_one_time;
+                $primaryLabel = ' (one-time)';
+            }
+        }
+        
+        return [
+            'is_quote_based' => $isQuoteBased,
+            'has_fixed_price' => !$isQuoteBased,
+            'show_get_quote' => $isQuoteBased,
+            'show_buy_now' => !$isQuoteBased && $primaryPrice !== null,
+            'primary_price' => $primaryPrice,
+            'primary_label' => $primaryLabel,
+            'price_monthly' => $this->price_monthly,
+            'price_quarterly' => $this->price_quarterly,
+            'price_semi_annually' => $this->price_semi_annually,
+            'price_annually' => $this->price_annually,
+            'price_one_time' => $this->price_one_time,
+            'setup_fee' => $this->setup_fee,
+            'formatted_pricing' => $this->getAvailablePricingOptions(),
+            'price_type' => $this->getPriceType(),
+        ];
+    }
+
+    /**
+     * Get the price type for this product
+     */
+    public function getPriceType(): string
+    {
+        if ($this->isQuoteBased()) {
+            return 'quote';
+        }
+        
+        if ($this->price_one_time && !$this->price_monthly && !$this->price_annually) {
+            return 'one_time';
+        }
+        
+        if ($this->price_annually) {
+            return 'recurring_annual';
+        }
+        
+        if ($this->price_monthly) {
+            return 'recurring_monthly';
+        }
+        
+        return 'none';
     }
 
     /**

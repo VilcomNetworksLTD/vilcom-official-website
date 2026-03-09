@@ -8,12 +8,16 @@ use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\AddonController;
+use App\Http\Controllers\Api\QuoteRequestController;
 use App\Http\Controllers\Api\Admin\MediaController;
 use App\Http\Controllers\Api\Admin\BannerController;
 use App\Http\Controllers\Api\Admin\TestimonialController;
 use App\Http\Controllers\Api\Admin\FaqController;
 use App\Http\Controllers\Api\Admin\AdminSubscriptionController;
 use App\Http\Controllers\Api\Admin\ClientController;
+use App\Http\Controllers\Api\Admin\QuoteRequestController as AdminQuoteRequestController;
+use App\Http\Controllers\Api\CareerApplicationController;
+use App\Http\Controllers\Api\Admin\CareerApplicationController as AdminCareerApplicationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -176,6 +180,73 @@ Route::prefix('v1')->group(function () {
                 ->name('api.products.destroy')
                 ->middleware('permission:products.delete');
         });
+    });
+
+    // ============================================
+    // QUOTE REQUEST ROUTES (Public & Authenticated)
+    // ============================================
+    Route::prefix('quotes')->group(function () {
+        // Public routes
+        Route::get('/service-types', [QuoteRequestController::class, 'serviceTypes'])
+            ->name('api.quotes.service-types');
+        
+        Route::get('/technical-fields', [QuoteRequestController::class, 'technicalFields'])
+            ->name('api.quotes.technical-fields');
+        
+        Route::get('/options', [QuoteRequestController::class, 'options'])
+            ->name('api.quotes.options');
+        
+        // Submit quote request (public - no auth required)
+        Route::post('/', [QuoteRequestController::class, 'store'])
+            ->name('api.quotes.store');
+        
+        // Authenticated routes - User's quotes
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::get('/', [QuoteRequestController::class, 'index'])
+                ->name('api.quotes.index');
+            
+            Route::get('/{quoteNumber}', [QuoteRequestController::class, 'show'])
+                ->name('api.quotes.show');
+            
+            Route::post('/{quoteNumber}/respond', [QuoteRequestController::class, 'respond'])
+                ->name('api.quotes.respond');
+        });
+    });
+
+    // ============================================
+    // ADMIN QUOTE MANAGEMENT ROUTES
+    // ============================================
+    Route::prefix('admin/quotes')->middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+        Route::get('/', [AdminQuoteRequestController::class, 'index'])
+            ->name('api.admin.quotes.index');
+        
+        Route::get('/statistics', [AdminQuoteRequestController::class, 'statistics'])
+            ->name('api.admin.quotes.statistics');
+        
+        Route::get('/staff', [AdminQuoteRequestController::class, 'staff'])
+            ->name('api.admin.quotes.staff');
+        
+        Route::get('/{id}', [AdminQuoteRequestController::class, 'show'])
+            ->name('api.admin.quotes.show');
+        
+        Route::post('/{id}/mark-review', [AdminQuoteRequestController::class, 'markUnderReview'])
+            ->name('api.admin.quotes.mark-review');
+        
+        Route::post('/{id}/quote', [AdminQuoteRequestController::class, 'submitQuote'])
+            ->name('api.admin.quotes.submit-quote');
+        
+        Route::post('/{id}/assign', [AdminQuoteRequestController::class, 'assign'])
+            ->name('api.admin.quotes.assign');
+        
+        Route::put('/{id}', [AdminQuoteRequestController::class, 'update'])
+            ->name('api.admin.quotes.update');
+        
+        Route::post('/{id}/convert', [AdminQuoteRequestController::class, 'convertToSubscription'])
+            ->name('api.admin.quotes.convert');
+        
+        Route::delete('/{id}', [AdminQuoteRequestController::class, 'destroy'])
+            ->name('api.admin.quotes.destroy')
+            ->middleware('role:admin');
     });
 
     // ============================================
@@ -871,6 +942,69 @@ Route::prefix('v1')->group(function () {
                 ->name('api.faqs.categories.destroy')
                 ->middleware('permission:faqs.delete');
         });
+    });
+
+    // ============================================
+    // CAREER APPLICATION ROUTES (Public & Admin)
+    // ============================================
+    Route::prefix('careers')->group(function () {
+        // Public routes
+        Route::get('/positions', [CareerApplicationController::class, 'jobPositions'])
+            ->name('api.careers.positions');
+        
+        Route::get('/statuses', [CareerApplicationController::class, 'statuses'])
+            ->name('api.careers.statuses');
+        
+        // Submit career application (public - no auth required)
+        Route::post('/apply', [CareerApplicationController::class, 'store'])
+            ->name('api.careers.apply');
+        
+        // Check application status (public)
+        Route::post('/check-status', [CareerApplicationController::class, 'checkStatus'])
+            ->name('api.careers.check-status');
+        
+        // Withdraw application (public)
+        Route::post('/withdraw', [CareerApplicationController::class, 'withdraw'])
+            ->name('api.careers.withdraw');
+    });
+
+    // ============================================
+    // ADMIN CAREER APPLICATION MANAGEMENT ROUTES
+    // ============================================
+    Route::prefix('admin/careers')->middleware(['auth:sanctum', 'role:admin|staff|hr'])->group(function () {
+        Route::get('/', [AdminCareerApplicationController::class, 'index'])
+            ->name('api.admin.careers.index');
+        
+        Route::get('/statistics', [AdminCareerApplicationController::class, 'statistics'])
+            ->name('api.admin.careers.statistics');
+        
+        Route::get('/job-titles', [AdminCareerApplicationController::class, 'jobTitles'])
+            ->name('api.admin.careers.job-titles');
+        
+        Route::get('/{id}', [AdminCareerApplicationController::class, 'show'])
+            ->name('api.admin.careers.show');
+        
+        Route::post('/{id}/status', [AdminCareerApplicationController::class, 'updateStatus'])
+            ->name('api.admin.careers.update-status');
+        
+        Route::put('/{id}/notes', [AdminCareerApplicationController::class, 'updateNotes'])
+            ->name('api.admin.careers.update-notes');
+        
+        Route::get('/{id}/download/cv', [AdminCareerApplicationController::class, 'downloadCv'])
+            ->name('api.admin.careers.download-cv');
+        
+        Route::get('/{id}/download/certificates', [AdminCareerApplicationController::class, 'downloadCertificates'])
+            ->name('api.admin.careers.download-certificates');
+        
+        Route::get('/{id}/download/additional', [AdminCareerApplicationController::class, 'downloadAdditionalDocuments'])
+            ->name('api.admin.careers.download-additional');
+        
+        Route::delete('/{id}', [AdminCareerApplicationController::class, 'destroy'])
+            ->name('api.admin.careers.destroy')
+            ->middleware('role:admin');
+        
+        Route::post('/bulk-update', [AdminCareerApplicationController::class, 'bulkUpdateStatus'])
+            ->name('api.admin.careers.bulk-update');
     });
 });
 

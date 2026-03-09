@@ -9,6 +9,7 @@ import Plans from "./pages/Plans";
 import Coverage from "./pages/Coverage";
 import Signup from "./pages/Signup";
 import Auth from "./pages/Auth";
+import Quote from "./pages/Quote";
 import StaffInviteAccept from "./pages/StaffInviteAccept";
 import NotFound from "./pages/NotFound";
 import Hosting from "./pages/Hosting";
@@ -50,6 +51,7 @@ import MediaLibrary from "./pages/admin/MediaLibrary";
 import SubscriptionManagement from "./pages/admin/SubscriptionManagement";
 import StaffManagement from "./pages/admin/StaffManagement";
 import RolesManagement from "./pages/admin/RolesManagement";
+import QuoteManagement from "./pages/admin/QuoteManagement";
 import MySubscriptions from "./pages/clients/MySubscriptions";
 
 const queryClient = new QueryClient();
@@ -82,6 +84,7 @@ const App = () => (
             <Route path="/domains" element={<Domains />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/quote" element={<Quote />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/signup/:planId" element={<Signup />} />
             <Route path="/invite/:token" element={<StaffInviteAccept />} />
@@ -107,6 +110,7 @@ const App = () => (
             <Route path="/admin/categories" element={<CategoryManagement />} />
             <Route path="/admin/products" element={<ProductManagement />} />
             <Route path="/admin/subscriptions" element={<SubscriptionManagement />} />
+            <Route path="/admin/quotes" element={<QuoteManagement />} />
             <Route path="/admin/staff" element={<StaffManagement />} />
             <Route path="/admin/roles" element={<RolesManagement />} />
             <Route path="/admin/banners" element={<BannerManagement />} />

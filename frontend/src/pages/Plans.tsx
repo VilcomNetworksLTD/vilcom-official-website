@@ -47,9 +47,11 @@ const productToPlan = (product: Product, index: number) => {
     name: product.speed_mbps ? `${product.speed_mbps} Mbps` : product.name,
     speed: product.speed_mbps ? `${product.speed_mbps} Mbps` : "N/A",
     price: price.toLocaleString(),
+    rawPrice: price, // Keep raw price for conditional rendering
     features: product.features || [],
     popular: product.badge === "Popular" || product.badge === "Best Value",
     is_featured: product.is_featured,
+    is_quote_based: product.is_quote_based || false, // Add quote-based flag
     description: product.short_description || product.description,
   };
 };
@@ -180,7 +182,7 @@ const Plans = () => {
 
           {!loading && !error && (
             <div className={`grid gap-6 ${isFiberRoute ? 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 max-w-7xl mx-auto' : 'sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto'}`}>
-              {(plans as unknown as Array<{name: string; speed: string; price: string; slug: string; features: string[]; popular?: boolean}>).map((plan, i) => (
+              {(plans as unknown as Array<{name: string; speed: string; price: string; slug: string; features: string[]; popular?: boolean; is_quote_based?: boolean; id?: number}>).map((plan, i) => (
                 <div
                   key={plan.slug || plan.name + i}
                   className={`glass-sky rounded-2xl p-6 relative transition-all duration-300 hover:scale-[1.02] ${
@@ -197,10 +199,22 @@ const Plans = () => {
                   <div className="relative z-10">
                     <h3 className="font-heading text-lg font-bold text-slate-800">{plan.name}</h3>
                     <p className="text-sky-600 text-sm font-medium mb-4">{plan.speed}</p>
-                    <div className="mb-6">
-                      <span className="text-3xl font-heading font-bold text-gradient-royal">KES {plan.price}</span>
-                      <span className="text-slate-500 text-xs">/mo</span>
-                    </div>
+                    
+                    {/* Show price or Quote badge for quote-based products */}
+                    {plan.is_quote_based ? (
+                      <div className="mb-6">
+                        <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-100 text-purple-700 text-sm font-semibold rounded-lg">
+                          <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></span>
+                          Get Quote
+                        </span>
+                        <p className="text-xs text-slate-500 mt-2">Custom pricing based on your needs</p>
+                      </div>
+                    ) : (
+                      <div className="mb-6">
+                        <span className="text-3xl font-heading font-bold text-gradient-royal">KES {plan.price}</span>
+                        <span className="text-slate-500 text-xs">/mo</span>
+                      </div>
+                    )}
                     <ul className="space-y-2 mb-4">
                       {(() => {
                         const features = plan.features || [];
@@ -244,9 +258,15 @@ const Plans = () => {
                         plan.popular ? "royal-glow" : ""
                       }`}
                     >
-                      <Link to={`/signup?product=${plan.slug}`}>
-                        Get Started <ArrowRight className="w-4 h-4 ml-1" />
-                      </Link>
+                      {plan.is_quote_based ? (
+                        <Link to={`/quote?service=internet&product_id=${plan.id || ''}&product_name=${encodeURIComponent(plan.name)}`}>
+                          Get Quote <ArrowRight className="w-4 h-4 ml-1" />
+                        </Link>
+                      ) : (
+                        <Link to={`/signup?product=${plan.slug}`}>
+                          Get Started <ArrowRight className="w-4 h-4 ml-1" />
+                        </Link>
+                      )}
                     </Button>
                   </div>
                 </div>

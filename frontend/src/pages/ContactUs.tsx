@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Mail, Phone, MapPin, Clock, Send, MessageCircle, HeadphonesIcon, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,12 +7,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import FooterSection from "@/components/FooterSection";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
+
+// Fix for default marker icons in Leaflet with React
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
+
+// Firm location coordinates - Ramco Court, Mombasa Road, Nairobi
+const FIRM_LOCATION = {
+  lat: -1.3186238,
+  lng: 36.8352056,
+  address: "Ramco Court, Block B, Mombasa Road, Nairobi"
+};
 
 const contactInfo = [
-  { icon: Phone, title: "Phone", details: ["+254 700 000 000"], description: "Mon-Fri 8am-8pm" },
-  { icon: Mail, title: "Email", details: ["hello@vilcom.co.ke"], description: "We respond within 24h" },
-  { icon: MapPin, title: "Location", details: ["Nairobi, Kenya"], description: "Victoria Towers" },
-  { icon: Clock, title: "Hours", details: ["Mon-Fri: 8AM-8PM"], description: "24/7 Support" },
+  { icon: Phone, title: "Safaricom Helpline", details: ["0111 028800"], description: "Call Only - Mon-Sat 8AM-5PM" },
+  { icon: Phone, title: "Safaricom WhatsApp", details: ["0726888777"], description: "WhatsApp Only" },
+  { icon: Phone, title: "Airtel", details: ["0755055555"], description: "WhatsApp/SMS" },
+  { icon: Mail, title: "Email", details: ["customercare@vilcom.co.ke"], description: "We respond within 24h" },
+  { icon: MapPin, title: "Location", details: ["Ramco Court, Block B", "Mombasa Road, Nairobi"], description: "Physical Address" },
+  { icon: Clock, title: "Hours", details: ["Mon-Sat: 8AM-5PM"], description: "Frontend Support" },
 ];
 
 const departments = [
@@ -27,6 +46,11 @@ const glassCardStyle = { background: 'rgba(255, 255, 255, 0.08)', border: '1px s
 const ContactUs = () => {
   const [formData, setFormData] = useState({ name: "", email: "", phone: "", department: "", subject: "", message: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
+
+  useEffect(() => {
+    setIsMapLoaded(true);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,13 +74,15 @@ const ContactUs = () => {
         <h1 className="font-heading text-[10rem] lg:text-[14rem] font-black text-transparent bg-clip-text bg-gradient-to-b from-white/8 via-white/5 to-white/3 tracking-widest select-none transform rotate-[-5deg] scale-150 whitespace-nowrap blur-[1px]">VILCOM</h1>
       </div>
       <Navbar />
-      <main className="pt-32 pb-16 relative z-10">
+
+      {/* Main content wrapper — no bottom padding so map sits flush */}
+      <main className="pt-32 relative z-10">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h1 className="font-heading text-5xl lg:text-6xl font-bold text-white mb-6">Contact <span className="text-white">Us</span></h1>
             <p className="text-white/80 max-w-2xl mx-auto mb-8 text-lg font-medium">Have questions? We're here to help!</p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto mb-16">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto mb-16">
             {contactInfo.map((info, index) => (
               <div key={index} className="relative rounded-2xl p-6 text-center hover:scale-[1.02] transition-all duration-300 overflow-hidden backdrop-blur-md" style={glassCardStyle}>
                 <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: 'inset 0 0 20px rgba(255,255,255,0.05)' }} />
@@ -69,7 +95,7 @@ const ContactUs = () => {
               </div>
             ))}
           </div>
-          <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto pb-8">
             <div className="relative rounded-2xl p-8 overflow-hidden backdrop-blur-md" style={glassCardStyle}>
               <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: 'inset 0 0 20px rgba(255,255,255,0.05)' }} />
               <div className="relative z-10">
@@ -104,14 +130,40 @@ const ContactUs = () => {
                 <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: 'inset 0 0 20px rgba(255,255,255,0.05)' }} />
                 <div className="relative z-10">
                   <h3 className="font-heading text-xl font-bold text-white mb-4">Emergency Support</h3>
-                  <p className="text-white/70 mb-4">24/7 technical support available.</p>
-                  <div className="flex items-center gap-3 p-4 bg-red-500/20 rounded-xl border border-red-500/30"><div className="w-12 h-12 rounded-xl bg-red-500/30 flex items-center justify-center"><HeadphonesIcon className="w-6 h-6 text-red-400" /></div><div><h4 className="font-semibold text-white">Emergency</h4><p className="text-red-400 font-bold">+254 700 999 999</p></div></div>
+                  <p className="text-white/70 mb-4">Technical support available during business hours.</p>
+                  <div className="flex items-center gap-3 p-4 bg-red-500/20 rounded-xl border border-red-500/30"><div className="w-12 h-12 rounded-xl bg-red-500/30 flex items-center justify-center"><HeadphonesIcon className="w-6 h-6 text-red-400" /></div><div><h4 className="font-semibold text-white">Helpline</h4><p className="text-red-400 font-bold">0111 028800</p></div></div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Full-width map — outside container, no bottom margin, sits directly above footer */}
+        {isMapLoaded && (
+          <div className="w-full h-[500px]" style={{ position: 'relative', zIndex: 10 }}>
+            <MapContainer
+              center={[FIRM_LOCATION.lat, FIRM_LOCATION.lng]}
+              zoom={14}
+              style={{ height: '100%', width: '100%' }}
+              scrollWheelZoom={false}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <Marker position={[FIRM_LOCATION.lat, FIRM_LOCATION.lng]}>
+                <Popup>
+                  <div className="text-center">
+                    <strong className="text-base">VILCOM Headquarters</strong><br />
+                    {FIRM_LOCATION.address}
+                  </div>
+                </Popup>
+              </Marker>
+            </MapContainer>
+          </div>
+        )}
       </main>
+
       <FooterSection />
     </div>
   );

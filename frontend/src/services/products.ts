@@ -117,7 +117,145 @@ export async function getProductsByCategory(categorySlug: string): Promise<Produ
  */
 export async function getProductDetails(slug: string): Promise<Product> {
   const response = await productsApi.get(slug);
-  return response;
+  return response.data;
+}
+
+// ============================================
+// Helper Functions for Quote-Based Products
+// ============================================
+
+/**
+ * Check if a product requires a quote (no fixed price)
+ */
+export function isQuoteBased(product: Product): boolean {
+  return product.is_quote_based === true;
+}
+
+/**
+ * Check if a product has a fixed price (not quote-based)
+ */
+export function hasFixedPrice(product: Product): boolean {
+  return !isQuoteBased(product);
+}
+
+/**
+ * Check if product should show "Get Quote" button
+ */
+export function showGetQuote(product: Product): boolean {
+  return isQuoteBased(product);
+}
+
+/**
+ * Check if product should show "Buy Now" button
+ */
+export function showBuyNow(product: Product): boolean {
+  return hasFixedPrice(product) && !!(product.price_monthly || product.price_annually || product.price_one_time);
+}
+
+/**
+ * Get the display price for a product
+ * Returns null for quote-based products
+ */
+export function getDisplayPrice(product: Product): { price: number; label: string } | null {
+  if (isQuoteBased(product)) {
+    return null;
+  }
+
+  // Priority: annual (divided by 12) > monthly > one-time
+  if (product.price_annually) {
+    return {
+      price: Number(product.price_annually) / 12,
+      label: '/month (billed annually)'
+    };
+  }
+
+  if (product.price_monthly) {
+    return {
+      price: Number(product.price_monthly),
+      label: '/month'
+    };
+  }
+
+  if (product.price_one_time) {
+    return {
+      price: Number(product.price_one_time),
+      label: ' (one-time)'
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Get all available pricing options for a product
+ */
+export function getPricingOptions(product: Product): Array<{ key: string; price: number; label: string; perMonth?: number }> {
+  if (isQuoteBased(product)) {
+    return [];
+  }
+
+  const options: Array<{ key: string; price: number; label: string; perMonth?: number }> = [];
+
+  if (product.price_monthly) {
+    options.push({
+      key: 'monthly',
+      price: Number(product.price_monthly),
+      label: 'Monthly'
+    });
+  }
+
+  if (product.price_quarterly) {
+    options.push({
+      key: 'quarterly',
+      price: Number(product.price_quarterly),
+      label: 'Quarterly (3 months)',
+      perMonth: Number(product.price_quarterly) / 3
+    });
+  }
+
+  if (product.price_semi_annually) {
+    options.push({
+      key: 'semi_annually',
+      price: Number(product.price_semi_annually),
+      label: 'Semi-Annually (6 months)',
+      perMonth: Number(product.price_semi_annually) / 6
+    });
+  }
+
+  if (product.price_annually) {
+    options.push({
+      key: 'annually',
+      price: Number(product.price_annually),
+      label: 'Annually (12 months)',
+      perMonth: Number(product.price_annually) / 12
+    });
+  }
+
+  if (product.price_one_time && options.length === 0) {
+    options.push({
+      key: 'one_time',
+      price: Number(product.price_one_time),
+      label: 'One-time payment'
+    });
+  }
+
+  return options;
+}
+
+/**
+ * Get quote-based products only
+ */
+export async function getQuoteBasedProducts(): Promise<Product[]> {
+  const allProducts = await productsApi.getAll({ is_active: true });
+  return allProducts.filter(isQuoteBased);
+}
+
+/**
+ * Get fixed-price products only
+ */
+export async function getFixedPriceProducts(): Promise<Product[]> {
+  const allProducts = await productsApi.getAll({ is_active: true });
+  return allProducts.filter(hasFixedPrice);
 }
 
 export default productsApi;

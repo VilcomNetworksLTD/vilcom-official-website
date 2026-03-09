@@ -91,8 +91,12 @@ class ProductResource extends JsonResource
             // Status
             'is_active' => $this->is_active,
             'is_featured' => $this->is_featured,
+            'is_quote_based' => $this->is_quote_based,
             'requires_approval' => $this->requires_approval,
             'sort_order' => $this->sort_order,
+            
+            // Price display info for frontend
+            'price_display' => $this->getPriceDisplayInfo(),
             
             // Requirements
             'requirements' => $this->requirements,

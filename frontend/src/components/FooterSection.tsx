@@ -98,13 +98,19 @@ const FooterSection = () => {
               <h4 className="font-heading font-bold text-slate-800 mb-5 text-lg">Contact</h4>
               <div className="space-y-4">
                 <div className="flex items-center gap-3 text-base text-slate-600">
-                  <Mail className="w-5 h-5 text-primary shrink-0" /> hello@vilcom.co.ke
+                  <Mail className="w-5 h-5 text-primary shrink-0" /> customercare@vilcom.co.ke
                 </div>
                 <div className="flex items-center gap-3 text-base text-slate-600">
-                  <Phone className="w-5 h-5 text-primary shrink-0" /> +254 700 000 000
+                  <Phone className="w-5 h-5 text-primary shrink-0" /> 0111 028800 (Safaricom)
                 </div>
                 <div className="flex items-center gap-3 text-base text-slate-600">
-                  <MapPin className="w-5 h-5 text-primary shrink-0" /> Nairobi, Kenya
+                  <Phone className="w-5 h-5 text-primary shrink-0" /> 0726888777 (WhatsApp)
+                </div>
+                <div className="flex items-center gap-3 text-base text-slate-600">
+                  <Phone className="w-5 h-5 text-primary shrink-0" /> 0755055555 (Airtel)
+                </div>
+                <div className="flex items-center gap-3 text-base text-slate-600">
+                  <MapPin className="w-5 h-5 text-primary shrink-0" /> Ramco Court, Block B, Mombasa Road
                 </div>
               </div>
             </div>

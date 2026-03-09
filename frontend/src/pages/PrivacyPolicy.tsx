@@ -336,15 +336,19 @@ const PrivacyPolicy = () => {
                 <div className="bg-slate-700/30 rounded-xl p-6 space-y-3">
                   <div className="flex items-center gap-3">
                     <Mail className="w-5 h-5 text-cyan-400" />
-                    <span>Email: privacy@vilcom.co.ke</span>
+                    <span>Email: customercare@vilcom.co.ke</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Phone className="w-5 h-5 text-cyan-400" />
-                    <span>Phone: +254 700 000 000</span>
+                    <span>Phone: 0111 028800 (Safaricom)</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Phone className="w-5 h-5 text-cyan-400" />
+                    <span>WhatsApp: 0726888777</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <MapPin className="w-5 h-5 text-cyan-400" />
-                    <span>Address: Nairobi, Kenya</span>
+                    <span>Address: Ramco Court, Block B, Mombasa Road, Nairobi</span>
                   </div>
                 </div>
                 <p className="mt-4">

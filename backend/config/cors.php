@@ -27,12 +27,18 @@ return [
         'http://127.0.0.1:8080',
         'http://127.0.0.1:8081',
         'http://127.0.0.1:5173',
-        // Production origins
+        // Production origins - Main website
         'https://vilcom-net.co.ke',
         'https://www.vilcom-net.co.ke',
+        // API subdomain (backend)
+        'https://vilcom.backend.vilcom-net.co.ke',
+        'https://backend.vilcom-net.co.ke',
     ],
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        // Allow any subdomain of vilcom-net.co.ke
+        '/^https:\/\/.*\.vilcom-net\.ke$/',
+    ],
 
     'allowed_headers' => ['*'],
 

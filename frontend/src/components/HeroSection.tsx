@@ -1,10 +1,43 @@
-import { Wifi, Server, Cloud, Lock } from "lucide-react";
+import { useState } from "react";
+import { Wifi, Server, Cloud, Lock, Search, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import EarthGlobe3D from "./EarthGlobe3D";
+import { coverageApi, CoverageCheckResponse } from "@/services/coverage";
 
 const HeroSection = () => {
   const orbitText = "VILCOM NETWORKS LIMITED  ·  VILCOM NETWORKS LIMITED  ·  ";
+  
+  // Coverage search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResult, setSearchResult] = useState<CoverageCheckResponse | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+
+  const handleCoverageSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    
+    setIsSearching(true);
+    setSearchError(null);
+    setSearchResult(null);
+    
+    try {
+      const response = await coverageApi.checkCoverage({ address: searchQuery });
+      setSearchResult(response);
+    } catch (error: any) {
+      console.error("Coverage check error:", error);
+      setSearchError(error.response?.data?.message || "Unable to check coverage. Please try again.");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    setSearchResult(null);
+    setSearchError(null);
+  };
 
   return (
     <section
@@ -112,22 +145,94 @@ const HeroSection = () => {
           ))}
         </div>
 
-        {/* Coverage Card */}
-        <div className="anim-4 relative rounded-3xl p-6 hover:scale-[1.01] transition-all duration-300 cursor-pointer overflow-hidden backdrop-blur-md" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 32px rgba(0,0,0,0.2)" }}>
+        {/* Coverage Card with Search Input */}
+        <div className="anim-4 relative rounded-3xl p-6 hover:scale-[1.01] transition-all duration-300 overflow-hidden backdrop-blur-md" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 32px rgba(0,0,0,0.2)" }}>
           <div className="absolute inset-0 rounded-3xl" style={{ boxShadow: "inset 0 0 20px rgba(255,255,255,0.05)" }} />
           <div className="absolute -bottom-4 -left-4 w-32 h-32 rounded-full blur-[80px]" style={{ background: "rgba(234,88,12,0.2)" }} />
-          <div className="coverage-inner relative z-10 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 border border-white/20" style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3)" }}>
-              <Wifi className="w-6 h-6 text-cyan-400" />
+          
+          {!searchResult ? (
+            /* Search Input Mode */
+            <form onSubmit={handleCoverageSearch} className="coverage-inner relative z-10 flex flex-col sm:flex-row items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 border border-white/20" style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3)" }}>
+                <Wifi className="w-6 h-6 text-cyan-400" />
+              </div>
+              <div className="flex-1 w-full min-w-0">
+                <h3 className="font-heading text-lg font-bold text-white mb-1">Check Coverage</h3>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Enter your estate or location..."
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:outline-none focus:border-cyan-400 focus:bg-white/15 transition-all text-sm"
+                    disabled={isSearching}
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={clearSearch}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                {searchError && (
+                  <p className="text-red-400 text-xs mt-2">{searchError}</p>
+                )}
+              </div>
+              <Button
+                type="submit"
+                disabled={isSearching || !searchQuery.trim()}
+                className="gradient-royal text-white font-bold rounded-xl border-0 shadow-lg flex-shrink-0 hover:scale-105 transition-transform coverage-btn disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSearching ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Checking...
+                  </>
+                ) : (
+                  "Check Now"
+                )}
+              </Button>
+            </form>
+          ) : (
+            /* Result Mode */
+            <div className="coverage-inner relative z-10 flex flex-col sm:flex-row items-center gap-4">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 border ${searchResult.is_covered ? 'bg-green-500/20 border-green-400/30' : 'bg-orange-500/20 border-orange-400/30'}`}>
+                {searchResult.is_covered ? (
+                  <CheckCircle className="w-6 h-6 text-green-400" />
+                ) : (
+                  <XCircle className="w-6 h-6 text-orange-400" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-heading text-lg font-bold text-white mb-1">
+                  {searchResult.is_covered ? `We Cover ${searchResult.zone?.name || 'Your Area'}!` : 'Not Covered Yet'}
+                </h3>
+                <p className="text-white/70 text-sm">{searchResult.message}</p>
+                {searchResult.is_covered && searchResult.zone?.packages && searchResult.zone.packages.length > 0 && (
+                  <p className="text-cyan-400 text-xs mt-1">
+                    {searchResult.zone.packages.length} package(s) available starting from KES {Math.min(...searchResult.zone.packages.map((p: any) => p.monthly_price)).toLocaleString()}/mo
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <Button
+                  type="button"
+                  onClick={clearSearch}
+                  variant="outline"
+                  className="font-bold rounded-xl border border-white/20 text-white hover:bg-white/10 transition-colors text-sm px-4 py-2"
+                >
+                  Search Again
+                </Button>
+                <Button asChild className="gradient-royal text-white font-bold rounded-xl border-0 shadow-lg flex-shrink-0 hover:scale-105 transition-transform coverage-btn">
+                  <Link to="/coverage">View Plans</Link>
+                </Button>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-heading text-lg font-bold text-white mb-1">Check Coverage</h3>
-              <p className="text-white/70 text-sm">Enter your estate to check if we cover your area</p>
-            </div>
-            <Button asChild className="gradient-royal text-white font-bold rounded-xl border-0 shadow-lg flex-shrink-0 hover:scale-105 transition-transform coverage-btn">
-              <Link to="/coverage">Check Now</Link>
-            </Button>
-          </div>
+          )}
         </div>
       </div>
 

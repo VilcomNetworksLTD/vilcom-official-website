@@ -75,6 +75,7 @@ export interface Product {
   badge: string | null;
   is_active: boolean;
   is_featured: boolean;
+  is_quote_based: boolean;
   requires_approval: boolean;
   sort_order: number;
   requirements: string | null;
@@ -82,6 +83,23 @@ export interface Product {
   meta_title: string | null;
   meta_description: string | null;
   meta_keywords: string | null;
+  // Price display info from backend
+  price_display?: {
+    is_quote_based: boolean;
+    has_fixed_price: boolean;
+    show_get_quote: boolean;
+    show_buy_now: boolean;
+    primary_price: number | null;
+    primary_label: string;
+    price_monthly: number | null;
+    price_quarterly: number | null;
+    price_semi_annually: number | null;
+    price_annually: number | null;
+    price_one_time: number | null;
+    setup_fee: number | null;
+    formatted_pricing: Record<string, unknown>;
+    price_type: string;
+  };
   variants?: ProductVariant[];
   addons?: Addon[];
   created_at: string;

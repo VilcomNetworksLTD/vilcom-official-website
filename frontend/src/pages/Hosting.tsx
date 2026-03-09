@@ -44,16 +44,33 @@ const domainPrices = [
 ];
 
 // Helper to convert API product to plan format
-const productToPlan = (product: Product) => {
-  const price = product.price_annually 
-    ? (product.price_annually / 12).toLocaleString() 
-    : product.price_monthly?.toLocaleString() || "0";
+const productToPlan = (product: Product, tab: "web" | "reseller" | "vps") => {
+  // For VPS, use monthly price directly
+  if (tab === "vps") {
+    return {
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      price: product.price_monthly?.toLocaleString() || "0",
+      billingCycle: "mo",
+      features: product.features || [],
+      popular: product.badge === "Best Value" || product.badge === "Popular" || product.badge === "Popular" || product.badge === "Best Performance",
+      is_featured: product.is_featured,
+      description: product.short_description || product.description,
+      storage: product.storage_gb,
+      bandwidth: product.bandwidth_gb,
+    };
+  }
+  
+  // For web hosting and reseller, use annual price and show as yearly
+  const annualPrice = product.price_annually || 0;
   
   return {
     id: product.id,
     slug: product.slug,
     name: product.name,
-    price: price,
+    price: annualPrice?.toLocaleString() || "0",
+    billingCycle: "yr",
     features: product.features || [],
     popular: product.badge === "Best Value" || product.badge === "Popular",
     is_featured: product.is_featured,
@@ -128,7 +145,7 @@ const Hosting = () => {
       return tab === "web" ? webHostingPlans : tab === "reseller" ? resellerPlans : vpsPlans;
     }
     
-    return filtered.map(productToPlan);
+    return filtered.map((p) => productToPlan(p, tab));
   };
 
   const plans = getPlans();
@@ -304,7 +321,7 @@ const Hosting = () => {
                   <div className="mb-4 mt-2">
                     <span className="text-3xl font-heading font-bold text-gradient-royal">KSh. {plan.price}</span>
                     <span className="text-slate-500 text-xs">
-                      {tab === "vps" ? "/mo" : "/yr"}
+                      {`/${plan.billingCycle}`}
                     </span>
                   </div>
                   <ul className="space-y-2 mb-4">

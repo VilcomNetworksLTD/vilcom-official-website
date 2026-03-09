@@ -182,6 +182,7 @@ const staffSections: SidebarSection[] = [
     items: [
       { icon: Users, label: 'Clients', href: '/admin/clients' },
       { icon: Wifi, label: 'Subscriptions', href: '/admin/subscriptions' },
+      { icon: FileText, label: 'Quotes', href: '/admin/quotes' },
       { icon: Ticket, label: 'Tickets', href: '/admin/tickets', badge: 12 },
     ]
   },
@@ -228,6 +229,7 @@ const adminSections: SidebarSection[] = [
       { icon: Wifi, label: 'Subscriptions', href: '/admin/subscriptions' },
       { icon: Building2, label: 'Coverage Areas', href: '/admin/coverage' },
       { icon: Globe, label: 'Domains', href: '/admin/domains' },
+      { icon: FileText, label: 'Quote Requests', href: '/admin/quotes' },
     ]
   },
   {

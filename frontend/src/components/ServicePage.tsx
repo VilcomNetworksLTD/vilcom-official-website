@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Navbar from "@/components/Navbar";
 import FooterSection from "@/components/FooterSection";
+import QuoteRequestForm from "@/components/QuoteRequestForm";
 
 interface ServiceFeature {
   text: string;
@@ -20,6 +21,7 @@ interface ServicePageProps {
   iconBgColor: string;
   iconColor: string;
   blobColor?: string;
+  serviceType?: string; // New prop for quote form
 }
 
 // Map icons to use consistent styling
@@ -27,7 +29,7 @@ const getIconComponent = (icon: React.ReactNode) => {
   return icon;
 };
 
-const ServicePage = ({ title, subtitle, description, features, icon, iconBgColor, iconColor, blobColor = "bg-purple-500/20" }: ServicePageProps) => {
+const ServicePage = ({ title, subtitle, description, features, icon, iconBgColor, iconColor, blobColor = "bg-purple-500/20", serviceType }: ServicePageProps) => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -48,6 +50,10 @@ const ServicePage = ({ title, subtitle, description, features, icon, iconBgColor
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     setIsSubmitting(false);
+    setSubmitted(true);
+  };
+
+  const handleQuoteSuccess = () => {
     setSubmitted(true);
   };
 
@@ -212,149 +218,156 @@ const ServicePage = ({ title, subtitle, description, features, icon, iconBgColor
             </div>
           </div>
 
-          {/* Quotation Form - Glass Card */}
+          {/* Quotation Form - Glass Card - Use QuoteRequestForm if serviceType provided */}
           <div className="max-w-2xl mx-auto">
-            <div className="glass-dark backdrop-blur-xl rounded-3xl p-8 md:p-10 border border-white/10">
-              <h2 className="font-heading text-2xl font-bold text-white mb-2 text-center">
-                Request a Quote
-              </h2>
-              <p className="text-blue-200/70 text-center mb-8">
-                Fill out the form below and our team will get back to you with a customized quotation.
-              </p>
+            {serviceType ? (
+              <QuoteRequestForm 
+                serviceType={serviceType}
+                onSuccess={handleQuoteSuccess}
+              />
+            ) : (
+              <div className="glass-dark backdrop-blur-xl rounded-3xl p-8 md:p-10 border border-white/10">
+                <h2 className="font-heading text-2xl font-bold text-white mb-2 text-center">
+                  Request a Quote
+                </h2>
+                <p className="text-blue-200/70 text-center mb-8">
+                  Fill out the form below and our team will get back to you with a customized quotation.
+                </p>
 
-              {submitted ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Check className="w-8 h-8 text-white" />
+                {submitted ? (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Check className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="font-heading text-xl font-bold text-white mb-2">
+                      Request Submitted!
+                    </h3>
+                    <p className="text-blue-200/70">
+                      Thank you for your interest. Our team will review your requirements and contact you within 24-48 hours.
+                    </p>
+                    <Button 
+                      onClick={() => setSubmitted(false)}
+                      className="mt-6 gradient-royal text-white"
+                    >
+                      Submit Another Request
+                    </Button>
                   </div>
-                  <h3 className="font-heading text-xl font-bold text-white mb-2">
-                    Request Submitted!
-                  </h3>
-                  <p className="text-blue-200/70">
-                    Thank you for your interest. Our team will review your requirements and contact you within 24-48 hours.
-                  </p>
-                  <Button 
-                    onClick={() => setSubmitted(false)}
-                    className="mt-6 gradient-royal text-white"
-                  >
-                    Submit Another Request
-                  </Button>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  <div className="grid md:grid-cols-2 gap-5">
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                    <div className="grid md:grid-cols-2 gap-5">
+                      <div>
+                        <label className="block text-sm font-medium text-blue-200/80 mb-2">
+                          Full Name *
+                        </label>
+                        <Input
+                          type="text"
+                          required
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          placeholder="John Doe"
+                          className="bg-white/10 border-white/10 text-white placeholder:text-blue-200/40 focus:border-purple-500 focus:ring-purple-500/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-blue-200/80 mb-2">
+                          Email Address *
+                        </label>
+                        <Input
+                          type="email"
+                          required
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          placeholder="john@company.com"
+                          className="bg-white/10 border-white/10 text-white placeholder:text-blue-200/40 focus:border-purple-500 focus:ring-purple-500/20"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-5">
+                      <div>
+                        <label className="block text-sm font-medium text-blue-200/80 mb-2">
+                          Phone Number
+                        </label>
+                        <Input
+                          type="tel"
+                          value={formData.phone}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          placeholder="+254 700 000 000"
+                          className="bg-white/10 border-white/10 text-white placeholder:text-blue-200/40 focus:border-purple-500 focus:ring-purple-500/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-blue-200/80 mb-2">
+                          Company Name
+                        </label>
+                        <Input
+                          type="text"
+                          value={formData.company}
+                          onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                          placeholder="Your Company Ltd"
+                          className="bg-white/10 border-white/10 text-white placeholder:text-blue-200/40 focus:border-purple-500 focus:ring-purple-500/20"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-5">
+                      <div>
+                        <label className="block text-sm font-medium text-blue-200/80 mb-2">
+                          Estimated Budget
+                        </label>
+                        <Input
+                          type="text"
+                          value={formData.budget}
+                          onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                          placeholder="e.g. KES 50,000 - 100,000"
+                          className="bg-white/10 border-white/10 text-white placeholder:text-blue-200/40 focus:border-purple-500 focus:ring-purple-500/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-blue-200/80 mb-2">
+                          Preferred Timeline
+                        </label>
+                        <Input
+                          type="text"
+                          value={formData.timeline}
+                          onChange={(e) => setFormData({ ...formData, timeline: e.target.value })}
+                          placeholder="e.g. 2-4 weeks"
+                          className="bg-white/10 border-white/10 text-white placeholder:text-blue-200/40 focus:border-purple-500 focus:ring-purple-500/20"
+                        />
+                      </div>
+                    </div>
                     <div>
                       <label className="block text-sm font-medium text-blue-200/80 mb-2">
-                        Full Name *
+                        Your Requirements *
                       </label>
-                      <Input
-                        type="text"
+                      <Textarea
                         required
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="John Doe"
-                        className="bg-white/10 border-white/10 text-white placeholder:text-blue-200/40 focus:border-purple-500 focus:ring-purple-500/20"
+                        value={formData.requirements}
+                        onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
+                        placeholder="Please describe your requirements, project scope, timeline, and any specific needs..."
+                        rows={5}
+                        className="bg-white/10 border-white/10 text-white placeholder:text-blue-200/40 focus:border-purple-500 focus:ring-purple-500/20 resize-none"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-blue-200/80 mb-2">
-                        Email Address *
-                      </label>
-                      <Input
-                        type="email"
-                        required
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        placeholder="john@company.com"
-                        className="bg-white/10 border-white/10 text-white placeholder:text-blue-200/40 focus:border-purple-500 focus:ring-purple-500/20"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-5">
-                    <div>
-                      <label className="block text-sm font-medium text-blue-200/80 mb-2">
-                        Phone Number
-                      </label>
-                      <Input
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        placeholder="+254 700 000 000"
-                        className="bg-white/10 border-white/10 text-white placeholder:text-blue-200/40 focus:border-purple-500 focus:ring-purple-500/20"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-blue-200/80 mb-2">
-                        Company Name
-                      </label>
-                      <Input
-                        type="text"
-                        value={formData.company}
-                        onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                        placeholder="Your Company Ltd"
-                        className="bg-white/10 border-white/10 text-white placeholder:text-blue-200/40 focus:border-purple-500 focus:ring-purple-500/20"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-5">
-                    <div>
-                      <label className="block text-sm font-medium text-blue-200/80 mb-2">
-                        Estimated Budget
-                      </label>
-                      <Input
-                        type="text"
-                        value={formData.budget}
-                        onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                        placeholder="e.g. KES 50,000 - 100,000"
-                        className="bg-white/10 border-white/10 text-white placeholder:text-blue-200/40 focus:border-purple-500 focus:ring-purple-500/20"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-blue-200/80 mb-2">
-                        Preferred Timeline
-                      </label>
-                      <Input
-                        type="text"
-                        value={formData.timeline}
-                        onChange={(e) => setFormData({ ...formData, timeline: e.target.value })}
-                        placeholder="e.g. 2-4 weeks"
-                        className="bg-white/10 border-white/10 text-white placeholder:text-blue-200/40 focus:border-purple-500 focus:ring-purple-500/20"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-blue-200/80 mb-2">
-                      Your Requirements *
-                    </label>
-                    <Textarea
-                      required
-                      value={formData.requirements}
-                      onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
-                      placeholder="Please describe your requirements, project scope, timeline, and any specific needs..."
-                      rows={5}
-                      className="bg-white/10 border-white/10 text-white placeholder:text-blue-200/40 focus:border-purple-500 focus:ring-purple-500/20 resize-none"
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full gradient-royal text-white font-semibold py-6 text-lg disabled:opacity-70"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                        Submitting...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-5 h-5 mr-2" />
-                        Request Quote
-                      </>
-                    )}
-                  </Button>
-                </form>
-              )}
-            </div>
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full gradient-royal text-white font-semibold py-6 text-lg disabled:opacity-70"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                          Submitting...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-5 h-5 mr-2" />
+                          Request Quote
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                )}
+              </div>
+            )}
           </div>
 
           {/* CTA Section */}

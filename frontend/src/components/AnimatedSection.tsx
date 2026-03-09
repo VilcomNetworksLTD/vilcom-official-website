@@ -21,13 +21,13 @@ const AnimatedSection = ({
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
-          // Disconnect after first intersection → better performance
+          // Disconnect after first intersection for better performance
           observer.disconnect();
         }
       },
       {
-        threshold: 0.1,              // trigger when 10% visible
-        rootMargin: "0px 0px -50px 0px", // trigger a bit earlier
+        threshold: 0.1,                  // trigger when 10% visible
+        rootMargin: "0px 0px -50px 0px", // trigger slightly before it enters the viewport
       }
     );
 
@@ -41,21 +41,19 @@ const AnimatedSection = ({
       if (currentElement) {
         observer.unobserve(currentElement);
       }
-      // observer.disconnect(); // optional – already disconnected on intersection
     };
-  }, []); // empty deps → runs once on mount
+  }, []);
 
   return (
     <div
       ref={ref}
       id={id}
-      className={className}
-      style={{
-        opacity: isVisible ? 1 : 0,
-        transform: isVisible ? "translateY(0)" : "translateY(30px)",
-        transition: `opacity 0.8s ease-out ${delay}ms, transform 0.8s ease-out ${delay}ms`,
-        willChange: "opacity, transform", // hint to browser for better perf
-      }}
+      // Tailwind classes for the transition effect
+      className={`transform transition-all duration-1000 ease-out ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+      } ${className}`}
+      // Apply the dynamic delay
+      style={{ transitionDelay: `${delay}ms` }}
     >
       {children}
     </div>

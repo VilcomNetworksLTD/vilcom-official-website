@@ -96,6 +96,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->boolean('is_featured')->default(false);
             $table->boolean('requires_approval')->default(false); // For custom services
+            $table->boolean('is_quote_based')->default(false); // Added here
             $table->integer('sort_order')->default(0);
             
             // Requirements
@@ -118,6 +119,7 @@ return new class extends Migration
             $table->index('sku');
             $table->index('is_active');
             $table->index('is_featured');
+            $table->index('is_quote_based'); // Added index for quick filtering
             $table->index('speed_mbps');
             $table->index('plan_category');
         });
@@ -131,4 +133,3 @@ return new class extends Migration
         Schema::dropIfExists('products');
     }
 };
-

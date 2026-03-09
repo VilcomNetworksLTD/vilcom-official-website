@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Code, Layout, ShoppingCart, Smartphone, Search, Check, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowRight, Code, Layout, ShoppingCart, Smartphone, Search, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import FooterSection from "@/components/FooterSection";
 import { Product, productsApi } from "@/services/products";
@@ -58,14 +58,6 @@ const WebDevelopment = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({});
-
-  const toggleExpand = (serviceKey: string) => {
-    setExpandedCards(prev => ({
-      ...prev,
-      [serviceKey]: !prev[serviceKey]
-    }));
-  };
 
   // Fetch web development products from API
   useEffect(() => {
@@ -155,36 +147,18 @@ const WebDevelopment = () => {
                      idx === 2 ? <Smartphone className="w-6 h-6 text-white" /> :
                      <Search className="w-6 h-6 text-white" />}
                   </div>
-                  <h3 className="font-heading text-xl font-bold text-white mb-3">
+                  <h3 className="font-heading text-xl font-bold text-white mb-3 uppercase">
                     {service.name}
                   </h3>
                   <p className="text-blue-200/70 text-sm mb-4">
                     {service.description}
                   </p>
-                  <ul className="space-y-2">
-                    {(() => {
-                      const isExpanded = expandedCards[service.name] || false;
-                      const displayFeatures = isExpanded ? service.features : service.features.slice(0, 7);
-                      return displayFeatures.map((feature) => (
-                        <li key={feature} className="flex items-center gap-2 text-sm text-blue-200/60">
-                          <Check className="w-3.5 h-3.5 text-pink-400 shrink-0" />
-                          {feature}
-                        </li>
-                      ));
-                    })()}
-                  </ul>
-                  {service.features.length > 7 && (
-                    <button
-                      onClick={() => toggleExpand(service.name)}
-                      className="flex items-center gap-1 text-sm text-pink-400 hover:text-pink-300 font-medium mt-3 transition-colors"
-                    >
-                      {expandedCards[service.name] ? (
-                        <>Show less <ChevronUp className="w-4 h-4" /></>
-                      ) : (
-                        <>Show {service.features.length - 7} more <ChevronDown className="w-4 h-4" /></>
-                      )}
-                    </button>
-                  )}
+                  <Link
+                    to={`/quote?service=web-development&product_id=${service.id}&product_name=${encodeURIComponent(service.name)}`}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all text-sm mt-auto"
+                  >
+                    GET QUOTE
+                  </Link>
                 </div>
               ))}
             </div>
@@ -273,7 +247,7 @@ const WebDevelopment = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
-                  to="/contact"
+                  to="/quote?service=web-development"
                   className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-500 via-pink-500 to-purple-600 shadow-lg hover:shadow-pink-500/25 transition-all"
                 >
                   Get Free Quote
