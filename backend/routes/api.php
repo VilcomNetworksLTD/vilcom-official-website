@@ -605,28 +605,29 @@ Route::prefix('v1')->group(function () {
 
 // ============================================
     // REPORTS & ANALYTICS (Admin/Staff Only)
+    // NOTE: Commented out - ReportController not implemented yet
     // ============================================
-    Route::prefix('reports')->middleware(['auth:sanctum', 'role:admin|staff|sales'])->group(function () {
-        Route::get('/dashboard', [App\Http\Controllers\Api\ReportController::class, 'dashboard'])
-            ->name('api.reports.dashboard')
-            ->middleware('permission:reports.view');
+    // Route::prefix('reports')->middleware(['auth:sanctum', 'role:admin|staff|sales'])->group(function () {
+    //     Route::get('/dashboard', [App\Http\Controllers\Api\ReportController::class, 'dashboard'])
+    //         ->name('api.reports.dashboard')
+    //         ->middleware('permission:reports.view');
 
-        Route::get('/revenue', [App\Http\Controllers\Api\ReportController::class, 'revenue'])
-            ->name('api.reports.revenue')
-            ->middleware('permission:reports.revenue');
+    //     Route::get('/revenue', [App\Http\Controllers\Api\ReportController::class, 'revenue'])
+    //         ->name('api.reports.revenue')
+    //         ->middleware('permission:reports.revenue');
 
-        Route::get('/subscriptions', [App\Http\Controllers\Api\ReportController::class, 'subscriptions'])
-            ->name('api.reports.subscriptions')
-            ->middleware('permission:reports.subscriptions');
+    //     Route::get('/subscriptions', [App\Http\Controllers\Api\ReportController::class, 'subscriptions'])
+    //         ->name('api.reports.subscriptions')
+    //         ->middleware('permission:reports.subscriptions');
 
-        Route::get('/tickets', [App\Http\Controllers\Api\ReportController::class, 'tickets'])
-            ->name('api.reports.tickets')
-            ->middleware('permission:reports.tickets');
+    //     Route::get('/tickets', [App\Http\Controllers\Api\ReportController::class, 'tickets'])
+    //         ->name('api.reports.tickets')
+    //         ->middleware('permission:reports.tickets');
 
-        Route::post('/export', [App\Http\Controllers\Api\ReportController::class, 'export'])
-            ->name('api.reports.export')
-            ->middleware('permission:reports.export');
-    });
+    //     Route::post('/export', [App\Http\Controllers\Api\ReportController::class, 'export'])
+    //         ->name('api.reports.export')
+    //         ->middleware('permission:reports.export');
+    // });
 
     // ============================================
     // ROLES & PERMISSIONS MANAGEMENT (Admin Only)
@@ -715,26 +716,27 @@ Route::prefix('v1')->group(function () {
         });
     });
 
-    // ============================================
+// ============================================
     // SETTINGS (Admin Only)
+    // NOTE: Commented out - SettingsController not implemented yet
     // ============================================
-    Route::prefix('settings')->middleware(['auth:sanctum', 'role:admin'])->group(function () {
-        Route::get('/', [App\Http\Controllers\Api\SettingsController::class, 'index'])
-            ->name('api.settings.index')
-            ->middleware('permission:settings.view');
+    // Route::prefix('settings')->middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    //     Route::get('/', [App\Http\Controllers\Api\SettingsController::class, 'index'])
+    //         ->name('api.settings.index')
+    //         ->middleware('permission:settings.view');
 
-        Route::put('/', [App\Http\Controllers\Api\SettingsController::class, 'update'])
-            ->name('api.settings.update')
-            ->middleware('permission:settings.edit');
+    //     Route::put('/', [App\Http\Controllers\Api\SettingsController::class, 'update'])
+    //         ->name('api.settings.update')
+    //         ->middleware('permission:settings.edit');
 
-        Route::get('/email-templates', [App\Http\Controllers\Api\SettingsController::class, 'emailTemplates'])
-            ->name('api.settings.email-templates')
-            ->middleware('permission:settings.email.templates');
+    //     Route::get('/email-templates', [App\Http\Controllers\Api\SettingsController::class, 'emailTemplates'])
+    //         ->name('api.settings.email-templates')
+    //         ->middleware('permission:settings.email.templates');
 
-        Route::put('/email-templates/{template}', [App\Http\Controllers\Api\SettingsController::class, 'updateEmailTemplate'])
-            ->name('api.settings.email-templates.update')
-            ->middleware('permission:settings.email.templates');
-    });
+    //     Route::put('/email-templates/{template}', [App\Http\Controllers\Api\SettingsController::class, 'updateEmailTemplate'])
+    //         ->name('api.settings.email-templates.update')
+    //         ->middleware('permission:settings.email.templates');
+    // });
 
     // ============================================
     // MEDIA / FILE MANAGEMENT (Admin Only)
@@ -1036,30 +1038,39 @@ Route::prefix('v1')->group(function () {
         ->name('staff.consultants');
 
     // ============================================
-    // AUTHENTICATED BOOKING ROUTES
+    // WHATSAPP MESSAGE ROUTES (Public & Admin)
     // ============================================
-    Route::prefix('bookings')->middleware('auth:sanctum')->group(function () {
-        // List user's bookings
-        Route::get('/', [BookingController::class, 'index'])
-            ->name('bookings.index');
+    Route::prefix('whatsapp')->group(function () {
+        // Public routes - Get message options and log messages
+        Route::get('/options', [App\Http\Controllers\Api\WhatsappMessageController::class, 'options'])
+            ->name('api.whatsapp.options');
 
-        // Get booking statistics
-        Route::get('/meta/statistics', [BookingController::class, 'statistics'])
-            ->name('bookings.statistics');
+        Route::post('/messages', [App\Http\Controllers\Api\WhatsappMessageController::class, 'store'])
+            ->name('api.whatsapp.messages.store');
 
-        // View single booking
-        Route::get('/{booking}', [BookingController::class, 'show'])
-            ->name('bookings.show');
+        // Admin/Staff routes - Manage messages
+        Route::middleware(['auth:sanctum', 'role:admin|staff'])->prefix('admin/whatsapp')->group(function () {
+            Route::get('/messages', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'index'])
+                ->name('api.admin.whatsapp.messages.index');
 
-        // Cancel own booking
-        Route::post('/{booking}/cancel', [BookingController::class, 'cancel'])
-            ->name('bookings.cancel');
+            Route::get('/messages/statistics', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'statistics'])
+                ->name('api.admin.whatsapp.messages.statistics');
 
-        // Staff/Admin routes for managing bookings
-        Route::middleware('role:admin|staff|technical_support')->group(function () {
-            // Update booking status
-            Route::patch('/{booking}/status', [BookingController::class, 'updateStatus'])
-                ->name('bookings.update-status');
+            Route::get('/messages/{id}', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'show'])
+                ->name('api.admin.whatsapp.messages.show');
+
+            Route::put('/messages/{id}', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'update'])
+                ->name('api.admin.whatsapp.messages.update');
+
+            Route::post('/messages/{id}/contacted', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'markContacted'])
+                ->name('api.admin.whatsapp.messages.contacted');
+
+            Route::post('/messages/{id}/converted', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'markConverted'])
+                ->name('api.admin.whatsapp.messages.converted');
+
+            Route::delete('/messages/{id}', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'destroy'])
+                ->name('api.admin.whatsapp.messages.destroy')
+                ->middleware('role:admin');
         });
     });
 
@@ -1078,6 +1089,93 @@ Route::prefix('v1')->group(function () {
                 ->name('staff.availability.update');
         });
     });
+
+    // ============================================
+    // LEAD TRACKING ROUTES (Public - No Auth)
+    // ============================================
+    Route::prefix('leads')->group(function () {
+        // Track page visit (uses sendBeacon - no response needed)
+        Route::post('/track-visit', [App\Http\Controllers\Api\LeadController::class, 'trackVisit'])
+            ->name('api.leads.track-visit');
+
+        // Capture lead from CTA buttons
+        Route::post('/capture', [App\Http\Controllers\Api\LeadController::class, 'capture'])
+            ->name('api.leads.capture');
+
+        // Coverage waitlist signup
+        Route::post('/waitlist', [App\Http\Controllers\Api\LeadController::class, 'waitlist'])
+            ->name('api.leads.waitlist');
+
+        // Newsletter signup
+        Route::post('/newsletter', [App\Http\Controllers\Api\LeadController::class, 'newsletter'])
+            ->name('api.leads.newsletter');
+
+        // Capture booking abandonment
+        Route::post('/abandonment', [App\Http\Controllers\Api\LeadController::class, 'captureAbandonment'])
+            ->name('api.leads.abandonment');
+
+        // Generate new visitor ID
+        Route::get('/visitor-id', [App\Http\Controllers\Api\LeadController::class, 'generateVisitorId'])
+            ->name('api.leads.visitor-id');
+    });
+
+    // ============================================
+    // ADMIN LEAD MANAGEMENT ROUTES
+    // ============================================
+    Route::prefix('admin/leads')->middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+        // List all leads
+        Route::get('/', [App\Http\Controllers\Api\Admin\LeadController::class, 'index'])
+            ->name('api.admin.leads.index');
+
+        // Lead statistics
+        Route::get('/statistics', [App\Http\Controllers\Api\Admin\LeadController::class, 'statistics'])
+            ->name('api.admin.leads.statistics');
+
+        // Get available staff for assignment
+        Route::get('/staff', [App\Http\Controllers\Api\Admin\LeadController::class, 'staff'])
+            ->name('api.admin.leads.staff');
+
+        // Get single lead
+        Route::get('/{id}', [App\Http\Controllers\Api\Admin\LeadController::class, 'show'])
+            ->name('api.admin.leads.show');
+
+        // Update lead
+        Route::put('/{id}', [App\Http\Controllers\Api\Admin\LeadController::class, 'update'])
+            ->name('api.admin.leads.update');
+
+        // Update lead status
+        Route::post('/{id}/status', [App\Http\Controllers\Api\Admin\LeadController::class, 'updateStatus'])
+            ->name('api.admin.leads.status');
+
+        // Assign lead to staff
+        Route::post('/{id}/assign', [App\Http\Controllers\Api\Admin\LeadController::class, 'assign'])
+            ->name('api.admin.leads.assign');
+
+        // Auto-assign lead
+        Route::post('/{id}/auto-assign', [App\Http\Controllers\Api\Admin\LeadController::class, 'autoAssign'])
+            ->name('api.admin.leads.auto-assign');
+
+        // Convert lead to customer
+        Route::post('/{id}/convert', [App\Http\Controllers\Api\Admin\LeadController::class, 'convert'])
+            ->name('api.admin.leads.convert');
+
+        // Delete lead
+        Route::delete('/{id}', [App\Http\Controllers\Api\Admin\LeadController::class, 'destroy'])
+            ->name('api.admin.leads.destroy')
+            ->middleware('role:admin');
+
+        // Find duplicates
+        Route::get('/{id}/duplicates', [App\Http\Controllers\Api\Admin\LeadController::class, 'duplicates'])
+            ->name('api.admin.leads.duplicates');
+
+        // Merge leads
+        Route::post('/{id}/merge', [App\Http\Controllers\Api\Admin\LeadController::class, 'merge'])
+            ->name('api.admin.leads.merge');
+
+        // Bulk assign
+        Route::post('/bulk-assign', [App\Http\Controllers\Api\Admin\LeadController::class, 'bulkAssign'])
+            ->name('api.admin.leads.bulk-assign');
+    });
 });
 
 /*
@@ -1091,16 +1189,16 @@ Route::prefix('v1')->group(function () {
 */
 
 Route::prefix('webhooks')->group(function () {
-    // M-Pesa Webhooks
-    Route::post('/mpesa/callback', [App\Http\Controllers\Api\Webhook\MpesaController::class, 'callback'])
+// M-Pesa Webhooks
+Route::post('/mpesa/callback', [App\Http\Controllers\Api\Webhook\MpesaController::class, 'callback'])
         ->name('api.webhooks.mpesa.callback');
 
     Route::post('/mpesa/validation', [App\Http\Controllers\Api\Webhook\MpesaController::class, 'validation'])
         ->name('api.webhooks.mpesa.validation');
 
-    // Stripe Webhook
-    Route::post('/stripe/webhook', [App\Http\Controllers\Api\Webhook\StripeController::class, 'webhook'])
-        ->name('api.webhooks.stripe');
+    // Stripe Webhook (commented out - StripeController not implemented)
+    // Route::post('/stripe/webhook', [App\Http\Controllers\Api\Webhook\StripeController::class, 'webhook'])
+    //     ->name('api.webhooks.stripe');
 
     // Pesapal IPN
     Route::get('/pesapal/ipn', [App\Http\Controllers\Api\Webhook\PesapalController::class, 'ipn'])

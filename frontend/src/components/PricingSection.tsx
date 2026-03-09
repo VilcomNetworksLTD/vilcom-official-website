@@ -4,6 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Product, getInternetPlans } from "@/services/products";
 
+// Glassmorphism style matching ContactUs and CookieConsent - Lighter version for visibility
+const glassCardStyle = {
+  background: 'rgba(255, 255, 255, 0.25)',
+  border: '1px solid rgba(255, 255, 255, 0.3)',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 8px 32px rgba(0,0,0,0.15)'
+};
+
 const blobColors = [
   "bg-[hsl(232, 89%, 55%)/0.5]",
   "bg-[hsl(38, 83%, 54%)/0.5]",
@@ -212,13 +219,13 @@ const PricingSection = () => {
       <div className="relative z-10 container mx-auto px-4">
         {/* Tab Toggle Buttons */}
         <div className="flex justify-center mb-12">
-          <div className="inline-flex glass-sky rounded-full p-1.5">
+          <div className="inline-flex rounded-full p-1.5 backdrop-blur-md" style={{ background: 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.15)' }}>
             <button
               onClick={() => setActiveTab("home")}
               className={`px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 ${
                 activeTab === "home"
-                  ? "bg-sky-600 text-white shadow-lg"
-                  : "text-slate-600 hover:text-sky-700 hover:bg-white/50"
+                  ? "bg-gradient-to-r from-[hsl(220,80%,50%)] to-[hsl(220,60%,40%)] text-white shadow-lg"
+                  : "text-slate-700 hover:text-slate-900 hover:bg-white/20 bg-white/10"
               }`}
             >
               Home Fibre
@@ -227,8 +234,8 @@ const PricingSection = () => {
               onClick={() => setActiveTab("business")}
               className={`px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 ${
                 activeTab === "business"
-                  ? "bg-sky-600 text-white shadow-lg"
-                  : "text-slate-600 hover:text-sky-700 hover:bg-white/50"
+                  ? "bg-gradient-to-r from-[hsl(220,80%,50%)] to-[hsl(220,60%,40%)] text-white shadow-lg"
+                  : "text-slate-700 hover:text-slate-900 hover:bg-white/20 bg-white/10"
               }`}
             >
               Business Fibre
@@ -240,9 +247,9 @@ const PricingSection = () => {
         {activeTab === "home" && displayHomePlans.length > 0 && (
           <div className="mb-16">
             <div className="text-center mb-12">
-              <span className="text-sky-700 text-sm font-bold uppercase tracking-[0.3em]">Home Fibre</span>
+              <span className="text-slate-600 text-sm font-bold uppercase tracking-[0.3em]">Home Fibre</span>
               <h2 className="font-heading text-4xl lg:text-5xl font-bold text-slate-800 mt-4 tracking-wide">
-                Perfect for <span className="text-sky-700">Your Home</span>
+                Perfect for <span className="text-slate-800">Your Home</span>
               </h2>
               <p className="text-slate-600 mt-5 max-w-lg mx-auto text-lg font-medium">
                 Reliable internet for streaming, gaming, and working from home.
@@ -253,9 +260,10 @@ const PricingSection = () => {
               {displayHomePlans.map((plan) => (
                 <div
                   key={plan.id}
-                  className={`glass-sky rounded-2xl p-8 relative transition-all duration-300 hover:scale-[1.02] ${
+                  className={`rounded-2xl p-8 relative transition-all duration-300 hover:scale-[1.02] backdrop-blur-md ${
                     plan.popular ? "golden-glow-sky" : ""
                   }`}
+                  style={glassCardStyle}
                 >
                   {/* Color blob behind glass */}
                   <div className={`absolute -bottom-8 -right-8 w-36 h-36 ${blobColors[plan.colorIndex % blobColors.length]} rounded-full blur-[40px]`} />
@@ -269,12 +277,12 @@ const PricingSection = () => {
                   <div className="relative z-10">
                     <div className="mb-5">
                       <h3 className={`font-heading text-2xl font-bold ${plan.titleColor} drop-shadow-lg tracking-wide`}>{plan.name}</h3>
-                      <p className="text-primary text-base font-medium mt-1.5"> {plan.speed}</p>
+                      <p className="text-slate-800 text-base font-medium mt-1.5"> {plan.speed}</p>
                     </div>
                     
                     <div className="mb-6">
                       <span className="text-3xl font-heading font-bold text-gradient-royal">KES {plan.price}</span>
-                      <span className="text-muted-foreground text-xs ml-1">/mo</span>
+                      <span className="text-slate-600 text-xs ml-1">/mo</span>
                     </div>
                     
                     <ul className="space-y-2.5 mb-4 min-h-[196px]">
@@ -282,8 +290,8 @@ const PricingSection = () => {
                         const isExpanded = expandedCards[`home-${plan.id}`] || false;
                         const displayFeatures = isExpanded ? plan.features : plan.features.slice(0, 7);
                         return displayFeatures.map((feature, idx) => (
-                          <li key={idx} className="flex items-center gap-2.5 text-sm text-foreground/90">
-                            <Check className="w-4 h-4 text-primary shrink-0" /> {feature}
+                          <li key={idx} className="flex items-center gap-2.5 text-sm text-slate-700">
+                            <Check className="w-4 h-4 text-slate-700 shrink-0" /> {feature}
                           </li>
                         ));
                       })()}
@@ -291,7 +299,7 @@ const PricingSection = () => {
                     {plan.features.length > 7 && (
                       <button
                         onClick={() => toggleExpand(`home-${plan.id}`)}
-                        className="flex items-center gap-1 text-sm text-primary hover:text-sky-700 font-medium mb-4 transition-colors"
+                        className="flex items-center gap-1 text-sm text-slate-600 hover:text-slate-800 font-medium mb-4 transition-colors"
                       >
                         {expandedCards[`home-${plan.id}`] ? (
                           <>Show less <ChevronUp className="w-4 h-4" /></>
@@ -318,9 +326,9 @@ const PricingSection = () => {
         {activeTab === "business" && displayBusinessPlans.length > 0 && (
           <div>
             <div className="text-center mb-12">
-              <span className="text-sky-700 text-sm font-bold uppercase tracking-[0.3em]">Business Fibre</span>
+              <span className="text-slate-600 text-sm font-bold uppercase tracking-[0.3em]">Business Fibre</span>
               <h2 className="font-heading text-4xl lg:text-5xl font-bold text-slate-800 mt-4 tracking-wide">
-                Power Your <span className="text-sky-700">Business</span>
+                Power Your <span className="text-slate-800">Business</span>
               </h2>
               <p className="text-slate-600 mt-5 max-w-lg mx-auto text-lg font-medium">
                 Scalable solutions with guaranteed uptime and dedicated support.
@@ -331,9 +339,10 @@ const PricingSection = () => {
               {displayBusinessPlans.map((plan) => (
                 <div
                   key={plan.id}
-                  className={`glass-sky rounded-2xl p-8 relative transition-all duration-300 hover:scale-[1.02] ${
+                  className={`rounded-2xl p-8 relative transition-all duration-300 hover:scale-[1.02] backdrop-blur-md ${
                     plan.popular ? "golden-glow-sky" : ""
                   }`}
+                  style={glassCardStyle}
                 >
                   {/* Color blob behind glass */}
                   <div className={`absolute -bottom-8 -right-8 w-36 h-36 ${blobColors[plan.colorIndex % blobColors.length]} rounded-full blur-[40px]`} />
@@ -347,12 +356,12 @@ const PricingSection = () => {
                   <div className="relative z-10">
                     <div className="mb-5">
                       <h3 className={`font-heading text-2xl font-bold ${plan.titleColor} drop-shadow-lg tracking-wide`}>{plan.name}</h3>
-                      <p className="text-primary text-base font-medium mt-1.5"> {plan.speed}</p>
+                      <p className="text-slate-800 text-base font-medium mt-1.5"> {plan.speed}</p>
                     </div>
                     
                     <div className="mb-6">
                       <span className="text-3xl font-heading font-bold text-gradient-royal">KES {plan.price}</span>
-                      <span className="text-muted-foreground text-xs ml-1">/mo</span>
+                      <span className="text-slate-600 text-xs ml-1">/mo</span>
                     </div>
                     
                     <ul className="space-y-2.5 mb-4 min-h-[168px]">
@@ -360,8 +369,8 @@ const PricingSection = () => {
                         const isExpanded = expandedCards[`business-${plan.id}`] || false;
                         const displayFeatures = isExpanded ? plan.features : plan.features.slice(0, 6);
                         return displayFeatures.map((feature, idx) => (
-                          <li key={idx} className="flex items-center gap-2.5 text-sm text-foreground/90">
-                            <Check className="w-4 h-4 text-primary shrink-0" /> {feature}
+                          <li key={idx} className="flex items-center gap-2.5 text-sm text-slate-700">
+                            <Check className="w-4 h-4 text-slate-700 shrink-0" /> {feature}
                           </li>
                         ));
                       })()}
@@ -369,7 +378,7 @@ const PricingSection = () => {
                     {plan.features.length > 6 && (
                       <button
                         onClick={() => toggleExpand(`business-${plan.id}`)}
-                        className="flex items-center gap-1 text-sm text-primary hover:text-sky-700 font-medium mb-4 transition-colors"
+                        className="flex items-center gap-1 text-sm text-slate-600 hover:text-slate-800 font-medium mb-4 transition-colors"
                       >
                         {expandedCards[`business-${plan.id}`] ? (
                           <>Show less <ChevronUp className="w-4 h-4" /></>

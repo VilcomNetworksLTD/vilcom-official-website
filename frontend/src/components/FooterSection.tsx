@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
-import { Wifi, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin, Send } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Wifi, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
+import NewsletterSignup from "@/components/NewsletterSignup";
 
 const FooterSection = () => {
   return (
@@ -37,16 +36,7 @@ const FooterSection = () => {
               <div className="mb-6">
                 <h4 className="font-heading font-bold text-slate-800 mb-4 text-lg">Subscribe to our newsletter</h4>
                 <p className="text-sm text-slate-500 mb-3">Get updates on new plans and offers.</p>
-                <form className="flex gap-2" onSubmit={(e) => e.preventDefault()}>
-                  <Input 
-                    type="email" 
-                    placeholder="Enter your email" 
-                    className="bg-white/50 border-white/30 focus:border-primary focus:ring-primary"
-                  />
-                  <Button type="submit" size="sm" className="gradient-royal text-white shrink-0">
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </form>
+                <NewsletterSignup variant="inline" className="flex gap-2" />
               </div>
 
               {/* Social Networks */}

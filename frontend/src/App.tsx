@@ -44,6 +44,7 @@ import StaffDashboard from "./pages/staff/StaffDashboard";
 import AdminDashboard from "./pages/staff/AdminDashboard";
 import DashboardRedirect from "./pages/DashboardRedirect";
 import CookieConsent from "./components/CookieConsent";
+import WhatsAppButton from "./components/WhatsAppButton";
 import CategoryManagement from "./pages/admin/CategoryManagement";
 import ProductManagement from "./pages/admin/ProductManagement";
 import BannerManagement from "./pages/admin/BannerManagement";
@@ -54,6 +55,7 @@ import SubscriptionManagement from "./pages/admin/SubscriptionManagement";
 import StaffManagement from "./pages/admin/StaffManagement";
 import RolesManagement from "./pages/admin/RolesManagement";
 import QuoteManagement from "./pages/admin/QuoteManagement";
+import WhatsAppMessages from "./pages/admin/WhatsAppMessages";
 import MySubscriptions from "./pages/clients/MySubscriptions";
 
 const queryClient = new QueryClient();
@@ -66,6 +68,7 @@ const App = () => (
       <AuthProvider>
         <BrowserRouter>
           <CookieConsent />
+          <WhatsAppButton />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/plans" element={<Plans />} />
@@ -116,6 +119,7 @@ const App = () => (
             <Route path="/admin/products" element={<ProductManagement />} />
             <Route path="/admin/subscriptions" element={<SubscriptionManagement />} />
             <Route path="/admin/quotes" element={<QuoteManagement />} />
+            <Route path="/admin/whatsapp-messages" element={<WhatsAppMessages />} />
             <Route path="/admin/staff" element={<StaffManagement />} />
             <Route path="/admin/roles" element={<RolesManagement />} />
             <Route path="/admin/banners" element={<BannerManagement />} />
