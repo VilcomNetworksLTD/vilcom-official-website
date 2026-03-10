@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Plans from "./pages/Plans";
 import Coverage from "./pages/Coverage";
+import SpeedTest from "./pages/SpeedTest";
 import Signup from "./pages/Signup";
 import Auth from "./pages/Auth";
 import Quote from "./pages/Quote";
@@ -57,6 +58,7 @@ import RolesManagement from "./pages/admin/RolesManagement";
 import QuoteManagement from "./pages/admin/QuoteManagement";
 import WhatsAppMessages from "./pages/admin/WhatsAppMessages";
 import MySubscriptions from "./pages/clients/MySubscriptions";
+import CoverageManagement from "./pages/admin/CoverageManagement";
 
 const queryClient = new QueryClient();
 
@@ -74,6 +76,7 @@ const App = () => (
             <Route path="/plans" element={<Plans />} />
             <Route path="/fiber" element={<Plans />} />
             <Route path="/coverage" element={<Coverage />} />
+            <Route path="/speed-test" element={<SpeedTest />} />
             <Route path="/hosting" element={<Hosting />} />
             <Route path="/web-development" element={<WebDevelopment />} />
             <Route path="/cloud-solutions" element={<CloudSolutions />} />
@@ -126,6 +129,7 @@ const App = () => (
             <Route path="/admin/testimonials" element={<TestimonialManagement />} />
             <Route path="/admin/faqs" element={<FaqManagement />} />
             <Route path="/admin/media" element={<MediaLibrary />} />
+            <Route path="/admin/coverage" element={<CoverageManagement />} />
             
             {/* Client Routes */}
             <Route path="/client/subscriptions" element={<MySubscriptions />} />

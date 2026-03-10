@@ -1075,6 +1075,46 @@ Route::prefix('v1')->group(function () {
     });
 
     // ============================================
+    // CONTACT MESSAGE ROUTES (Public & Admin) - Like WhatsApp
+    // ============================================
+    Route::prefix('contact')->group(function () {
+        // Public routes - Submit contact form
+        Route::post('/messages', [App\Http\Controllers\Api\ContactMessageController::class, 'store'])
+            ->name('api.contact.messages.store');
+
+        Route::get('/departments', [App\Http\Controllers\Api\ContactMessageController::class, 'departments'])
+            ->name('api.contact.departments');
+
+        // Admin/Staff routes - Manage contact messages
+        Route::middleware(['auth:sanctum', 'role:admin|staff'])->prefix('admin/contact')->group(function () {
+            Route::get('/messages', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'index'])
+                ->name('api.admin.contact.messages.index');
+
+            Route::get('/messages/statistics', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'statistics'])
+                ->name('api.admin.contact.messages.statistics');
+
+            Route::get('/messages/staff', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'staff'])
+                ->name('api.admin.contact.messages.staff');
+
+            Route::get('/messages/{id}', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'show'])
+                ->name('api.admin.contact.messages.show');
+
+            Route::put('/messages/{id}', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'update'])
+                ->name('api.admin.contact.messages.update');
+
+            Route::post('/messages/{id}/contacted', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'markContacted'])
+                ->name('api.admin.contact.messages.contacted');
+
+            Route::post('/messages/{id}/resolved', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'markResolved'])
+                ->name('api.admin.contact.messages.resolved');
+
+            Route::delete('/messages/{id}', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'destroy'])
+                ->name('api.admin.contact.messages.destroy')
+                ->middleware('role:admin');
+        });
+    });
+
+    // ============================================
     // STAFF AVAILABILITY ROUTES
     // ============================================
     Route::prefix('staff')->group(function () {

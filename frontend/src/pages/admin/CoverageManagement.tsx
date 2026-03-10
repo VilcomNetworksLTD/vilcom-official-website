@@ -214,6 +214,7 @@ const CoverageManagement = () => {
                             {zone.type} • {zone.is_serviceable ? "Serviceable" : "Not Serviceable"}
                           </p>
                         </div>
+                      </div>{/* ← FIXED: this closing </div> was missing in the original */}
                       <div className="flex items-center gap-2">
                         <Badge variant={zone.status === "active" ? "default" : "secondary"}>
                           {zone.status}
@@ -225,6 +226,7 @@ const CoverageManagement = () => {
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
                       </div>
+                    </div>
                   ))
                 )}
               </div>
@@ -251,6 +253,7 @@ const CoverageManagement = () => {
                     </Button>
                   ))}
                 </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -294,6 +297,7 @@ const CoverageManagement = () => {
                           Update Status
                         </Button>
                       </div>
+                    </div>
                   ))
                 )}
               </div>

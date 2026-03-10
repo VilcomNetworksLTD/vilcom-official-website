@@ -4,6 +4,14 @@ import { leadsApi } from "@/services/leads";
 const COOKIE_NAME = "vlc_vid";
 const COOKIE_DAYS = 365;
 
+// Get the API base URL - must point to backend, not frontend dev server
+const getApiBaseUrl = (): string => {
+  if (typeof window === "undefined") return "";
+  // Use the same logic as axios.ts - strip /api/v1 if present
+  const envUrl = import.meta.env.VITE_API_URL || "";
+  return envUrl.replace(/\/api\/v1$/, "");
+};
+
 // Generate UUID
 const generateUUID = (): string => {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -120,7 +128,7 @@ export const useLeadTracker = () => {
       // Use sendBeacon for non-blocking request
       if (typeof navigator !== "undefined" && navigator.sendBeacon) {
         const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
-        navigator.sendBeacon("/api/v1/leads/track-visit", blob);
+        navigator.sendBeacon(`${getApiBaseUrl()}/api/v1/leads/track-visit`, blob);
       } else {
         // Fallback to regular fetch
         try {

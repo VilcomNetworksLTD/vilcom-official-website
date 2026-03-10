@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Wifi, Server, Globe, ArrowRight, Cloud, Shield, Cpu, Smartphone, Briefcase, CreditCard, Plug, Monitor, Lock, Satellite, ChevronDown, ChevronUp } from "lucide-react";
 
 const services = [
@@ -116,6 +116,7 @@ const services = [
 
 const ServicesSection = () => {
   const [showAll, setShowAll] = useState(false);
+  const navigate = useNavigate();
   
   // Number of services to show initially (3 rows)
   const initialVisibleCount = 9; // 3 rows x 3 columns on lg
@@ -200,14 +201,16 @@ const ServicesSection = () => {
                 {service.hasSubLinks && service.subLinks ? (
                   <div className="flex gap-3 mt-2">
                     {service.subLinks.map((subLink) => (
-                      <Link
+                      <span
                         key={subLink.label}
-                        to={subLink.to}
-                        className="inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-white/10 border border-white/20 hover:bg-white/20 transition-colors"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(subLink.to);
+                        }}
+                        className="inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-white/10 border border-white/20 hover:bg-white/20 transition-colors cursor-pointer"
                       >
                         {subLink.label}
-                      </Link>
+                      </span>
                     ))}
                   </div>
                 ) : (

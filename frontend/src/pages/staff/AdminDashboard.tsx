@@ -25,7 +25,8 @@ import {
   HardDrive,
   Cpu,
   Gauge,
-  Zap
+  Zap,
+  MapPin
 } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -124,14 +125,22 @@ const AdminDashboard = () => {
 
   // Quick actions for admin dashboard with blue/moroccan theme
   const quickActions = [
-    { icon: Users, label: 'All Users', href: '/admin/users', color: 'from-blue-500 to-indigo-500', bgColor: 'bg-blue-500/20' },
-    { icon: Package, label: 'Plans & Pricing', href: '/admin/plans', color: 'from-indigo-500 to-purple-500', bgColor: 'bg-indigo-500/20' },
-    { icon: Ticket, label: 'All Tickets', href: '/admin/tickets', color: 'from-cyan-500 to-blue-500', bgColor: 'bg-cyan-500/20' },
-    { icon: CreditCard, label: 'Invoices', href: '/admin/invoices', color: 'from-green-500 to-emerald-500', bgColor: 'bg-green-500/20' },
-    { icon: BarChart3, label: 'Reports', href: '/admin/reports', color: 'from-purple-500 to-indigo-500', bgColor: 'bg-purple-500/20' },
-    { icon: Database, label: 'Backups', href: '/admin/backups', color: 'from-red-500 to-orange-500', bgColor: 'bg-red-500/20' },
-    { icon: Settings, label: 'Settings', href: '/admin/settings', color: 'from-gray-500 to-slate-500', bgColor: 'bg-gray-500/20' },
+    { icon: Users, label: 'Staff Management', href: '/admin/staff', color: 'from-blue-500 to-indigo-500', bgColor: 'bg-blue-500/20' },
+    { icon: Package, label: 'Products', href: '/admin/products', color: 'from-indigo-500 to-purple-500', bgColor: 'bg-indigo-500/20' },
+    { icon: Ticket, label: 'Subscriptions', href: '/admin/subscriptions', color: 'from-cyan-500 to-blue-500', bgColor: 'bg-cyan-500/20' },
+    { icon: CreditCard, label: 'Quotes', href: '/admin/quotes', color: 'from-green-500 to-emerald-500', bgColor: 'bg-green-500/20' },
+    { icon: BarChart3, label: 'Coverage Zones', href: '/admin/coverage', color: 'from-purple-500 to-indigo-500', bgColor: 'bg-purple-500/20' },
+    { icon: Database, label: 'Media Library', href: '/admin/media', color: 'from-red-500 to-orange-500', bgColor: 'bg-red-500/20' },
     { icon: Layers, label: 'Roles & Permissions', href: '/admin/roles', color: 'from-blue-600 to-indigo-600', bgColor: 'bg-blue-600/20' },
+    { icon: Settings, label: 'Categories', href: '/admin/categories', color: 'from-gray-500 to-slate-500', bgColor: 'bg-gray-500/20' },
+  ];
+
+  // Additional quick actions for more modules
+  const additionalActions = [
+    { icon: Building2, label: 'Banners', href: '/admin/banners', color: 'from-pink-500 to-rose-500', bgColor: 'bg-pink-500/20' },
+    { icon: MapPin, label: 'Testimonials', href: '/admin/testimonials', color: 'from-amber-500 to-yellow-500', bgColor: 'bg-amber-500/20' },
+    { icon: Mail, label: 'FAQs', href: '/admin/faqs', color: 'from-teal-500 to-cyan-500', bgColor: 'bg-teal-500/20' },
+    { icon: Globe, label: 'WhatsApp Messages', href: '/admin/whatsapp-messages', color: 'from-green-500 to-emerald-500', bgColor: 'bg-green-500/20' },
   ];
 
   // Recent activities (mock data)
@@ -240,6 +249,25 @@ const AdminDashboard = () => {
             <h2 className="text-lg font-semibold text-white mb-4">Quick Actions</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {quickActions.map((action, index) => (
+                <Link
+                  key={index}
+                  to={action.href}
+                  className="flex flex-col items-center justify-center p-4 rounded-xl border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all group"
+                >
+                  <div className={`w-12 h-12 rounded-lg ${action.bgColor} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform border border-white/10`}>
+                    <action.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="text-sm font-medium text-slate-300 text-center">{action.label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Additional Quick Actions */}
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">Content Management</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {additionalActions.map((action, index) => (
                 <Link
                   key={index}
                   to={action.href}

@@ -129,6 +129,9 @@ const HeroSection = () => {
           <Button asChild variant="outline" className="font-bold rounded-2xl hover:bg-white/10 hover:text-white transition-colors cta-btn" style={{ fontSize: "clamp(0.95rem, 1.15vw, 1.1rem)", border: "1.5px solid rgba(255,255,255,0.25)", color: "white", background: "rgba(255,255,255,0.05)", backdropFilter: "blur(10px)" }}>
             <Link to="/coverage">Our Coverage</Link>
           </Button>
+          <Button asChild variant="outline" className="font-bold rounded-2xl hover:bg-white/10 hover:text-white transition-colors cta-btn" style={{ fontSize: "clamp(0.95rem, 1.15vw, 1.1rem)", border: "1.5px solid rgba(6,182,212,0.5)", color: "#67e8f9", background: "rgba(6,182,212,0.1)", backdropFilter: "blur(10px)" }}>
+            <Link to="/speed-test">Speed Test</Link>
+          </Button>
         </div>
 
         {/* Service Badges */}

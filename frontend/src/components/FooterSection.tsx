@@ -23,9 +23,11 @@ const FooterSection = () => {
             {/* Brand & Newsletter Column */}
             <div className="lg:col-span-2">
               <Link to="/" className="flex items-center gap-2 font-heading font-bold text-2xl text-foreground mb-5">
-                <div className="w-10 h-10 rounded-lg gradient-royal flex items-center justify-center shadow-lg">
-                  <Wifi className="w-5 h-5 text-white" />
-                </div>
+                <img 
+                  src="/favicon.ico" 
+                  alt="Vilcom Networks" 
+                  className="w-10 h-10 rounded-lg shadow-lg"
+                />
                 Vilcom<span className="text-gradient-royal">Network</span>
               </Link>
               <p className="text-base text-slate-600 leading-relaxed mb-6">

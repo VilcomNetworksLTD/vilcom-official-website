@@ -16,21 +16,23 @@ const videos = [
 const VideosSection = () => {
   return (
     <section className="py-16 md:py-24 relative overflow-hidden">
-      {/* Solid dark background - no image */}
-      <div className="absolute inset-0 bg-[hsl(220,30%,15%)]" />
+      {/* Dark blue gradient background - matching TestimonialsSection */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(235,85%,25%)] via-[hsl(235,80%,30%)] to-[hsl(225,70%,40%)]" />
 
-      {/* Multi-color radial glow accents */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full bg-[hsl(220,80%,40%)] opacity-15 blur-[150px]" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-[hsl(30,100%,55%)] opacity-15 blur-[120px]" />
-      <div className="absolute top-1/3 left-[10%] w-[350px] h-[350px] rounded-full bg-[hsl(220,80%,50%)] opacity-12 blur-[120px]" />
+      {/* Animated fluid shapes - matching TestimonialsSection style */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] rounded-full bg-gradient-to-br from-blue-400/30 to-cyan-300/20 blur-[100px]" />
+        <div className="absolute top-[30%] right-[-15%] w-[60%] h-[60%] rounded-full bg-gradient-to-br from-indigo-400/25 to-purple-300/20 blur-[100px]" />
+        <div className="absolute bottom-[-20%] left-[20%] w-[65%] h-[65%] rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-400/15 blur-[100px]" />
+      </div>
 
       <div className="relative z-10 container mx-auto px-4">
         <div className="text-center mb-12">
-          <span className="text-primary text-sm font-semibold uppercase tracking-widest">Videos</span>
-          <h2 className="font-heading text-3xl md:text-4xl font-bold text-slate-800 mt-3">
-            Watch Our <span className="text-gradient-royal">Videos</span>
+          <span className="text-white/70 text-sm font-semibold uppercase tracking-widest">Videos</span>
+          <h2 className="font-heading text-3xl md:text-4xl font-bold text-white mt-3">
+            Watch Our <span className="text-white">Videos</span>
           </h2>
-          <p className="text-slate-600 mt-4 max-w-2xl mx-auto">
+          <p className="text-blue-200/80 mt-4 max-w-2xl mx-auto">
             Learn more about our services and technology through our featured videos
           </p>
         </div>

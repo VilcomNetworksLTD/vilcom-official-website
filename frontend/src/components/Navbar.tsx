@@ -61,6 +61,7 @@ const navLinks: NavItem[] = [
       { label: "ISP CPE As A Service", to: "/isp-cpe" },
       { label: "ISP Device Management", to: "/isp-device-management" },
       { label: "Firewall Solutions", to: "/firewall-solutions" },
+      { label: "Speed Test", to: "/speed-test" },
       { label: "Deep Packet Inspection", to: "/deep-packet-inspection" },
       { label: "Satellite Connectivity", to: "/satellite-connectivity" },
     ]

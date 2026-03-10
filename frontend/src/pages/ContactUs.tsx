@@ -9,6 +9,7 @@ import Navbar from "@/components/Navbar";
 import FooterSection from "@/components/FooterSection";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
+import contactService from "@/services/contact";
 
 // Fix for default marker icons in Leaflet with React
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -55,10 +56,25 @@ const ContactUs = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsSubmitting(false);
-    alert("Thank you!");
-    setFormData({ name: "", email: "", phone: "", department: "", subject: "", message: "" });
+    
+    try {
+      await contactService.sendMessage({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        department: formData.department || 'other',
+        subject: formData.subject,
+        message: formData.message,
+      });
+      
+      alert("Thank you for contacting us! We'll get back to you shortly.");
+      setFormData({ name: "", email: "", phone: "", department: "", subject: "", message: "" });
+    } catch (error: any) {
+      console.error('Error sending message:', error);
+      alert(error.response?.data?.message || "Failed to send message. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
