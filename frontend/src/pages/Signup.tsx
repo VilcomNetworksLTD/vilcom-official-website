@@ -146,8 +146,31 @@ const Signup = () => {
       // Registration successful - show success message, do NOT redirect to dashboard
       setSuccess(true);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "An error occurred. Please check your connection.";
-      setError(errorMessage);
+      // Axios errors expose the server response via err.response.data
+      // A Laravel 422 returns: { message: "...", errors: { field: ["msg"] } }
+      if (err && typeof err === "object" && "response" in err) {
+        const axiosErr = err as {
+          response: {
+            data: {
+              message?: string;
+              errors?: Record<string, string[]>;
+            };
+          };
+        };
+        const responseData = axiosErr.response?.data;
+
+        if (responseData?.errors) {
+          // Flatten all field-level validation messages into a single string
+          const messages = Object.values(responseData.errors).flat().join(" ");
+          setError(messages);
+        } else if (responseData?.message) {
+          setError(responseData.message);
+        } else {
+          setError("Registration failed. Please check your details and try again.");
+        }
+      } else {
+        setError("An error occurred. Please check your connection.");
+      }
       console.error("Registration error:", err);
     } finally {
       setIsLoading(false);
@@ -300,14 +323,14 @@ const Signup = () => {
         {/* Frosted Glass Card */}
         <div className="w-full max-w-4xl">
           <div className="glass-dark backdrop-blur-xl rounded-3xl p-8 sm:p-10 shadow-2xl border border-white/10">
-            
+
             {/* Card Header */}
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold text-white mb-2">
                 Sign Up
               </h2>
               <p className="text-blue-200/70">
-                {selectedProduct 
+                {selectedProduct
                   ? `Complete your registration for ${selectedProduct.name}`
                   : "Create your account to get started."}
               </p>

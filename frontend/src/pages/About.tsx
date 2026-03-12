@@ -1,21 +1,22 @@
 import { Link } from "react-router-dom";
-import { 
+import { useEffect } from "react";
+import {
   Briefcase, 
   Images, 
   Award, 
   Shield, 
-  FileText, 
-  Download, 
   ExternalLink,
   Heart,
   Users,
   Zap,
   BadgeCheck,
-  ArrowRight
+  ArrowRight,
+  Wifi
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import FooterSection from "@/components/FooterSection";
-import AnimatedSection from "@/components/AnimatedSection"; 
+import AnimatedSection from "@/components/AnimatedSection";
 
 const mediaFeatures = [
   {
@@ -53,6 +54,10 @@ const glassCardStyleEnhanced = {
 };
 
 const About = () => {
+  useEffect(() => {
+    document.title = "About Us | Vilcom Networks Ltd";
+  }, []);
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Dark gradient background */}
@@ -77,34 +82,9 @@ const About = () => {
 
       <Navbar />
 
+      {/* Main content */}
       <main className="pt-32 pb-16 relative z-10">
         <div className="container mx-auto px-4">
-
-          {/* ── Hero Section ── */}
-          <AnimatedSection>
-            <div className="text-center mb-16">
-              <h1 className="font-heading text-5xl lg:text-6xl font-bold text-white mb-6">
-                About <span className="text-white">Vilcom Networks</span>
-              </h1>
-              <p className="text-white/80 max-w-2xl mx-auto text-lg font-medium mb-8">
-                Connecting Kenya with high-speed fiber internet and innovative technology solutions
-              </p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <a
-                  href="#company-overview"
-                  className="inline-flex items-center gap-2 px-6 py-3 gradient-royal text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
-                >
-                  Company Overview
-                </a>
-                <a
-                  href="#core-values"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all backdrop-blur-md hover:scale-105"
-                >
-                  Our Values
-                </a>
-              </div>
-            </div>
-          </AnimatedSection>
 
           {/* ── Company Overview ── */}
           <AnimatedSection delay={100} className="mb-20" id="company-overview">
@@ -154,7 +134,7 @@ const About = () => {
                   
                   <div className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                     <p>
-                      Our vision is to be a <strong className="text-white text-xl font-bold">leading technology solutions provider in Africa</strong>. We envision a future where Vilcom Networks is synonymous with innovation, reliability, and excellence in telecommunications across the continent.
+                      Our vision is to be a <strong className="text-white text-xl font-bold">leading technology solutions provider in Africa</strong>. We envision a future where synonymous with innovation, Vilcom Networks is reliability, and excellence in telecommunications across the continent.
                     </p>
                   </div>
                   
@@ -167,27 +147,6 @@ const About = () => {
                       Integrity - conducting business with honesty and transparency; and 
                       Professionalism - maintaining the highest standards in all our interactions.
                     </p>
-                  </div>
-                </div>
-
-                <div className="mt-10 pt-8 border-t border-white/10">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    <div className="text-center animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
-                      <div className="text-3xl lg:text-4xl font-bold text-cyan-300 mb-1">47+</div>
-                      <div className="text-white/60 text-sm">Counties Covered</div>
-                    </div>
-                    <div className="text-center animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-                      <div className="text-3xl lg:text-4xl font-bold text-cyan-300 mb-1">2021</div>
-                      <div className="text-white/60 text-sm">Year Founded</div>
-                    </div>
-                    <div className="text-center animate-fade-in-up" style={{ animationDelay: '0.7s' }}>
-                      <div className="text-3xl lg:text-4xl font-bold text-cyan-300 mb-1">100+</div>
-                      <div className="text-white/60 text-sm">Team Members</div>
-                    </div>
-                    <div className="text-center animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
-                      <div className="text-3xl lg:text-4xl font-bold text-cyan-300 mb-1">24/7</div>
-                      <div className="text-white/60 text-sm">Support</div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -375,84 +334,6 @@ const About = () => {
             </div>
           </AnimatedSection>
 
-          {/* ── Certifications & Policies ── */}
-          <AnimatedSection delay={500} className="mb-20">
-            <h2 className="font-heading text-3xl lg:text-4xl font-bold text-white text-center mb-4">
-              Certifications & <span className="text-white">Policies</span>
-            </h2>
-            <p className="text-white/70 text-center max-w-2xl mx-auto mb-12">
-              Our commitment to quality and security standards
-            </p>
-            
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
-              <div className="relative rounded-2xl p-6 text-center hover:scale-[1.02] transition-all duration-300 cursor-pointer overflow-hidden backdrop-blur-md" style={glassCardStyle}>
-                <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: 'inset 0 0 20px rgba(255,255,255,0.05)' }} />
-                <div className="relative z-10">
-                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
-                    <Award className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="font-heading text-lg font-bold text-white mb-2">ISO 9001</h3>
-                  <p className="text-white/70 text-sm">
-                    Quality Management System certification ensuring consistent delivery of high-quality services.
-                  </p>
-                </div>
-              </div>
-
-              <div className="relative rounded-2xl p-6 text-center hover:scale-[1.02] transition-all duration-300 cursor-pointer overflow-hidden backdrop-blur-md" style={glassCardStyle}>
-                <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: 'inset 0 0 20px rgba(255,255,255,0.05)' }} />
-                <div className="relative z-10">
-                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
-                    <Shield className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="font-heading text-lg font-bold text-white mb-2">ISO 27001</h3>
-                  <p className="text-white/70 text-sm">
-                    Information Security Management System certification protecting customer data and network infrastructure.
-                  </p>
-                </div>
-              </div>
-
-              <div className="relative rounded-2xl p-6 text-center hover:scale-[1.02] transition-all duration-300 cursor-pointer overflow-hidden backdrop-blur-md" style={glassCardStyle}>
-                <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: 'inset 0 0 20px rgba(255,255,255,0.05)' }} />
-                <div className="relative z-10">
-                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
-                    <FileText className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="font-heading text-lg font-bold text-white mb-2">Health & Safety Policy</h3>
-                  <p className="text-white/70 text-sm mb-3">
-                    Our commitment to ensuring the health, safety, and well-being of our employees and stakeholders.
-                  </p>
-                  <a 
-                    href="/downloads/health-safety-policy.pdf" 
-                    download
-                    className="inline-flex items-center gap-2 text-sky-300 font-semibold text-sm hover:text-sky-200"
-                  >
-                    <Download className="w-4 h-4" /> Download PDF
-                  </a>
-                </div>
-              </div>
-
-              <div className="relative rounded-2xl p-6 text-center hover:scale-[1.02] transition-all duration-300 cursor-pointer overflow-hidden backdrop-blur-md" style={glassCardStyle}>
-                <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: 'inset 0 0 20px rgba(255,255,255,0.05)' }} />
-                <div className="relative z-10">
-                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-violet-400 to-purple-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
-                    <FileText className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="font-heading text-lg font-bold text-white mb-2">Quality & InfoSec Policy</h3>
-                  <p className="text-white/70 text-sm mb-3">
-                    Our policies for maintaining quality standards and information security management.
-                  </p>
-                  <a 
-                    href="/downloads/quality-info-security-policy.pdf" 
-                    download
-                    className="inline-flex items-center gap-2 text-sky-300 font-semibold text-sm hover:text-sky-200"
-                  >
-                    <Download className="w-4 h-4" /> Download PDF
-                  </a>
-                </div>
-              </div>
-            </div>
-          </AnimatedSection>
-
           {/* ── CTA ── */}
           <AnimatedSection delay={600}>
             <div className="text-center">
@@ -493,3 +374,4 @@ const About = () => {
 };
 
 export default About;
+

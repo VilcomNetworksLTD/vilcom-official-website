@@ -48,17 +48,19 @@ class EmailVerificationNotification extends Notification
 
     /**
      * Get the verification URL for the given notifiable.
+     *
+     * This points to the FRONTEND, which then calls the backend:
+     *   GET /api/v1/auth/email/verify/{id}/{hash}
      */
     protected function verificationUrl(object $notifiable): string
     {
-        $id = $notifiable->getKey();
+        $id   = $notifiable->getKey();
         $hash = sha1($notifiable->getEmailForVerification());
 
-        $url = config('app.frontend_url') . '/auth/verify-email';
-        $url .= '?id=' . $id;
-        $url .= '&hash=' . $hash;
-
-        return $url;
+        return rtrim(config('app.frontend_url'), '/')
+            . '/auth/verify-email'
+            . '?id=' . $id
+            . '&hash=' . $hash;
     }
 
     /**
@@ -68,9 +70,6 @@ class EmailVerificationNotification extends Notification
      */
     public function toArray(object $notifiable): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 }
-

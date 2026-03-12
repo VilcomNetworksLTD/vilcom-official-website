@@ -118,7 +118,7 @@ const PricingSection = () => {
       features: features,
       popular: product.badge === "Best Value" || product.badge === "Popular",
       slug: product.slug,
-      titleColor: prefix === "home" ? "text-green-400" : "text-green-400",
+      titleColor: prefix === "home" ? "text-orange-500" : "text-orange-500",
     };
   };
 

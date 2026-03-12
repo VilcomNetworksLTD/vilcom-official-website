@@ -24,11 +24,10 @@ const FooterSection = () => {
             <div className="lg:col-span-2">
               <Link to="/" className="flex items-center gap-2 font-heading font-bold text-2xl text-foreground mb-5">
                 <img 
-                  src="/favicon.ico" 
-                  alt="Vilcom Networks" 
-                  className="w-10 h-10 rounded-lg shadow-lg"
+                  src="/vilcomsignature.png" 
+                  alt="Vilcom" 
+                  className="h-12 w-auto object-contain"
                 />
-                Vilcom<span className="text-gradient-royal">Network</span>
               </Link>
               <p className="text-base text-slate-600 leading-relaxed mb-6">
                 Connecting homes and businesses with blazing-fast fiber internet across the region.

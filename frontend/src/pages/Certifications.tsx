@@ -1,4 +1,4 @@
-import { Award, Shield, Globe, CheckCircle, Star, Zap, BadgeCheck, TrendingUp } from "lucide-react";
+import { Award, Shield, Globe, CheckCircle, Star, Zap, BadgeCheck, TrendingUp, Wifi } from "lucide-react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import FooterSection from "@/components/FooterSection";
@@ -109,6 +109,8 @@ const Certifications = () => {
       </div>
 
       <Navbar />
+
+      {/* Main content */}
       <main className="pt-32 pb-16 relative z-10">
         <div className="container mx-auto px-4">
           {/* Hero Section */}

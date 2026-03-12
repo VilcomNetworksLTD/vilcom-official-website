@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import ServicesSection from "@/components/ServicesSection";
@@ -7,6 +8,9 @@ import PricingSection from "@/components/PricingSection";
 import FooterSection from "@/components/FooterSection";
 
 const Index = () => {
+  useEffect(() => {
+    document.title = "Home | Vilcom Networks Ltd";
+  }, []);
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Royal Blue Background #153aee with orange radiance */}

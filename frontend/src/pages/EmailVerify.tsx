@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
-import { Wifi, Mail, CheckCircle, Loader2, AlertCircle, ArrowRight } from "lucide-react";
+import { Wifi, CheckCircle, Loader2, AlertCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import api from "@/lib/axios";
 
@@ -17,24 +17,24 @@ const EmailVerify = () => {
     const verifyEmail = async () => {
       if (!id || !hash) {
         setStatus("error");
-        setMessage("Invalid verification link. Please check your email for the correct verification link.");
+        setMessage("Invalid verification link. Please check your email for the correct link.");
         return;
       }
 
       try {
+        // axios baseURL is already http://localhost:8000/api/v1
+        // so we use a relative path: /auth/email/verify/{id}/{hash}
         const response = await api.get(`/auth/email/verify/${id}/${hash}`);
-        
+
         if (response.data.success) {
           setStatus("success");
           setMessage(response.data.message || "Email verified successfully!");
-          
+
           // If token is returned, auto-login the user
-          if (response.data.data.token) {
-            // Store token
-            localStorage.setItem("token", response.data.data.token);
-            localStorage.setItem("user", JSON.stringify(response.data.data.user));
-            
-            // Redirect after a short delay
+          if (response.data.data?.token) {
+            localStorage.setItem("auth_token", response.data.data.token);
+            localStorage.setItem("auth_user", JSON.stringify(response.data.data.user));
+
             setTimeout(() => {
               navigate("/dashboard");
             }, 2000);
@@ -42,12 +42,16 @@ const EmailVerify = () => {
         }
       } catch (error: unknown) {
         const err = error as { response?: { data?: { message?: string } } };
-        if (err.response?.data?.message === "Email already verified.") {
+        const errMessage = err.response?.data?.message ?? "";
+
+        if (errMessage === "Email already verified.") {
           setStatus("already");
-          setMessage("Your email is already verified. You can login to your account.");
+          setMessage("Your email is already verified. You can log in to your account.");
         } else {
           setStatus("error");
-          setMessage(err.response?.data?.message || "Failed to verify email. The verification link may have expired.");
+          setMessage(
+            errMessage || "Failed to verify email. The verification link may have expired."
+          );
         }
       }
     };
@@ -104,16 +108,12 @@ const EmailVerify = () => {
           </h1>
 
           {/* Message */}
-          <p className="text-slate-300 text-center mb-8">
-            {message}
-          </p>
+          <p className="text-slate-300 text-center mb-8">{message}</p>
 
           {/* Actions */}
           {status === "success" && (
             <div className="text-center">
-              <p className="text-green-400 text-sm mb-4">
-                Redirecting to dashboard...
-              </p>
+              <p className="text-green-400 text-sm mb-4">Redirecting to dashboard...</p>
               <Link to="/dashboard">
                 <Button className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold">
                   Go to Dashboard <ArrowRight className="w-4 h-4 ml-2" />
@@ -124,11 +124,9 @@ const EmailVerify = () => {
 
           {status === "error" && (
             <div className="space-y-4">
-              <div className="text-center">
-                <p className="text-slate-400 text-sm mb-4">
-                  Please try again or request a new verification email.
-                </p>
-              </div>
+              <p className="text-slate-400 text-sm text-center mb-4">
+                Please try again or request a new verification email.
+              </p>
               <div className="flex flex-col gap-3">
                 <Link to="/auth" className="w-full">
                   <Button className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold">
@@ -177,4 +175,3 @@ const EmailVerify = () => {
 };
 
 export default EmailVerify;
-

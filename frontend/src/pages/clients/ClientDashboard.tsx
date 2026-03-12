@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { 
   Wifi, 
   CreditCard, 
@@ -58,7 +58,22 @@ const CircularGauge = ({ percentage, color }: { percentage: number; color: strin
 };
 
 const ClientDashboard = () => {
-  const { hasRole } = useAuth();
+  const { hasRole, isAuthenticated } = useAuth();
+  
+  // Access Control: Only allow client users to access this dashboard
+  if (!isAuthenticated) {
+    return <Navigate to="/auth" replace />;
+  }
+  
+  // If user is admin, redirect to admin dashboard
+  if (hasRole('admin')) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+  
+  // If user is staff, redirect to staff dashboard
+  if (hasRole(['staff', 'sales', 'technical_support', 'web_developer', 'content_manager'])) {
+    return <Navigate to="/staff/dashboard" replace />;
+  }
   
   // Determine userType from auth context
   const userType = hasRole('admin') ? 'admin' : hasRole(['staff', 'sales', 'technical_support', 'web_developer', 'content_manager']) ? 'staff' : 'client';

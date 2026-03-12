@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { 
   Users, 
   Wifi, 
@@ -114,7 +114,23 @@ const PerformanceScore = ({ score }: { score: number }) => {
 };
 
 const StaffDashboard = () => {
-  const { hasRole } = useAuth();
+  const { hasRole, isAuthenticated } = useAuth();
+  
+  // Access Control: Only allow staff and admin users to access this dashboard
+  // Admins should use the admin dashboard instead
+  if (!isAuthenticated) {
+    return <Navigate to="/auth" replace />;
+  }
+  
+  // If user is admin, redirect to admin dashboard
+  if (hasRole('admin')) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+  
+  // If user is not staff (e.g., client), redirect to client dashboard
+  if (!hasRole(['staff', 'sales', 'technical_support', 'web_developer', 'content_manager'])) {
+    return <Navigate to="/client/dashboard" replace />;
+  }
   
   // Determine userType from auth context
   const userType = hasRole('admin') ? 'admin' : hasRole(['staff', 'sales', 'technical_support', 'web_developer', 'content_manager']) ? 'staff' : 'client';

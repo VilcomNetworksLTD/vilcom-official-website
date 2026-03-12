@@ -42,7 +42,7 @@ import Gallery from "./pages/Gallery";
 import Media from "./pages/Media";
 import ClientDashboard from "./pages/clients/ClientDashboard";
 import StaffDashboard from "./pages/staff/StaffDashboard";
-import AdminDashboard from "./pages/staff/AdminDashboard";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import DashboardRedirect from "./pages/DashboardRedirect";
 import CookieConsent from "./components/CookieConsent";
 import WhatsAppButton from "./components/WhatsAppButton";
@@ -106,7 +106,7 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/email/verify" element={<EmailVerify />} />
+            <Route path="/auth/verify-email" element={<EmailVerify />} />
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/media" element={<Media />} />

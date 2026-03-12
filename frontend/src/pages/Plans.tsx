@@ -57,6 +57,10 @@ const productToPlan = (product: Product, index: number) => {
 };
 
 const Plans = () => {
+  useEffect(() => {
+    document.title = "Plans | Vilcom Networks Ltd";
+  }, []);
+
   const [tab, setTab] = useState<"home" | "business">("home");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Subscription extends Model
 {
@@ -251,7 +252,7 @@ class Subscription extends Model
      */
     public function getIsExpiredAttribute(): bool
     {
-        return $this->status === 'expired' || 
+        return $this->status === 'expired' ||
             ($this->end_date && $this->end_date->isPast());
     }
 
@@ -263,7 +264,7 @@ class Subscription extends Model
         if (!$this->next_billing_date) {
             return false;
         }
-        
+
         return $this->next_billing_date->diffInDays(now()) <= 7;
     }
 
@@ -275,7 +276,7 @@ class Subscription extends Model
         if (!$this->next_billing_date) {
             return null;
         }
-        
+
         return now()->diffInDays($this->next_billing_date, false);
     }
 
@@ -340,7 +341,7 @@ class Subscription extends Model
     public function renew(): bool
     {
         $nextBillingDate = $this->calculateNextBillingDate($this->billing_cycle);
-        
+
         return $this->update([
             'next_billing_date' => $nextBillingDate,
             'status' => 'active',

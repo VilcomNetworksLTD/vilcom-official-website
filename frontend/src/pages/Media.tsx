@@ -199,7 +199,7 @@ const Media = () => {
       <NetworkingNodes />
 
       <Navbar />
-      <main className="pt-28 pb-16 relative z-10">
+      <main className="pt-36 pb-16 relative z-10">
         <div className="container mx-auto px-4">
           {/* Header Section */}
           <div className="text-center mb-12">

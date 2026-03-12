@@ -1,9 +1,10 @@
-import { Search, CheckCircle, Clock, Wifi, Globe, X, ChevronRight, Zap } from "lucide-react";
-import { useState } from "react";
+import { Search, CheckCircle, Clock, Wifi, Globe, X, ChevronRight, Zap, Map, Box } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import FooterSection from "@/components/FooterSection";
 import KenyaGlobe3D from "@/components/KenyaGlobe3D";
+import KenyaCoverageMap2D from "@/components/KenyaCoverageMap2D";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Region {
@@ -34,9 +35,15 @@ const regions: Region[] = [
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const Coverage = () => {
+  useEffect(() => {
+    document.title = "Coverage | Vilcom Networks Ltd";
+  }, []);
+
   const [search, setSearch]       = useState("");
   const [selected, setSelected]   = useState<Region | null>(null);
   const [filterStatus, setFilter] = useState<"all" | "connected" | "coming_soon">("all");
+  const [mapView, setMapView]     = useState<"3d" | "2d">("3d");
+  const [selectedCounty, setSelectedCounty] = useState<string | null>(null);
 
   const filtered = regions.filter(r => {
     const q = search.toLowerCase();
@@ -89,10 +96,10 @@ const Coverage = () => {
     setSelected(prev => prev?.name === region.name ? null : region);
 
   return (
-    <div className="min-h-screen" style={{ background: "#f8f9fa", color: "#1a1a2e" }}>
+    <div className="min-h-screen" style={{ background: "#f8f9fa", color: "#1a1a2e", overflowY: "auto" }}>
       <Navbar />
 
-      <main className="pt-0" style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+      <main className="pt-0" style={{ minHeight: "calc(100vh - 200px)", display: "flex", flexDirection: "column" }}>
 
         {/* ── Page header strip ── */}
         <div style={{
@@ -118,6 +125,53 @@ const Coverage = () => {
             </h1>
           </div>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            {/* Map View Toggle */}
+            <div style={{
+              display: "flex",
+              background: "rgba(0,0,0,0.05)",
+              borderRadius: "8px",
+              padding: "3px",
+              gap: "2px"
+            }}>
+              <button
+                onClick={() => setMapView("3d")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "6px 12px",
+                  borderRadius: "6px",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  background: mapView === "3d" ? "rgba(0,128,255,0.15)" : "transparent",
+                  color: mapView === "3d" ? "#0080ff" : "rgba(0,0,0,0.4)",
+                  transition: "all 0.2s ease"
+                }}
+              >
+                <Box size={14} /> 3D Globe
+              </button>
+              <button
+                onClick={() => setMapView("2d")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "6px 12px",
+                  borderRadius: "6px",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  background: mapView === "2d" ? "rgba(0,128,255,0.15)" : "transparent",
+                  color: mapView === "2d" ? "#0080ff" : "rgba(0,0,0,0.4)",
+                  transition: "all 0.2s ease"
+                }}
+              >
+                <Map size={14} /> 2D Map
+              </button>
+            </div>
             <span style={{ fontSize: 12, color: "rgba(180,210,255,0.5)" }}>
               <span style={{ color: "#00d4aa", fontWeight: 700 }}>{liveCount}</span> live ·{" "}
               <span style={{ color: "#f59e0b", fontWeight: 700 }}>{soonCount}</span> expanding
@@ -318,7 +372,21 @@ const Coverage = () => {
 
           {/* ── Map panel ── */}
           <main style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-            <KenyaGlobe3D />
+            {mapView === "3d" ? (
+              <KenyaGlobe3D />
+            ) : (
+              <KenyaCoverageMap2D 
+                onCountyClick={(countyName) => {
+                  setSelectedCounty(countyName);
+                  // Also try to find a matching region in the sidebar
+                  const matchingRegion = regions.find(r => r.county === countyName);
+                  if (matchingRegion) {
+                    setSelected(matchingRegion);
+                  }
+                }}
+                selectedCounty={selectedCounty}
+              />
+            )}
           </main>
         </div>
       </main>

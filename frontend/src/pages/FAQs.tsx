@@ -406,6 +406,10 @@ const AccordionItem = ({
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 const FAQs = () => {
+  useEffect(() => {
+    document.title = "FAQs | Vilcom Networks Ltd";
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState("");
   // Exclusive accordion: only one item open across ALL categories
   const [openItem, setOpenItem] = useState<string | null>(null);

@@ -74,9 +74,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // ============================================
 // API URL
+// Strips trailing slash so all fetch paths can safely start with /
+// VITE_API_URL must be: http://localhost:8000/api/v1
 // ============================================
 
-const API_URL = import.meta.env.VITE_API_URL || '';
+const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
 // ============================================
 // PROVIDER
@@ -95,10 +97,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const loadUser = async () => {
       const storedToken = localStorage.getItem('auth_token');
-      
+
       if (storedToken) {
         setToken(storedToken);
-        
+
         try {
           const response = await fetch(`${API_URL}/auth/user`, {
             method: 'GET',
@@ -116,7 +118,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               localStorage.setItem('auth_user', JSON.stringify(data.data.user));
             }
           } else if (response.status === 401) {
-            // Token invalid, clear auth state
             handleLogout();
           }
         } catch (error) {
@@ -124,7 +125,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           handleLogout();
         }
       }
-      
+
       setIsLoading(false);
     };
 
@@ -156,8 +157,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     if (data.success && data.data) {
       const { user: userData, token: authToken } = data.data;
-      
-      // Store token
       localStorage.setItem('auth_token', authToken);
       localStorage.setItem('auth_user', JSON.stringify(userData));
       setToken(authToken);
@@ -169,7 +168,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async (): Promise<void> => {
     const storedToken = localStorage.getItem('auth_token');
-    
+
     if (storedToken) {
       try {
         await fetch(`${API_URL}/auth/logout`, {
@@ -184,7 +183,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.error('Logout request failed', error);
       }
     }
-    
+
     handleLogout();
   };
 
@@ -201,13 +200,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.message || result.errors ? JSON.stringify(result.errors) : 'Registration failed');
+      // Surface Laravel field-level validation errors
+      if (result.errors) {
+        const messages = Object.values(result.errors as Record<string, string[]>)
+          .flat()
+          .join(' ');
+        throw new Error(messages);
+      }
+      throw new Error(result.message || 'Registration failed');
     }
 
     if (result.success && result.data) {
       const { user: userData, token: authToken } = result.data;
-      
-      // Store token
       localStorage.setItem('auth_token', authToken);
       localStorage.setItem('auth_user', JSON.stringify(userData));
       setToken(authToken);
@@ -230,40 +234,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const hasRole = (roles: string | string[]): boolean => {
     if (!user) return false;
-    
     const roleArray = Array.isArray(roles) ? roles : [roles];
     return user.roles?.some((role: Role) => roleArray.includes(role.name)) || false;
   };
 
+  const hasPermission = (permissions: string | string[]): boolean => {
+    if (!user) return false;
+
+    // Admin has all permissions
+    if (user.roles?.some((role: Role) => role.name === 'admin')) return true;
+
+    const permArray = Array.isArray(permissions) ? permissions : [permissions];
+    return user.permissions?.some((perm: Permission) => permArray.includes(perm.name)) || false;
+  };
+
   /**
-   * Get the appropriate dashboard URL based on user role
+   * Get the appropriate dashboard URL based on user role.
    * Priority: admin > staff > client
    */
   const getDashboardUrl = (): string => {
     if (!user) return '/';
-    
-    if (hasRole('admin')) {
-      return '/admin/dashboard';
-    }
-    
+    if (hasRole('admin')) return '/admin/dashboard';
     if (hasRole(['staff', 'sales', 'technical_support', 'web_developer', 'content_manager'])) {
       return '/staff/dashboard';
     }
-    
-    // Default to client dashboard
     return '/client/dashboard';
-  };
-
-  const hasPermission = (permissions: string | string[]): boolean => {
-    if (!user) return false;
-    
-    // Admin has all permissions
-    if (user.roles?.some((role: Role) => role.name === 'admin')) {
-      return true;
-    }
-    
-    const permArray = Array.isArray(permissions) ? permissions : [permissions];
-    return user.permissions?.some((perm: Permission) => permArray.includes(perm.name)) || false;
   };
 
   const isAdmin = hasRole('admin');
@@ -327,7 +322,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
       </div>
     );
   }
@@ -343,7 +338,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // Check roles
   if (requireRoles.length > 0 && !hasRole(requireRoles)) {
     return fallback || (
       <div className="min-h-screen flex items-center justify-center">
@@ -355,7 +349,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // Check permissions
   if (requirePermissions.length > 0 && !hasPermission(requirePermissions)) {
     return fallback || (
       <div className="min-h-screen flex items-center justify-center">
@@ -375,37 +368,25 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 // ============================================
 
 interface CanProps {
-  do?: string | string[]; // permissions
-  be?: string | string[]; // roles
+  do?: string | string[];
+  be?: string | string[];
   children: ReactNode;
   fallback?: ReactNode;
 }
 
 /**
- * Conditional rendering based on permissions or roles
- * 
+ * Conditional rendering based on permissions or roles.
+ *
  * Usage:
- * <Can do="products.create">
- *   <CreateProductButton />
- * </Can>
- * 
- * <Can be="admin">
- *   <AdminPanel />
- * </Can>
+ *   <Can do="products.create"><CreateProductButton /></Can>
+ *   <Can be="admin"><AdminPanel /></Can>
  */
 export const Can: React.FC<CanProps> = ({ do: permissions, be: roles, children, fallback }) => {
   const { hasRole, hasPermission } = useAuth();
 
   let authorized = true;
-
-  if (roles) {
-    authorized = authorized && hasRole(roles);
-  }
-
-  if (permissions) {
-    authorized = authorized && hasPermission(permissions);
-  }
+  if (roles) authorized = authorized && hasRole(roles);
+  if (permissions) authorized = authorized && hasPermission(permissions);
 
   return authorized ? <>{children}</> : <>{fallback}</>;
 };
-

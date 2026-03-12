@@ -81,6 +81,10 @@ const productToPlan = (product: Product, tab: "web" | "reseller" | "vps") => {
 };
 
 const Hosting = () => {
+  useEffect(() => {
+    document.title = "Web Hosting | Vilcom Networks Ltd";
+  }, []);
+
   const [tab, setTab] = useState<"web" | "reseller" | "vps">("web");
   const [domainSearch, setDomainSearch] = useState("");
   const [domainResult, setDomainResult] = useState<"available" | "taken" | null>(null);

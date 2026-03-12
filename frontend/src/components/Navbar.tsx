@@ -41,7 +41,7 @@ const navLinks: NavItem[] = [
     dropdown: [
       { label: "Fibre Solutions", to: "/plans" },
       { label: "Vuta WiFi", to: "/fiber" },
-      { label: "Enterprise Connectivity", to: "/plans" },
+      { label: "Enterprise Connectivity", to: "/enterprise-connectivity" },
       { label: "Cloud Solutions", to: "/cloud-solutions" },
       { label: "Cyber Security", to: "/cyber-security" },
       { label: "Smart Integration", to: "/smart-integration" },
@@ -178,14 +178,12 @@ const Navbar = () => {
       {/* Main Navbar */}
       <nav className="fixed top-10 left-0 right-0 z-50 glass-navbar">
         <div className="container mx-auto flex items-center justify-between h-20 px-4">
-          <Link to="/" className="flex flex-col items-start gap-0 group">
-            <span className="font-['Cinzel'] text-4xl font-black tracking-widest italic">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 drop-shadow-[0_0_15px_rgba(6,182,212,0.8)] group-hover:drop-shadow-[0_0_25px_rgba(6,182,212,1)] transition-all duration-300 animate-radiant-glow">V</span>
-              <span className="text-white">ILCOM</span>
-            </span>
-            <span className="text-[10px] tracking-[0.25em] text-slate-400 font-medium -mt-1">
-              Smart • Secure • Reliable
-            </span>
+          <Link to="/" className="flex items-center gap-0 group">
+            <img 
+              src="/vilcomsignature.png" 
+              alt="Vilcom" 
+              className="h-24 w-auto object-contain group-hover:opacity-90 transition-opacity"
+            />
           </Link>
 
           {/* Desktop */}

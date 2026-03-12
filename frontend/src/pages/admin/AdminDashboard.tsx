@@ -1,5 +1,7 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import api from '@/lib/axios';
+import { clientsApi } from '@/services/clients';
+import { Link, Navigate } from 'react-router-dom';
 import { 
   Users, 
   Wifi, 
@@ -104,24 +106,78 @@ const RevenueChart = () => {
 };
 
 const AdminDashboard = () => {
-  const { hasRole } = useAuth();
+  const { hasRole, isAuthenticated } = useAuth();
   
-  // Determine userType from auth context - use admin dashboard for admins, staff for staff, client for clients
-  const userType = hasRole('admin') ? 'admin' : hasRole(['staff', 'sales', 'technical_support', 'web_developer', 'content_manager']) ? 'staff' : 'client';
+  // Access Control: Only allow admin users to access this dashboard
+  if (!isAuthenticated) {
+    return <Navigate to="/auth" replace />;
+  }
   
-  const [stats] = useState({
-    totalClients: 156,
-    activeSubscriptions: 142,
-    monthlyRevenue: 2450000,
-    annualRevenue: 29400000,
-    openTickets: 28,
-    resolvedTickets: 892,
-    pendingInvoices: 45,
+  if (!hasRole('admin')) {
+    // Redirect non-admin users to their appropriate dashboard
+    if (hasRole(['staff', 'sales', 'technical_support', 'web_developer', 'content_manager'])) {
+      return <Navigate to="/staff/dashboard" replace />;
+    }
+    return <Navigate to="/client/dashboard" replace />;
+  }
+  
+  const [stats, setStats] = useState({
+    totalClients: 0,
+    activeSubscriptions: 0,
+    monthlyRevenue: 0,
+    annualRevenue: 0,
+    openTickets: 0,
+    resolvedTickets: 0,
+    pendingInvoices: 0,
     coverageAreas: 12,
-    totalStaff: 18,
+    totalStaff: 0,
     churnRate: 2.3,
-    avgRevenuePerUser: 15705
+    avgRevenuePerUser: 0,
+    totalUsers: 0,
+    activeClients: 0
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [userRes, clientRes] = await Promise.all([
+          api.get('/v1/users/statistics'),
+          clientsApi.statistics()
+        ]);
+
+        const userStats = userRes.data.data;
+        const clientStats = clientRes.data.data;
+
+        setStats({
+          totalClients: userStats.clients || 0,
+          totalUsers: userStats.total || 0,
+          totalStaff: (userStats.staff || 0) + (userStats.admins || 0),
+          activeClients: userStats.active || 0,
+          activeSubscriptions: 0, // Fetch separately if needed
+          monthlyRevenue: 0,
+          annualRevenue: 0,
+          openTickets: 0,
+          resolvedTickets: 0,
+          pendingInvoices: 0,
+          coverageAreas: 12,
+          churnRate: 2.3,
+          avgRevenuePerUser: 0
+        });
+      } catch (err) {
+        console.error('Failed to fetch dashboard stats:', err);
+        setError('Failed to load dashboard statistics');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   // Quick actions for admin dashboard with blue/moroccan theme
   const quickActions = [
@@ -178,22 +234,38 @@ const AdminDashboard = () => {
         <p className="text-slate-400">System Overview & Management</p>
       </div>
 
-      {/* Stats Cards - Glassmorphic with Moroccan Blue Theme */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6 hover:bg-white/15 hover:border-white/30 transition-all">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-400 mb-1">Total Clients</p>
-              <p className="text-2xl font-bold text-white">{stats.totalClients}</p>
-              <p className="text-xs text-green-400 mt-1 flex items-center">
-                <ArrowUpRight className="w-3 h-3 mr-1" /> +12% this month
-              </p>
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {Array(4).fill(0).map((_, i) => (
+            <div key={i} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6 animate-pulse">
+              <div className="h-4 bg-white/20 rounded w-3/4 mb-2"></div>
+              <div className="h-8 bg-white/20 rounded w-1/2 mb-2"></div>
+              <div className="h-3 bg-white/20 rounded w-1/4"></div>
             </div>
-            <div className="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
-              <Users className="w-6 h-6 text-blue-400" />
-            </div>
-          </div>
+          ))}
         </div>
+      ) : error ? (
+        <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-6 mb-8">
+          <p className="text-red-300">{error}</p>
+        </div>
+      ) : (
+        <>
+          {/* Stats Cards - Glassmorphic with Moroccan Blue Theme */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6 hover:bg-white/15 hover:border-white/30 transition-all">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-400 mb-1">Total Clients</p>
+                  <p className="text-2xl font-bold text-white">{stats.totalClients}</p>
+                  <p className="text-xs text-green-400 mt-1 flex items-center">
+                    <ArrowUpRight className="w-3 h-3 mr-1" /> +12% this month
+                  </p>
+                </div>
+                <div className="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
+                  <Users className="w-6 h-6 text-blue-400" />
+                </div>
+              </div>
+            </div>
 
         <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6 hover:bg-white/15 hover:border-white/30 transition-all">
           <div className="flex items-center justify-between">

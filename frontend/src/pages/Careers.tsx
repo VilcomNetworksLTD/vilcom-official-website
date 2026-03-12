@@ -219,9 +219,13 @@ const FileUpload = ({ label, accept, file, onChange, error }: FileUploadProps) =
     <div className="relative">
       <label className="block text-sm font-medium text-white mb-2">{label}</label>
       <div
-        className={`relative border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors backdrop-blur-md bg-white/10 ${
-          error ? "border-red-400" : "border-white/30 hover:border-white/50"
+        className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all backdrop-blur-md hover:scale-[1.01] ${
+          error ? "border-red-400/50" : "border-white/20 hover:border-white/40"
         }`}
+        style={{ 
+          background: 'rgba(255, 255, 255, 0.08)', 
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15), 0 4px 16px rgba(0,0,0,0.15)'
+        }}
         onClick={() => inputRef.current?.click()}
       >
         <input ref={inputRef} type="file" accept={accept} className="hidden" onChange={(e) => onChange(e.target.files?.[0] || null)} />
@@ -401,6 +405,10 @@ const ApplicationModal = ({ jobTitle, onClose }: ApplicationModalProps) => {
 
 // Main Careers Page Component
 export default function Careers() {
+  useEffect(() => {
+    document.title = "Careers | Vilcom Networks Ltd";
+  }, []);
+
   const [jobOpenings, setJobOpenings] = useState<JobPosition[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -453,7 +461,7 @@ export default function Careers() {
         <h1 className="font-heading text-[10rem] lg:text-[14rem] font-black text-transparent bg-clip-text bg-gradient-to-b from-white/8 via-white/5 to-white/3 tracking-widest select-none transform rotate-[-5deg] scale-150 whitespace-nowrap blur-[1px]">VILCOM</h1>
       </div>
       <Navbar />
-      <section className="relative pt-32 pb-16 overflow-hidden z-10">
+      <section className="relative pt-36 pb-16 overflow-hidden z-10">
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">Join Our <span className="text-cyan-400">Team</span></h1>
           <p className="text-xl text-white/70 max-w-3xl mx-auto mb-8">Be part of Kenya's leading ISP company and help us connect communities through innovative solutions.</p>

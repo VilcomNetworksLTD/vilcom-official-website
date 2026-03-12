@@ -1,5 +1,6 @@
 import { Wifi, Zap, Gauge, ArrowRight, Download, Upload, Activity } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import FooterSection from "@/components/FooterSection";
 
@@ -7,6 +8,9 @@ import FooterSection from "@/components/FooterSection";
 const glassCardStyle = { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 32px rgba(0,0,0,0.2)' };
 
 const SpeedTest = () => {
+  useEffect(() => {
+    document.title = "Speed Test | Vilcom Networks Ltd";
+  }, []);
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Background gradient matching ContactUs */}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Calendar, User, ArrowRight, ChevronLeft, ChevronRight, Share2, Heart, MessageCircle } from "lucide-react";
+import { Search, Calendar, User, ArrowRight, ChevronLeft, ChevronRight, Share2, Heart, MessageCircle, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import FooterSection from "@/components/FooterSection";
@@ -179,8 +179,9 @@ const Blog = () => {
       </div>
 
       <Navbar />
-      
-      <main className="pt-28 pb-16 relative z-10">
+
+      {/* Main content */}
+      <main className="pt-32 pb-16 relative z-10">
         <div className="container mx-auto px-4">
           {/* Header Section */}
           <div className="text-center mb-12">
