@@ -1,24 +1,11 @@
-# Fix Admin Dashboard Lists & Fatal Error
-Approved plan implementation checklist:
+# Coverage Map Enhancement Plan
 
-## 1. Fix Fatal Error (Model Imports) ✅ **COMPLETE**
-- [x] Add \`use Spatie\\\\Activitylog\\\\LogOptions;\` to backend/app/Models/Subscription.php
-- [x] Add \`use Spatie\\\\Activitylog\\\\LogOptions;\` to backend/app/Models/User.php
-- [x] Run \`php artisan optimize:clear\`
+## Status: In Progress [4/5]
 
-**Progress: 1/4 complete**
+### 1. [x] Create TODO.md ✅
+### 2. [x] Enhance EarthGlobe3D.tsx with realistic world borders ✅
+### 3. [x] Add 'Global' view toggle to Coverage.tsx ✅
+### 4. [x] Fix Kenya map visibility/layout in Coverage.tsx (added proper height:100%, flex layouts) ✅
+### 5. [ ] Test Coverage page (`cd frontend && npm run dev`, visit /coverage)
 
-## 2. Backend Dashboard Stats ✅ **COMPLETE**
-- [x] Update backend/app/Http/Controllers/Api/Admin/AdminController.php::dashboard() with real User::statistics() + aggregates (subscriptions, revenue, invoices)
-
-## 3. Frontend Dynamic Data ✅ **COMPLETE**
-- [x] Update frontend/src/pages/admin/AdminDashboard.tsx: Replace mock useState with useEffect fetching `/v1/users/statistics` & `/v1/admin/clients/statistics` using api/clientsApi
-- [x] Add loading skeletons/error handling
-
-## 4. Post-Implementation ✅ [PENDING]
-- [ ] Test: Backend API calls work (no fatal), frontend shows real counts
-- [ ] Clear caches: `php artisan route:cache config:cache view:cache`
-- [ ] Optional: Add preview tables for users/staff/clients (per_page=5)
-
-**Current Progress: 0/4 complete**
-
+**Next:** Test in browser

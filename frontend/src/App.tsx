@@ -59,6 +59,8 @@ import QuoteManagement from "./pages/admin/QuoteManagement";
 import WhatsAppMessages from "./pages/admin/WhatsAppMessages";
 import MySubscriptions from "./pages/clients/MySubscriptions";
 import CoverageManagement from "./pages/admin/CoverageManagement";
+import Users from "./pages/admin/Users";
+import Clients from "./pages/admin/Clients";
 
 const queryClient = new QueryClient();
 
@@ -129,7 +131,9 @@ const App = () => (
             <Route path="/admin/testimonials" element={<TestimonialManagement />} />
             <Route path="/admin/faqs" element={<FaqManagement />} />
             <Route path="/admin/media" element={<MediaLibrary />} />
-            <Route path="/admin/coverage" element={<CoverageManagement />} />
+<Route path="/admin/coverage" element={<CoverageManagement />} />
+  <Route path="/admin/users" element={<Users />} />
+  <Route path="/admin/clients" element={<Clients />} />
             
             {/* Client Routes */}
             <Route path="/client/subscriptions" element={<MySubscriptions />} />
