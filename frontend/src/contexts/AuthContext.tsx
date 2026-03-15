@@ -72,11 +72,7 @@ interface RegisterData {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// ============================================
-// API URL
-// Strips trailing slash so all fetch paths can safely start with /
-// VITE_API_URL must be: http://localhost:8000/api/v1
-// ============================================
+
 
 const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
@@ -253,12 +249,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * Priority: admin > staff > client
    */
   const getDashboardUrl = (): string => {
-    if (!user) return '/';
     if (hasRole('admin')) return '/admin/dashboard';
     if (hasRole(['staff', 'sales', 'technical_support', 'web_developer', 'content_manager'])) {
       return '/staff/dashboard';
     }
-    return '/client/dashboard';
+    return '/client/dashboard'; // Default for clients or missing roles
   };
 
   const isAdmin = hasRole('admin');

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '@/lib/axios';
 import { clientsApi } from '@/services/clients';
+import { usersApi } from '@/services/users';
 import { Link, Navigate } from 'react-router-dom';
 import { 
   Users, 
@@ -161,7 +162,7 @@ const AdminDashboard = () => {
         setError(null);
 
         const [userRes, clientRes] = await Promise.all([
-          api.get('/v1/users/statistics'),
+          usersApi.statistics(),
           clientsApi.statistics()
         ]);
 
@@ -169,19 +170,19 @@ const AdminDashboard = () => {
         const clientStats = clientRes.data.data;
 
         setStats({
-          totalClients: userStats?.clients || 0,
+          totalClients: clientStats?.total_clients || userStats?.clients || 0,
           totalUsers: userStats?.total || 0,
           totalStaff: (userStats?.staff || 0) + (userStats?.admins || 0),
-          activeClients: userStats?.active || 0,
-          activeSubscriptions: 0,
-          monthlyRevenue: 0,
-          annualRevenue: 0,
-          openTickets: 0,
-          resolvedTickets: 0,
-          pendingInvoices: 0,
+          activeClients: clientStats?.active_clients || userStats?.active || 0,
+          activeSubscriptions: clientStats?.active_subscriptions || 0,
+          monthlyRevenue: clientStats?.monthly_revenue || 0,
+          annualRevenue: clientStats?.annual_revenue || 0,
+          openTickets: clientStats?.open_tickets || 0,
+          resolvedTickets: clientStats?.resolved_tickets || 0,
+          pendingInvoices: clientStats?.pending_invoices || 0,
           coverageAreas: 12,
-          churnRate: 2.3,
-          avgRevenuePerUser: 0
+          churnRate: clientStats?.churn_rate || 2.3,
+          avgRevenuePerUser: clientStats?.avg_revenue_per_user || 0
         });
       } catch (err) {
         console.error('Failed to fetch dashboard stats:', err);

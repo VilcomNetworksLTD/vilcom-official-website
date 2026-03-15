@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { MessageCircle, X, Send, User, Mail, Phone } from "lucide-react";
 import whatsappService, { WhatsAppOption } from "@/services/whatsapp";
 
-const WHATSAPP_NUMBER = "0726888777";
+const LOCAL_WHATSAPP_NUMBER = "0726888777"; // Your local format number
 
 // Glassmorphism style matching the project
 const glassCardStyle = {
@@ -23,12 +23,13 @@ export default function WhatsAppButton() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Load WhatsApp options from API
     const loadOptions = async () => {
       try {
         const response = await whatsappService.getOptions();
         if (response.data.success) {
           setOptions(response.data.data);
+          // You could also set whatsapp number dynamically here if API returns it:
+          // const fetchedNumber = response.data.whatsapp_number || LOCAL_WHATSAPP_NUMBER;
         }
       } catch (error) {
         console.error("Failed to load WhatsApp options:", error);
@@ -46,15 +47,47 @@ export default function WhatsAppButton() {
     setCustomMessage(option.description);
   };
 
+  const getInternationalNumber = () => {
+    // Convert 07xxxxxxxx → 2547xxxxxxxx
+    return "254" + LOCAL_WHATSAPP_NUMBER.replace(/^0/, "");
+  };
+
+const buildWhatsAppMessage = () => {
+  const parts = [];
+
+  if (name.trim()) parts.push(`Name: ${name.trim()}`);
+  if (phone.trim()) parts.push(`Phone: ${phone.trim()}`);
+  if (email.trim()) parts.push(`Email: ${email.trim()}`);
+
+  // Add the selected option title + description (if any)
+  if (selectedOption) {
+    parts.push(`${selectedOption.title}\n${selectedOption.description}`);
+  }
+
+  // Only add customMessage if:
+  // - No option was selected (pure custom)
+  // - OR the user actually changed/added something beyond the default description
+  if (!selectedOption || customMessage.trim() !== selectedOption.description) {
+    if (customMessage.trim()) {
+      parts.push(customMessage.trim());
+    }
+  }
+
+  return parts.filter(Boolean).join("\n\n");
+};
+
   const handleSendMessage = async () => {
     if (!customMessage.trim()) return;
 
     setIsLoading(true);
 
+    const internationalNumber = getInternationalNumber();
+    const fullMessage = buildWhatsAppMessage();
+
     try {
-      // Log the message to backend for tracking
+      // Log to backend
       await whatsappService.logMessage({
-        message: customMessage,
+        message: fullMessage, // log the full context version
         message_type: selectedOption?.id === 'other' ? 'custom' : 'predefined',
         name: name || undefined,
         email: email || undefined,
@@ -62,17 +95,17 @@ export default function WhatsAppButton() {
         page_url: window.location.href,
       });
 
-      // Open WhatsApp with the message (but without pre-filled text)
-      // User will type the message themselves in WhatsApp
-      whatsappService.openWhatsApp(WHATSAPP_NUMBER);
+      // Open WhatsApp with pre-filled message
+      whatsappService.openWhatsApp(internationalNumber, fullMessage);
 
-      // Reset and close
       resetForm();
       setIsOpen(false);
     } catch (error) {
       console.error("Failed to log message:", error);
-      // Still open WhatsApp even if logging fails
-      whatsappService.openWhatsApp(WHATSAPP_NUMBER);
+
+      // Fallback: still open WhatsApp even if logging fails
+      whatsappService.openWhatsApp(internationalNumber, fullMessage);
+
       resetForm();
       setIsOpen(false);
     } finally {
@@ -123,12 +156,11 @@ export default function WhatsAppButton() {
         onClick={handleClose}
       />
 
-      {/* Dialog - Centered with Glassmorphism */}
+      {/* Dialog */}
       <div 
         className="relative w-full max-w-md max-h-[90vh] overflow-hidden rounded-3xl animate-in zoom-in-95 fade-in duration-300 backdrop-blur-md"
         style={glassCardStyle}
       >
-        {/* Inner glow effect */}
         <div className="absolute inset-0 rounded-3xl" style={{ boxShadow: 'inset 0 0 30px rgba(255,255,255,0.05)' }} />
 
         {/* Close Button */}
@@ -156,10 +188,9 @@ export default function WhatsAppButton() {
         {/* Content */}
         <div className="relative px-6 pb-4 overflow-y-auto max-h-[50vh]">
           {!showCustomInput ? (
-            // Show predefined options
             <div className="space-y-3">
               <p className="text-white/60 text-sm mb-4">
-                Select a topic to get started. You'll be able to type your message before sending.
+                Select a topic to get started. Your message will be pre-filled in WhatsApp.
               </p>
               {options.map((option) => (
                 <button
@@ -172,7 +203,6 @@ export default function WhatsAppButton() {
                 </button>
               ))}
 
-              {/* Custom Message Button */}
               <button
                 onClick={handleCustomMessage}
                 className="w-full p-4 rounded-xl bg-gradient-to-r from-[hsl(145,80%,40%)] to-[hsl(145,60%,30%)] hover:opacity-90 transition-all text-center"
@@ -182,7 +212,6 @@ export default function WhatsAppButton() {
               </button>
             </div>
           ) : (
-            // Show custom input form
             <div className="space-y-4">
               <div className="p-4 rounded-xl bg-white/5 border border-white/10">
                 <label className="text-white/70 text-sm font-semibold block mb-2">
@@ -193,11 +222,10 @@ export default function WhatsAppButton() {
                   onChange={(e) => setCustomMessage(e.target.value)}
                   placeholder="Type your message here..."
                   className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-white placeholder-white/40 focus:outline-none focus:border-[hsl(145,80%,40%)] resize-none"
-                  rows={3}
+                  rows={4}
                 />
               </div>
 
-              {/* Optional Contact Info */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 rounded-xl bg-white/5 border border-white/10">
                   <label className="text-white/50 text-xs font-semibold flex items-center gap-1 mb-1">
@@ -238,7 +266,6 @@ export default function WhatsAppButton() {
                 />
               </div>
 
-              {/* Back Button */}
               <button
                 onClick={() => {
                   setShowCustomInput(false);
@@ -278,7 +305,7 @@ export default function WhatsAppButton() {
               </button>
             </div>
             <p className="text-white/50 text-xs text-center mt-3">
-              Clicking "Send to WhatsApp" will open the app where you can review and send your message
+              Opens WhatsApp with your message pre-filled — just tap Send
             </p>
           </div>
         )}
@@ -286,4 +313,3 @@ export default function WhatsAppButton() {
     </div>
   );
 }
-

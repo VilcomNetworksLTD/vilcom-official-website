@@ -247,21 +247,7 @@ const Atmosphere = () => (
   </mesh>
 );
 
-const GlowRing = () => (
-  <group>
-    {[[2.28, 2.42], [2.48, 2.68], [2.72, 2.92]].map(([inner, outer], i) => (
-      <mesh key={i} rotation={[Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[inner, outer, 72]} />
-        <meshBasicMaterial 
-          color={i === 0 ? "#4a90e2" : i === 1 ? "#22c55e" : "#eab308"} 
-          transparent opacity={[0.12, 0.18, 0.08][i]} 
-          side={THREE.DoubleSide} 
-          depthWrite={false} 
-        />
-      </mesh>
-    ))}
-  </group>
-);
+
 
 // ─── Globe Mesh with Texture ─────────────────────────────────────────────────
 const EarthMesh = ({ texture }: { texture: THREE.Texture }) => {
@@ -292,7 +278,6 @@ const Scene = ({ texture }: { texture: THREE.Texture }) => (
     <EarthPoints count={20000} />
     <GridLines />
     <Atmosphere />
-    <GlowRing />
   </>
 );
 

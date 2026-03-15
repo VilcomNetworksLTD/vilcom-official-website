@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class LoginController extends Controller
 {
@@ -35,12 +36,12 @@ class LoginController extends Controller
     {
         // Check rate limiting
         $key = $this->throttleKey($request);
-        
+
         if (RateLimiter::tooManyAttempts($key, self::MAX_ATTEMPTS)) {
             $seconds = RateLimiter::availableIn($key);
-            
+
             $this->logFailedAttempt($request, 'Too many login attempts');
-            
+
             return response()->json([
                 'success' => false,
                 'message' => "Too many login attempts. Please try again in {$seconds} seconds.",
@@ -54,9 +55,9 @@ class LoginController extends Controller
         // Validate credentials
         if (!$user || !Hash::check($request->password, $user->password)) {
             RateLimiter::hit($key, self::LOCKOUT_DURATION);
-            
+
             $this->logFailedAttempt($request, 'Invalid credentials');
-            
+
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
@@ -65,7 +66,7 @@ class LoginController extends Controller
         // Check account status
         if ($user->status === 'suspended') {
             $this->logFailedAttempt($request, 'Account suspended', $user->id);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Your account has been suspended. Please contact support.',
@@ -77,7 +78,7 @@ class LoginController extends Controller
 
         if ($user->status === 'banned') {
             $this->logFailedAttempt($request, 'Account banned', $user->id);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Your account has been permanently banned.',
@@ -87,7 +88,7 @@ class LoginController extends Controller
 
         if ($user->status === 'inactive') {
             $this->logFailedAttempt($request, 'Account inactive', $user->id);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Your account is inactive. Please contact support to reactivate.',
@@ -98,7 +99,7 @@ class LoginController extends Controller
         if ($user->two_factor_enabled && $user->two_factor_confirmed_at) {
             // Store user ID in session for 2FA verification
             $request->session()->put('2fa_user_id', $user->id);
-            
+
             return response()->json([
                 'success' => true,
                 'requires_2fa' => true,
@@ -133,6 +134,15 @@ class LoginController extends Controller
             'description' => 'User logged in successfully',
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
+        ]);
+
+        // Debug logging for dashboard redirect issue
+\Illuminate\Support\Facades\Log::info('Login success - roles check', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'roles_count' => $user->roles->count(),
+            'roles' => $user->roles->pluck('name')->toArray(),
+            'status' => $user->status
         ]);
 
         return response()->json([
@@ -212,7 +222,7 @@ class LoginController extends Controller
     private function getTokenAbilities(User $user): array
     {
         $permissions = $user->getAllPermissions()->pluck('name')->toArray();
-        
+
         // Add role-specific abilities
         if ($user->hasRole('admin')) {
             return ['*']; // Admin gets all abilities
@@ -273,7 +283,7 @@ class LoginController extends Controller
     {
         // This is a placeholder - implement actual 2FA verification
         // using Google2FA or similar package
-        
+
         // For now, accept any 6-digit code in development
         if (app()->environment('local')) {
             return strlen($code) === 6 && is_numeric($code);
@@ -281,7 +291,7 @@ class LoginController extends Controller
 
         // Implement actual verification here
         // Example: return Google2FA::verifyKey($user->two_factor_secret, $code);
-        
+
         return false;
     }
 

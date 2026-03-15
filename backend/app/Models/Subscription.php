@@ -373,4 +373,4 @@ class Subscription extends Model
     }
 }
 
-        parent::boot();
+

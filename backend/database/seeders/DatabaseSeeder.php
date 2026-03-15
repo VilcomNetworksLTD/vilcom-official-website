@@ -3,58 +3,49 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // Run role and permission seeder first
+        // 1. Roles & permissions first — everything depends on these
         $this->call(RoleAndPermissionSeeder::class);
 
-        // Seed categories (must run before products)
+        // 2. Catalogue
         $this->call(CategorySeeder::class);
-
-        // Seed products
         $this->call(ProductSeeder::class);
 
-        // Create admin user
+        // 3. Coverage — counties → regions → survey points → hubs
+        $this->call(CoverageZoneSeeder::class);
+
+        // 4. Admin user
         $admin = User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@vilcom.co.ke',
-            'password' => Hash::make('Admin@123'),
-            'phone' => '+254700000000',
-            'customer_type' => 'business',
-            'company_name' => 'Vilcom Networks',
-            'status' => 'active',
+            'name'              => 'Admin User',
+            'email'             => 'admin@vilcom.co.ke',
+            'password'          => Hash::make('Adminero@123'),
+            'phone'             => '+254700000000',
+            'customer_type'     => 'business',
+            'company_name'      => 'Vilcom Networks',
+            'status'            => 'active',
             'email_verified_at' => now(),
         ]);
-
-        // Assign admin role
         $admin->assignRole('admin');
+        $this->command->info('Admin: admin@vilcom.co.ke / Adminero@123');
 
-        $this->command->info('Admin user created: admin@vilcom.co.ke / Admin@123');
-
-        // Create a test staff user
+        // 5. Staff user
         $staff = User::create([
-            'name' => 'Staff User',
-            'email' => 'staff@vilcom.co.ke',
-            'password' => Hash::make('Staff@123'),
-            'phone' => '+254711111111',
-            'customer_type' => 'business',
-            'company_name' => 'Vilcom Networks',
-            'status' => 'active',
+            'name'              => 'Staff User',
+            'email'             => 'staff@vilcom.co.ke',
+            'password'          => Hash::make('Staffuto@123'),
+            'phone'             => '+254711111111',
+            'customer_type'     => 'business',
+            'company_name'      => 'Vilcom Networks',
+            'status'            => 'active',
             'email_verified_at' => now(),
         ]);
-
-        // Assign staff role
         $staff->assignRole('staff');
-
-        $this->command->info('Staff user created: staff@vilcom.co.ke / Staff@123');
+        $this->command->info('Staff: staff@vilcom.co.ke / Staffuto@123');
     }
 }

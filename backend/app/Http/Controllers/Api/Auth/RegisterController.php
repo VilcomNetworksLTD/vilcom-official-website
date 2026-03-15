@@ -39,18 +39,18 @@ class RegisterController extends Controller
                 'status' => 'pending_verification',
                 'timezone' => $request->timezone ?? 'Africa/Nairobi',
                 'language' => $request->language ?? 'en',
-                
+
                 // Business info (if provided)
                 'company_name' => $request->company_name,
                 'company_registration' => $request->company_registration,
                 'tax_pin' => $request->tax_pin,
-                
+
                 // Address info
                 'address' => $request->address,
                 'city' => $request->city,
                 'county' => $request->county,
                 'postal_code' => $request->postal_code,
-                
+
                 // Set initial preferences
                 'preferences' => [
                     'notifications' => [
@@ -62,8 +62,11 @@ class RegisterController extends Controller
                 ],
             ]);
 
-            // Assign default 'client' role
-            $user->assignRole('client');
+            // Force assign default 'client' role (fix for dashboard redirect)
+            if (!$user->hasRole('client')) {
+                $user->assignRole('client');
+            }
+\Illuminate\Support\Facades\Log::info('User registered', ['user_id' => $user->id, 'roles_assigned' => ['client']]);
 
             // Log activity
             UserActivity::create([
@@ -104,7 +107,7 @@ class RegisterController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             \Log::error('Registration failed', [
                 'error' => $e->getMessage(),
                 'email' => $request->email,
@@ -129,17 +132,17 @@ class RegisterController extends Controller
     {
         // Remove any spaces or special characters
         $phone = preg_replace('/[^0-9+]/', '', $phone);
-        
+
         // Convert to international format if starts with 0
         if (substr($phone, 0, 1) === '0') {
             $phone = '+254' . substr($phone, 1);
         }
-        
+
         // Add +254 if not present
         if (substr($phone, 0, 1) !== '+') {
             $phone = '+254' . $phone;
         }
-        
+
         return $phone;
     }
 

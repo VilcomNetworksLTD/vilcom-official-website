@@ -28,6 +28,8 @@ export interface UserFilters {
   search?: string;
   status?: string;
   customer_type?: string;
+  role?: string;                                        // single role (legacy)
+  roles?: ('staff' | 'sales' | 'technical_support' | 'admin' | 'client')[]; // multi-role
   sort_by?: string;
   sort_order?: "asc" | "desc";
   per_page?: number;
@@ -43,6 +45,7 @@ export interface PaginatedResponse<T> {
 
 export const usersApi = {
   list: (filters: UserFilters = {}): Promise<PaginatedResponse<User>> => {
+    // axios serialises arrays as roles[]=staff&roles[]=sales which Laravel reads as $request->roles
     return api.get("/users", { params: filters });
   },
 
@@ -74,4 +77,3 @@ export const usersApi = {
     return api.post(`/users/${id}/activate`);
   },
 };
-

@@ -42,6 +42,9 @@ import Gallery from "./pages/Gallery";
 import Media from "./pages/Media";
 import ClientDashboard from "./pages/clients/ClientDashboard";
 import StaffDashboard from "./pages/staff/StaffDashboard";
+import TicketManagement from "./pages/admin/TicketManagement";
+import MyTickets from "./pages/clients/MyTickets";
+import InvoiceManagement from "./pages/admin/InvoiceManagement";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import DashboardRedirect from "./pages/DashboardRedirect";
 import CookieConsent from "./components/CookieConsent";
@@ -61,6 +64,8 @@ import MySubscriptions from "./pages/clients/MySubscriptions";
 import CoverageManagement from "./pages/admin/CoverageManagement";
 import Users from "./pages/admin/Users";
 import Clients from "./pages/admin/Clients";
+import LeadManagement from "./pages/admin/LeadManagement";
+
 
 const queryClient = new QueryClient();
 
@@ -124,7 +129,9 @@ const App = () => (
             <Route path="/admin/products" element={<ProductManagement />} />
             <Route path="/admin/subscriptions" element={<SubscriptionManagement />} />
             <Route path="/admin/quotes" element={<QuoteManagement />} />
-            <Route path="/admin/whatsapp-messages" element={<WhatsAppMessages />} />
+            <Route path="/admin/whatsapp-messages" element={<WhatsAppMessages />} /> 
+            <Route path="/admin/tickets"   element={<TicketManagement />} />
+
             <Route path="/admin/staff" element={<StaffManagement />} />
             <Route path="/admin/roles" element={<RolesManagement />} />
             <Route path="/admin/banners" element={<BannerManagement />} />
@@ -132,12 +139,15 @@ const App = () => (
             <Route path="/admin/faqs" element={<FaqManagement />} />
             <Route path="/admin/media" element={<MediaLibrary />} />
 <Route path="/admin/coverage" element={<CoverageManagement />} />
+<Route path="/admin/invoices" element={<InvoiceManagement />} />
   <Route path="/admin/users" element={<Users />} />
   <Route path="/admin/clients" element={<Clients />} />
+  <Route path="/admin/leads" element={<LeadManagement />} />
             
             {/* Client Routes */}
             <Route path="/client/subscriptions" element={<MySubscriptions />} />
-            
+           
+<Route path="/client/tickets"  element={<MyTickets />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

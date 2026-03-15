@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Webhook;
 
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
-use App\Services\PaymentService;
+use App\Services\Billing\PaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 

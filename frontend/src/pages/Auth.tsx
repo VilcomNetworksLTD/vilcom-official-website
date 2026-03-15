@@ -30,8 +30,8 @@ const Auth = () => {
 
     try {
       await login(loginForm.email, loginForm.password);
-      // Redirect to appropriate dashboard based on user role
-      navigate(getDashboardUrl());
+      const dashboardUrl = getDashboardUrl();
+      navigate(dashboardUrl);
     } catch (err: any) {
       if (err.message === '2FA_REQUIRED') {
         setError('Two-factor authentication is required. Please enter your 2FA code.');
@@ -84,16 +84,11 @@ const Auth = () => {
         {/* Logo */}
         <div className="mb-auto">
           <Link to="/" className="inline-block">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                <svg viewBox="0 0 24 24" className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                  <path d="M2 17l10 5 10-5" />
-                  <path d="M2 12l10 5 10-5" />
-                </svg>
-              </div>
-              <span className="text-2xl font-bold text-white tracking-tight">VILCOM</span>
-            </div>
+              <img 
+                src="/vilcomsignature.png" 
+                alt="Vilcom Logo" 
+                className="h-28 w-auto flex-shrink-0"
+              />
           </Link>
         </div>
 
@@ -221,14 +216,11 @@ const Auth = () => {
           {/* Mobile Logo (visible on small screens) */}
           <div className="lg:hidden text-center mt-6">
             <Link to="/" className="inline-flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                  <path d="M2 17l10 5 10-5" />
-                  <path d="M2 12l10 5 10-5" />
-                </svg>
-              </div>
-              <span className="text-xl font-bold text-white tracking-tight">VILCOM</span>
+              <img 
+                src="/vilcomsignature.png" 
+                alt="Vilcom Logo" 
+                className="h-24 w-auto flex-shrink-0"
+              />
             </Link>
           </div>
         </div>

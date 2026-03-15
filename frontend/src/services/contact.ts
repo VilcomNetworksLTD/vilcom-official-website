@@ -1,5 +1,7 @@
 import axios from '@/lib/axios';
 
+
+
 export interface ContactMessage {
   id?: number;
   name: string;
@@ -22,25 +24,20 @@ export interface Department {
 }
 
 export const contactService = {
-  /**
-   * Submit a contact form message (public endpoint)
-   */
+  // ── Public ────────────────────────────────────────────────────────────────
+
   async sendMessage(data: ContactMessage): Promise<ContactMessageResponse> {
-    const response = await axios.post('/api/v1/contact/messages', data);
+    const response = await axios.post('/contact/messages', data);
     return response.data;
   },
 
-  /**
-   * Get available departments
-   */
   async getDepartments(): Promise<{ data: Department[] }> {
-    const response = await axios.get('/api/v1/contact/departments');
+    const response = await axios.get('/contact/departments');
     return response.data;
   },
 
-  /**
-   * Admin: Get all contact messages
-   */
+  // ── Admin ─────────────────────────────────────────────────────────────────
+
   async getAdminMessages(params?: {
     status?: string;
     department?: string;
@@ -48,70 +45,48 @@ export const contactService = {
     page?: number;
     per_page?: number;
   }) {
-    const response = await axios.get('/api/v1/admin/contact/messages', { params });
+    const response = await axios.get('/admin/contact/messages', { params });
     return response.data;
   },
 
-  /**
-   * Admin: Get single message
-   */
   async getAdminMessage(id: number) {
-    const response = await axios.get(`/api/v1/admin/contact/messages/${id}`);
+    const response = await axios.get(`/admin/contact/messages/${id}`);
     return response.data;
   },
 
-  /**
-   * Admin: Update message
-   */
   async updateAdminMessage(id: number, data: {
     status?: string;
     admin_notes?: string;
     assigned_staff_id?: number;
   }) {
-    const response = await axios.put(`/api/v1/admin/contact/messages/${id}`, data);
+    const response = await axios.put(`/admin/contact/messages/${id}`, data);
     return response.data;
   },
 
-  /**
-   * Admin: Mark as contacted
-   */
   async markContacted(id: number) {
-    const response = await axios.post(`/api/v1/admin/contact/messages/${id}/contacted`);
+    const response = await axios.post(`/admin/contact/messages/${id}/contacted`);
     return response.data;
   },
 
-  /**
-   * Admin: Mark as resolved
-   */
   async markResolved(id: number) {
-    const response = await axios.post(`/api/v1/admin/contact/messages/${id}/resolved`);
+    const response = await axios.post(`/admin/contact/messages/${id}/resolved`);
     return response.data;
   },
 
-  /**
-   * Admin: Delete message
-   */
   async deleteMessage(id: number) {
-    const response = await axios.delete(`/api/v1/admin/contact/messages/${id}`);
+    const response = await axios.delete(`/admin/contact/messages/${id}`);
     return response.data;
   },
 
-  /**
-   * Admin: Get statistics
-   */
   async getStatistics() {
-    const response = await axios.get('/api/v1/admin/contact/messages/statistics');
+    const response = await axios.get('/admin/contact/messages/statistics');
     return response.data;
   },
 
-  /**
-   * Admin: Get available staff for assignment
-   */
   async getStaff() {
-    const response = await axios.get('/api/v1/admin/contact/messages/staff');
+    const response = await axios.get('/admin/contact/messages/staff');
     return response.data;
   },
 };
 
 export default contactService;
-

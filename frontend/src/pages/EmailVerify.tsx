@@ -22,7 +22,7 @@ const EmailVerify = () => {
       }
 
       try {
-        // axios baseURL is already http://localhost:8000/api/v1
+        
         // so we use a relative path: /auth/email/verify/{id}/{hash}
         const response = await api.get(`/auth/email/verify/${id}/${hash}`);
 

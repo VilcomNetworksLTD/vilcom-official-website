@@ -84,7 +84,7 @@ const Coverage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 overflow-hidden" style={{ paddingTop: "140px" }}>
       <Navbar />
 
       <main style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
@@ -456,13 +456,27 @@ const Coverage = () => {
           from { transform: translateY(12px); opacity: 0; }
           to { transform: translateY(0); opacity: 1; }
         }
-        *::-webkit-scrollbar { width: 4px; height: 4px; }
-        *::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); }
-        *::-webkit-scrollbar-thumb { 
-          background: rgba(255,255,255,0.3); 
-          borderRadius: 2px; 
+        html {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255,255,255,0.5) rgba(0,0,0,0.1);
         }
-        *::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.5); }
+        *::-webkit-scrollbar {
+          width: 12px;
+        }
+        *::-webkit-scrollbar-track {
+          background: rgba(255,255,255,0.1);
+          border-radius: 10px;
+        }
+        *::-webkit-scrollbar-thumb {
+          background: linear-gradient(180deg, rgba(255,255,255,0.4), rgba(255,255,255,0.7));
+          border-radius: 10px;
+          border: 2px solid rgba(255,255,255,0.1);
+          box-shadow: inset 0 0 6px rgba(0,0,0,0.2);
+        }
+        *::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.9));
+          box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+        }
       `}</style>
     </div>
   );

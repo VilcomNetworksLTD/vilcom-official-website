@@ -3,486 +3,145 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Ticket;
+use App\Models\TicketReply;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
 
-/**
- * TicketController - API Controller for Ticket Management
- *
- * Handles CRUD operations for support tickets.
- * Only accessible to authenticated users.
- */
 class TicketController extends Controller
 {
-    /**
-     * Constructor - Apply auth middleware
-     */
-    public function __construct()
+    // ── Client: List own tickets ──────────────────────────────────────────────
+    public function index(Request $request)
     {
-        $this->middleware('auth:sanctum');
+        $user  = $request->user();
+        $query = Ticket::with(['assignedTo:id,name', 'replies'])
+            ->withCount('replies');
+
+        if (!$user->hasAnyRole(['admin', 'staff', 'technical_support'])) {
+            $query->where('user_id', $user->id);
+        }
+
+        if ($request->filled('status'))   $query->where('status', $request->status);
+        if ($request->filled('priority')) $query->where('priority', $request->priority);
+        if ($request->filled('search'))   $query->where('title', 'LIKE', "%{$request->search}%");
+
+        $tickets = $query->latest()->paginate($request->get('per_page', 15));
+
+        return response()->json([
+            'data' => $tickets->items(),
+            'meta' => ['total' => $tickets->total(), 'per_page' => $tickets->perPage(),
+                       'current_page' => $tickets->currentPage(), 'last_page' => $tickets->lastPage()],
+        ]);
     }
 
-    /**
-     * Get all tickets for the authenticated user
-     *
-     * @return JsonResponse
-     */
-    public function index(): JsonResponse
+    // ── Show single ───────────────────────────────────────────────────────────
+    public function show(Request $request, Ticket $ticket)
     {
-        try {
-            $user = Auth::user();
-
-            
-            $tickets = [];
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Tickets retrieved successfully',
-                'data' => $tickets,
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve tickets', [
-                'user_id' => Auth::id(),
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve tickets',
-                'error' => $e->getMessage(),
-            ], 500);
+        $user = $request->user();
+        if (!$user->hasAnyRole(['admin','staff','technical_support']) && $ticket->user_id !== $user->id) {
+            abort(403);
         }
+        $ticket->load(['user:id,name,email','assignedTo:id,name','replies.user:id,name']);
+        return response()->json(['data' => $ticket]);
     }
 
-    /**
-     * Get a specific ticket
-     *
-     * @param int $ticket
-     * @return JsonResponse
-     */
-    public function show(int $ticket): JsonResponse
+    // ── Client: Create ────────────────────────────────────────────────────────
+    public function store(Request $request)
     {
-        try {
-            $user = Auth::user();
+        $validated = $request->validate([
+            'title'       => 'required|string|max:255',
+            'description' => 'required|string',
+            'priority'    => 'nullable|in:low,medium,high,urgent',
+            'category'    => 'nullable|string|max:100',
+        ]);
 
-            // For now, return not found as ticket model doesn't exist yet
-            return response()->json([
-                'success' => false,
-                'message' => 'Ticket not found',
-            ], 404);
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve ticket', [
-                'user_id' => Auth::id(),
-                'ticket_id' => $ticket,
-                'error' => $e->getMessage(),
-            ]);
+        $ticket = Ticket::create([
+            ...$validated,
+            'user_id'  => $request->user()->id,
+            'status'   => 'open',
+            'priority' => $validated['priority'] ?? 'medium',
+        ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve ticket',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        return response()->json(['data' => $ticket->load('user:id,name,email'), 'message' => 'Ticket created.'], 201);
     }
 
-    /**
-     * Create a new ticket
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function store(Request $request): JsonResponse
+    // ── Update (client edits own open ticket) ─────────────────────────────────
+    public function update(Request $request, Ticket $ticket)
     {
-        try {
-            $validated = $request->validate([
-                'subject' => 'required|string|max:255',
-                'message' => 'required|string|max:1000',
-                'priority' => 'sometimes|in:low,medium,high,urgent',
-                'category' => 'sometimes|string|max:100',
-            ]);
+        $user = $request->user();
+        if (!$user->hasAnyRole(['admin','staff','technical_support']) && $ticket->user_id !== $user->id) abort(403);
 
-            $user = Auth::user();
+        $validated = $request->validate([
+            'title'       => 'sometimes|string|max:255',
+            'description' => 'sometimes|string',
+            'priority'    => 'sometimes|in:low,medium,high,urgent',
+        ]);
 
-            // For now, return success as ticket model doesn't exist yet
-            return response()->json([
-                'success' => true,
-                'message' => 'Ticket created successfully',
-                'data' => [
-                    'id' => 1, // Placeholder
-                    'subject' => $validated['subject'],
-                    'message' => $validated['message'],
-                    'status' => 'open',
-                    'created_at' => now(),
-                ],
-            ], 201);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
-            Log::error('Failed to create ticket', [
-                'user_id' => Auth::id(),
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create ticket',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        $ticket->update($validated);
+        return response()->json(['data' => $ticket->fresh(), 'message' => 'Ticket updated.']);
     }
 
-    /**
-     * Update a ticket
-     *
-     * @param Request $request
-     * @param int $ticket
-     * @return JsonResponse
-     */
-    public function update(Request $request, int $ticket): JsonResponse
+    // ── Reply ─────────────────────────────────────────────────────────────────
+    public function reply(Request $request, Ticket $ticket)
     {
-        try {
-            $validated = $request->validate([
-                'subject' => 'sometimes|string|max:255',
-                'message' => 'sometimes|string|max:1000',
-                'status' => 'sometimes|in:open,in_progress,resolved,closed',
-            ]);
+        $user = $request->user();
+        if (!$user->hasAnyRole(['admin','staff','technical_support']) && $ticket->user_id !== $user->id) abort(403);
 
-            $user = Auth::user();
+        $validated = $request->validate(['message' => 'required|string']);
 
-            // For now, return success as ticket model doesn't exist yet
-            return response()->json([
-                'success' => true,
-                'message' => 'Ticket updated successfully',
-                'data' => [
-                    'id' => $ticket,
-                    'subject' => $validated['subject'] ?? 'Updated Subject',
-                    'status' => $validated['status'] ?? 'open',
-                    'updated_at' => now(),
-                ],
-            ]);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
-            Log::error('Failed to update ticket', [
-                'user_id' => Auth::id(),
-                'ticket_id' => $ticket,
-                'error' => $e->getMessage(),
-            ]);
+        $reply = TicketReply::create([
+            'ticket_id'   => $ticket->id,
+            'user_id'     => $user->id,
+            'message'     => $validated['message'],
+            'is_internal' => false,
+        ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update ticket',
-                'error' => $e->getMessage(),
-            ], 500);
+        // Reopen if client replies on resolved ticket
+        if (!$user->hasAnyRole(['admin','staff','technical_support']) && in_array($ticket->status, ['resolved','closed'])) {
+            $ticket->update(['status' => 'open']);
         }
+
+        return response()->json(['data' => $reply->load('user:id,name'), 'message' => 'Reply added.'], 201);
     }
 
-    /**
-     * Add a reply to a ticket
-     *
-     * @param Request $request
-     * @param int $ticket
-     * @return JsonResponse
-     */
-    public function reply(Request $request, int $ticket): JsonResponse
+    // ── Staff: Assign ─────────────────────────────────────────────────────────
+    public function assign(Request $request, Ticket $ticket)
     {
-        try {
-            $validated = $request->validate([
-                'message' => 'required|string|max:1000',
-            ]);
-
-            $user = Auth::user();
-
-            // For now, return success as ticket model doesn't exist yet
-            return response()->json([
-                'success' => true,
-                'message' => 'Reply added successfully',
-                'data' => [
-                    'ticket_id' => $ticket,
-                    'message' => $validated['message'],
-                    'user_id' => $user->id,
-                    'created_at' => now(),
-                ],
-            ]);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
-            Log::error('Failed to add reply', [
-                'user_id' => Auth::id(),
-                'ticket_id' => $ticket,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to add reply',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        $validated = $request->validate(['assigned_to' => 'required|exists:users,id']);
+        $ticket->update([...$validated, 'status' => 'in_progress']);
+        return response()->json(['data' => $ticket->fresh(['assignedTo:id,name']), 'message' => 'Ticket assigned.']);
     }
 
-    /**
-     * Assign a ticket to a staff member (Admin/Staff only)
-     *
-     * @param Request $request
-     * @param int $ticket
-     * @return JsonResponse
-     */
-    public function assign(Request $request, int $ticket): JsonResponse
+    // ── Staff: Resolve ────────────────────────────────────────────────────────
+    public function resolve(Request $request, Ticket $ticket)
     {
-        try {
-            $validated = $request->validate([
-                'assigned_to' => 'required|integer|exists:users,id',
-            ]);
-
-            $user = Auth::user();
-
-            // Check if user has permission to assign tickets
-            if (!$user->hasRole(['admin', 'staff', 'technical_support'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized to assign tickets',
-                ], 403);
-            }
-
-            // For now, return success as ticket model doesn't exist yet
-            return response()->json([
-                'success' => true,
-                'message' => 'Ticket assigned successfully',
-                'data' => [
-                    'ticket_id' => $ticket,
-                    'assigned_to' => $validated['assigned_to'],
-                    'assigned_by' => $user->id,
-                    'assigned_at' => now(),
-                ],
-            ]);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
-            Log::error('Failed to assign ticket', [
-                'user_id' => Auth::id(),
-                'ticket_id' => $ticket,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to assign ticket',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        $ticket->update(['status' => 'resolved', 'resolved_at' => now()]);
+        return response()->json(['data' => $ticket->fresh(), 'message' => 'Ticket resolved.']);
     }
 
-    /**
-     * Resolve a ticket (Admin/Staff only)
-     *
-     * @param Request $request
-     * @param int $ticket
-     * @return JsonResponse
-     */
-    public function resolve(Request $request, int $ticket): JsonResponse
+    // ── Staff: Close ──────────────────────────────────────────────────────────
+    public function close(Request $request, Ticket $ticket)
     {
-        try {
-            $user = Auth::user();
-
-            // Check if user has permission to resolve tickets
-            if (!$user->hasRole(['admin', 'staff', 'technical_support'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized to resolve tickets',
-                ], 403);
-            }
-
-            // For now, return success as ticket model doesn't exist yet
-            return response()->json([
-                'success' => true,
-                'message' => 'Ticket resolved successfully',
-                'data' => [
-                    'ticket_id' => $ticket,
-                    'status' => 'resolved',
-                    'resolved_by' => $user->id,
-                    'resolved_at' => now(),
-                ],
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to resolve ticket', [
-                'user_id' => Auth::id(),
-                'ticket_id' => $ticket,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to resolve ticket',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        $ticket->update(['status' => 'closed', 'closed_at' => now()]);
+        return response()->json(['data' => $ticket->fresh(), 'message' => 'Ticket closed.']);
     }
 
-    /**
-     * Close a ticket (Admin/Staff only)
-     *
-     * @param Request $request
-     * @param int $ticket
-     * @return JsonResponse
-     */
-    public function close(Request $request, int $ticket): JsonResponse
+    // ── Staff: Reopen ─────────────────────────────────────────────────────────
+    public function reopen(Request $request, Ticket $ticket)
     {
-        try {
-            $user = Auth::user();
-
-            // Check if user has permission to close tickets
-            if (!$user->hasRole(['admin', 'staff', 'technical_support'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized to close tickets',
-                ], 403);
-            }
-
-            // For now, return success as ticket model doesn't exist yet
-            return response()->json([
-                'success' => true,
-                'message' => 'Ticket closed successfully',
-                'data' => [
-                    'ticket_id' => $ticket,
-                    'status' => 'closed',
-                    'closed_by' => $user->id,
-                    'closed_at' => now(),
-                ],
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to close ticket', [
-                'user_id' => Auth::id(),
-                'ticket_id' => $ticket,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to close ticket',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        $ticket->update(['status' => 'open', 'resolved_at' => null, 'closed_at' => null]);
+        return response()->json(['data' => $ticket->fresh(), 'message' => 'Ticket reopened.']);
     }
 
-    /**
-     * Reopen a ticket (Admin/Staff only)
-     *
-     * @param Request $request
-     * @param int $ticket
-     * @return JsonResponse
-     */
-    public function reopen(Request $request, int $ticket): JsonResponse
+    // ── Staff: Internal note ──────────────────────────────────────────────────
+    public function addInternalNote(Request $request, Ticket $ticket)
     {
-        try {
-            $user = Auth::user();
-
-            // Check if user has permission to reopen tickets
-            if (!$user->hasRole(['admin', 'staff', 'technical_support'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized to reopen tickets',
-                ], 403);
-            }
-
-            // For now, return success as ticket model doesn't exist yet
-            return response()->json([
-                'success' => true,
-                'message' => 'Ticket reopened successfully',
-                'data' => [
-                    'ticket_id' => $ticket,
-                    'status' => 'open',
-                    'reopened_by' => $user->id,
-                    'reopened_at' => now(),
-                ],
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to reopen ticket', [
-                'user_id' => Auth::id(),
-                'ticket_id' => $ticket,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to reopen ticket',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    /**
-     * Add an internal note to a ticket (Admin/Staff only)
-     *
-     * @param Request $request
-     * @param int $ticket
-     * @return JsonResponse
-     */
-    public function addInternalNote(Request $request, int $ticket): JsonResponse
-    {
-        try {
-            $validated = $request->validate([
-                'note' => 'required|string|max:1000',
-            ]);
-
-            $user = Auth::user();
-
-            // Check if user has permission to add internal notes
-            if (!$user->hasRole(['admin', 'staff', 'technical_support'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized to add internal notes',
-                ], 403);
-            }
-
-            // For now, return success as ticket model doesn't exist yet
-            return response()->json([
-                'success' => true,
-                'message' => 'Internal note added successfully',
-                'data' => [
-                    'ticket_id' => $ticket,
-                    'note' => $validated['note'],
-                    'added_by' => $user->id,
-                    'created_at' => now(),
-                ],
-            ]);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
-            Log::error('Failed to add internal note', [
-                'user_id' => Auth::id(),
-                'ticket_id' => $ticket,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to add internal note',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        $validated = $request->validate(['note' => 'required|string']);
+        $reply = TicketReply::create([
+            'ticket_id'   => $ticket->id,
+            'user_id'     => $request->user()->id,
+            'message'     => $validated['note'],
+            'is_internal' => true,
+        ]);
+        return response()->json(['data' => $reply->load('user:id,name'), 'message' => 'Internal note added.'], 201);
     }
 }

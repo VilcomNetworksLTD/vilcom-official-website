@@ -318,13 +318,13 @@ const Navbar = () => {
 
         {/* Mobile menu */}
         {open && (
-          <div className="md:hidden glass border-t border-white/40 px-4 pb-4">
+          <div className="md:hidden glass border-t border-white/40 px-4 pb-4 max-h-[calc(100vh-130px)] overflow-y-auto">
             {navLinks.map((link) => (
               link.dropdown ? (
                 <div key={link.to} className="border-b border-slate-200/20">
                   <button
                     onClick={() => setOpenDropdown(openDropdown === link.label ? null : link.label)}
-                    className="flex items-center justify-between w-full py-3 text-sm font-medium text-slate-700"
+                    className="flex items-center justify-between w-full py-3 text-sm font-medium text-white"
                   >
                     {link.label}
                     <ChevronDown className={`w-4 h-4 transition-transform ${openDropdown === link.label ? 'rotate-180' : ''}`} />
@@ -336,7 +336,7 @@ const Navbar = () => {
                           <div key={item.to}>
                             <button
                               onClick={() => setSubdropdownOpen(!subdropdownOpen)}
-                              className="flex items-center justify-between w-full py-2 text-sm font-medium text-slate-500"
+                              className="flex items-center justify-between w-full py-2 text-sm font-medium text-slate-100"
                             >
                               {item.label}
                               <ChevronRight className={`w-4 h-4 ${subdropdownOpen ? 'rotate-90' : ''}`} />
@@ -355,7 +355,7 @@ const Navbar = () => {
                                     className={`block py-2 text-sm font-medium ${
                                       isActive(subitem.to)
                                         ? "text-primary"
-                                        : "text-slate-500 hover:text-primary"
+                                        : "text-slate-100 hover:text-primary"
                                     }`}
                                   >
                                     {subitem.label}
@@ -375,7 +375,7 @@ const Navbar = () => {
                             className={`flex items-center gap-2 py-2 text-sm font-medium ${
                               isActive(item.to)
                                 ? "text-primary"
-                                : "text-slate-500 hover:text-primary"
+                                : "text-slate-100 hover:text-primary"
                             }`}
                           >
                             {item.icon && <item.icon className="w-4 h-4" />}
@@ -394,7 +394,7 @@ const Navbar = () => {
                   className={`block py-3 text-sm font-medium border-b border-slate-200/20 ${
                     isActive(link.to)
                       ? "text-primary"
-                      : "text-slate-700 hover:text-primary"
+                      : "text-white hover:text-primary"
                   }`}
                 >
                   {link.label}
@@ -403,7 +403,7 @@ const Navbar = () => {
             ))}
             <div className="flex gap-3 mt-4">
               <Link to="/auth" className="flex-1" onClick={() => setOpen(false)}>
-                <Button variant="ghost" size="sm" className="w-full text-slate-700">Login</Button>
+                <Button variant="ghost" size="sm" className="w-full text-slate-700 hover:bg-slate-100">Login</Button>
               </Link>
               <Link to="/signup" className="flex-1" onClick={() => setOpen(false)}>
                 <Button size="sm" className="w-full gradient-royal text-white font-semibold border-0">Get Started</Button>

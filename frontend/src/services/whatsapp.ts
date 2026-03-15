@@ -88,7 +88,7 @@ export const whatsappService = {
   },
 
   // Get WhatsApp URL for external navigation
-  getWhatsAppUrl(phone: string = "0726888777", message?: string): string {
+  getWhatsAppUrl(phone: string = "254726888777", message?: string): string {
     const baseUrl = "https://wa.me";
     const encodedPhone = phone.replace(/\D/g, "");
     const url = new URL(`${baseUrl}/${encodedPhone}`);
@@ -101,7 +101,7 @@ export const whatsappService = {
   },
 
   // Open WhatsApp in new tab
-  openWhatsApp(phone: string = "0726888777", message?: string): void {
+  openWhatsApp(phone: string = "254726888777", message?: string): void {
     const url = this.getWhatsAppUrl(phone, message);
     window.open(url, "_blank", "noopener,noreferrer");
   },

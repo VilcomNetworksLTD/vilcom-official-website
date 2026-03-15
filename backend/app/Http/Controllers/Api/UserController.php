@@ -15,20 +15,20 @@ class UserController extends Controller
 {
     /**
      * Why Impersonate?
-     * 
+     *
      * The impersonation feature is critical for:
      * 1. Debugging - Admins can see exactly what a client sees
      * 2. Support - Help customers by viewing their account state
      * 3. Testing - Verify permissions work correctly for different roles
      * 4. Verification - Confirm issue reports from clients
-     * 
+     *
      * Security: Only admins can impersonate, and it creates a separate
      * auth token while tracking the original admin for audit purposes.
      */
 
-    /**
+   /**
      * Display a listing of the users.
-     * 
+     *
      * Multi-tenant filtering:
      * - Admin: can see ALL users (clients + staff)
      * - Staff: can only see clients (not other staff)
@@ -37,33 +37,38 @@ class UserController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        
+
         // Start query
         $query = User::with(['roles', 'subscriptions']);
 
         // Role-based filtering (multi-tenant)
-        if ($user->hasRole('admin')) {
-            // Admin can see all - but can filter
-            if ($request->has('role')) {
-                $query->role($request->role);
-            }
-        } elseif ($user->hasAnyRole(['staff', 'sales', 'technical_support'])) {
-            // Staff can only see clients, not other staff
-            $query->role('client');
+        if ($request->has('roles') && is_array($request->roles)) {
+            // Support roles[] array filter — e.g. roles[]=staff&roles[]=sales
+            $query->whereHas('roles', function ($q) use ($request) {
+                $q->whereIn('name', $request->roles);
+            });
+        } elseif ($request->has('role')) {
+            // Legacy single role filter — keep for backwards compatibility
+            $query->role($request->role);
+        } elseif (!$user->hasRole('admin')) {
+            // Non-admins see clients + staff roles only
+            $query->whereHas('roles', function ($q) {
+                $q->whereIn('name', ['client', 'staff', 'sales', 'technical_support']);
+            });
         }
 
         // Status filtering
-        if ($request->has('status')) {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
         // Customer type filtering
-        if ($request->has('customer_type')) {
+        if ($request->filled('customer_type')) {
             $query->where('customer_type', $request->customer_type);
         }
 
         // Search
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -73,34 +78,34 @@ class UserController extends Controller
         }
 
         // Department filtering (for staff)
-        if ($request->has('department')) {
+        if ($request->filled('department')) {
             $query->byDepartment($request->department);
         }
 
         // Sorting
-        $sortBy = $request->sort_by ?? 'created_at';
+        $sortBy    = $request->sort_by    ?? 'created_at';
         $sortOrder = $request->sort_order ?? 'desc';
         $query->orderBy($sortBy, $sortOrder);
 
         // Pagination
         $perPage = $request->per_page ?? 15;
-        $users = $query->paginate($perPage);
+        $users   = $query->paginate($perPage);
 
         return response()->json([
             'success' => true,
-            'data' => UserResource::collection($users),
-            'meta' => [
+            'data'    => UserResource::collection($users),
+            'meta'    => [
                 'current_page' => $users->currentPage(),
-                'last_page' => $users->lastPage(),
-                'per_page' => $users->perPage(),
-                'total' => $users->total(),
+                'last_page'    => $users->lastPage(),
+                'per_page'     => $users->perPage(),
+                'total'        => $users->total(),
             ],
         ]);
     }
 
     /**
      * Store a newly created user (Staff/Admin only).
-     * 
+     *
      * Staff can only create clients.
      * Admin can create any user type.
      */
@@ -167,7 +172,7 @@ class UserController extends Controller
 
     /**
      * Display the specified user.
-     * 
+     *
      * Permission-based visibility:
      * - Admin: can view any user
      * - Staff: can view clients
@@ -212,7 +217,7 @@ class UserController extends Controller
 
     /**
      * Update the specified user.
-     * 
+     *
      * Multi-tenant update rules:
      * - Users can update their own profile (limited fields)
      * - Staff can update clients
@@ -291,7 +296,7 @@ class UserController extends Controller
 
     /**
      * Remove the specified user (Admin only).
-     * 
+     *
      * Cannot delete:
      * - Yourself
      * - Users with active subscriptions
@@ -341,11 +346,11 @@ class UserController extends Controller
 
     /**
      * Suspend the specified user.
-     * 
+     *
      * Permissions:
      * - Admin: can suspend anyone except other admins
      * - Staff: can suspend clients only
-     * 
+     *
      * Also suspends user's active subscriptions.
      */
     public function suspend(Request $request, User $user): JsonResponse
@@ -405,7 +410,7 @@ class UserController extends Controller
 
     /**
      * Activate/unsuspend the specified user.
-     * 
+     *
      * Permissions:
      * - Admin: can activate anyone
      * - Staff: can activate clients only
@@ -440,13 +445,13 @@ class UserController extends Controller
 
     /**
      * Impersonate the specified user (Admin only).
-     * 
+     *
      * This allows admin to:
      * - See exactly what the user sees
      * - Debug issues reported by users
      * - Test permissions from user perspective
      * - Provide better support
-     * 
+     *
      * Security: Creates a new token and tracks the original admin.
      */
     public function impersonate(Request $request, User $user): JsonResponse
@@ -479,7 +484,7 @@ class UserController extends Controller
 
         // Store original admin ID in session for audit
         $request->session()->put('impersonator_id', $admin->id);
-        
+
         // Log impersonation action
         \Log::info('Admin impersonating user', [
             'admin_id' => $admin->id,
@@ -564,19 +569,19 @@ class UserController extends Controller
             'inactive' => User::inactive()->count(),
             'suspended' => User::suspended()->count(),
             'pending_verification' => User::pendingVerification()->count(),
-            
+
             // Role breakdown
             'clients' => User::clients()->count(),
             'staff' => User::staff()->count(),
             'admins' => User::admins()->count(),
-            
+
             // Customer type
             'individuals' => User::individuals()->count(),
             'businesses' => User::businesses()->count(),
-            
+
             // Verification
             'verified' => User::verified()->count(),
-            
+
             // Growth
             'recent_registrations' => User::where('created_at', '>=', now()->subDays(30))->count(),
             'recent_registrations_7days' => User::where('created_at', '>=', now()->subDays(7))->count(),
@@ -595,7 +600,7 @@ class UserController extends Controller
     public function roles(Request $request): JsonResponse
     {
         $currentUser = $request->user();
-        
+
         if ($currentUser->hasRole('admin')) {
             $roles = Role::whereNotIn('name', ['admin'])->get();
         } elseif ($currentUser->hasAnyRole(['staff', 'sales'])) {
@@ -635,7 +640,7 @@ class UserController extends Controller
     public function impersonationStatus(Request $request): JsonResponse
     {
         $impersonatorId = $request->session()->get('impersonator_id');
-        
+
         if ($impersonatorId) {
             $impersonator = User::find($impersonatorId);
             return response()->json([

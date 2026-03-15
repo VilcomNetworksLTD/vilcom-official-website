@@ -107,7 +107,7 @@ const bookingService = {
     category?: string;
     quote_based_only?: boolean;
   }) {
-    const response = await axios.get('/v1/bookings/services', { params });
+    const response = await axios.get('/bookings/services', { params });
     return response.data;
   },
 
@@ -119,7 +119,7 @@ const bookingService = {
     product_id: number;
     staff_id?: number;
   }) {
-    const response = await axios.get('/v1/bookings/available-slots', { params });
+    const response = await axios.get('/bookings/available-slots', { params });
     return response.data;
   },
 
@@ -140,7 +140,7 @@ const bookingService = {
     meeting_type: 'in_person' | 'virtual' | 'phone';
     notes?: string;
   }) {
-    const response = await axios.post('/v1/bookings', data);
+    const response = await axios.post('/bookings', data);
     return response.data;
   },
 
@@ -148,7 +148,7 @@ const bookingService = {
    * Track a booking by reference (public)
    */
   async trackBooking(reference: string) {
-    const response = await axios.get(`/v1/bookings/track/${reference}`);
+    const response = await axios.get(`/bookings/track/${reference}`);
     return response.data;
   },
 
@@ -159,7 +159,7 @@ const bookingService = {
     department?: string;
     available_today?: boolean;
   }) {
-    const response = await axios.get('/v1/staff/consultants', { params });
+    const response = await axios.get('/staff/consultants', { params });
     return response.data;
   },
 
@@ -170,7 +170,7 @@ const bookingService = {
     date_from: string;
     date_to: string;
   }) {
-    const response = await axios.get(`/v1/staff/${userId}/availability`, { params });
+    const response = await axios.get(`/staff/${userId}/availability`, { params });
     return response.data;
   },
 
@@ -190,7 +190,7 @@ const bookingService = {
     per_page?: number;
     page?: number;
   }) {
-    const response = await axios.get('/v1/bookings', { params });
+    const response = await axios.get('/bookings', { params });
     return response.data;
   },
 
@@ -198,7 +198,7 @@ const bookingService = {
    * Get single booking details
    */
   async getBooking(bookingId: number) {
-    const response = await axios.get(`/v1/bookings/${bookingId}`);
+    const response = await axios.get(`/bookings/${bookingId}`);
     return response.data;
   },
 
@@ -206,7 +206,7 @@ const bookingService = {
    * Cancel own booking
    */
   async cancelBooking(bookingId: number, reason: string) {
-    const response = await axios.post(`/v1/bookings/${bookingId}/cancel`, { reason });
+    const response = await axios.post(`/bookings/${bookingId}/cancel`, { reason });
     return response.data;
   },
 
@@ -225,7 +225,7 @@ const bookingService = {
       meeting_link?: string;
     }
   ) {
-    const response = await axios.patch(`/v1/bookings/${bookingId}/status`, data);
+    const response = await axios.patch(`/bookings/${bookingId}/status`, data);
     return response.data;
   },
 
@@ -233,7 +233,7 @@ const bookingService = {
    * Get booking statistics
    */
   async getStatistics() {
-    const response = await axios.get('/v1/bookings/meta/statistics');
+    const response = await axios.get('/bookings/meta/statistics');
     return response.data;
   },
 
@@ -250,7 +250,7 @@ const bookingService = {
       notes?: string;
     }>
   ) {
-    const response = await axios.post(`/v1/staff/${userId}/availability`, {
+    const response = await axios.post(`/staff/${userId}/availability`, {
       availability,
     });
     return response.data;

@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\Admin\MediaController;
 use App\Http\Controllers\Api\Admin\BannerController;
 use App\Http\Controllers\Api\Admin\TestimonialController;
 use App\Http\Controllers\Api\Admin\FaqController;
+use App\Http\Controllers\Api\Admin\TicketController;
 use App\Http\Controllers\Api\Admin\AdminSubscriptionController;
 use App\Http\Controllers\Api\Admin\ClientController;
 use App\Http\Controllers\Api\Admin\QuoteRequestController as AdminQuoteRequestController;
@@ -1216,6 +1217,36 @@ Route::prefix('v1')->group(function () {
         Route::post('/bulk-assign', [App\Http\Controllers\Api\Admin\LeadController::class, 'bulkAssign'])
             ->name('api.admin.leads.bulk-assign');
     });
+});
+
+
+
+// Admin Invoice Management
+Route::prefix('admin/invoices')->middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+    Route::get('/analytics', [App\Http\Controllers\Api\Admin\InvoiceController::class, 'analytics']);
+    Route::get('/', [App\Http\Controllers\Api\Admin\InvoiceController::class, 'index']);
+    Route::post('/', [App\Http\Controllers\Api\Admin\InvoiceController::class, 'store']);
+    Route::get('/{invoice}', [App\Http\Controllers\Api\Admin\InvoiceController::class, 'show']);
+    Route::put('/{invoice}', [App\Http\Controllers\Api\Admin\InvoiceController::class, 'update']);
+    Route::post('/{invoice}/send', [App\Http\Controllers\Api\Admin\InvoiceController::class, 'send']);
+    Route::post('/{invoice}/mark-paid', [App\Http\Controllers\Api\Admin\InvoiceController::class, 'markPaid']);
+    Route::post('/{invoice}/void', [App\Http\Controllers\Api\Admin\InvoiceController::class, 'void']);
+    Route::get('/{invoice}/download', [App\Http\Controllers\Api\Admin\InvoiceController::class, 'download']);
+});
+
+
+// Admin ticket routes
+Route::prefix('admin/tickets')->middleware(['auth:sanctum','role:admin|staff|technical_support'])->group(function () {
+    Route::get('/analytics', [App\Http\Controllers\Api\Admin\TicketController::class, 'analytics']);
+    Route::get('/staff',     [App\Http\Controllers\Api\Admin\TicketController::class, 'staff']);
+    Route::get('/',          [App\Http\Controllers\Api\Admin\TicketController::class, 'index']);
+    Route::get('/{ticket}',  [App\Http\Controllers\Api\Admin\TicketController::class, 'show']);
+    Route::post('/{ticket}/reply',         [App\Http\Controllers\Api\Admin\TicketController::class, 'reply']);
+    Route::post('/{ticket}/assign',        [App\Http\Controllers\Api\Admin\TicketController::class, 'assign']);
+    Route::post('/{ticket}/resolve',       [App\Http\Controllers\Api\Admin\TicketController::class, 'resolve']);
+    Route::post('/{ticket}/close',         [App\Http\Controllers\Api\Admin\TicketController::class, 'close']);
+    Route::post('/{ticket}/reopen',        [App\Http\Controllers\Api\Admin\TicketController::class, 'reopen']);
+    Route::post('/{ticket}/internal-note', [App\Http\Controllers\Api\Admin\TicketController::class, 'addInternalNote']);
 });
 
 /*

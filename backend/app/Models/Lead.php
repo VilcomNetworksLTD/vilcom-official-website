@@ -482,7 +482,7 @@ class Lead extends Model
      */
     public static function generateVisitorId(): string
     {
-        return 'vlc_' . Str::uuid()->toString();
+        return Str::uuid()->toString();
     }
 }
 

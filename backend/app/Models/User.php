@@ -182,6 +182,8 @@ class User extends Authenticatable
         return $this->hasMany(Ticket::class);
     }
 
+
+    
     /**
      * Get the user's login history
      */

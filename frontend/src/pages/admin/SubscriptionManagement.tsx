@@ -168,466 +168,471 @@ const SubscriptionManagement = () => {
 
   return (
     <DashboardLayout userType="admin">
-      <div className="mb-6 flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Subscription Management</h1>
-          <p className="text-slate-400">Manage client subscriptions and billing</p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setActiveTab('list')}
-            className={`px-4 py-2 rounded-lg transition-all ${
-              activeTab === 'list'
-                ? 'bg-blue-500/20 border border-blue-500/30 text-blue-300'
-                : 'bg-white/10 border border-white/20 text-slate-300 hover:bg-white/20'
-            }`}
-          >
-            <Grid3X3 className="w-4 h-4 inline-block mr-2" />
-            Subscriptions
-          </button>
-          <button
-            onClick={() => setActiveTab('analytics')}
-            className={`px-4 py-2 rounded-lg transition-all ${
-              activeTab === 'analytics'
-                ? 'bg-blue-500/20 border border-blue-500/30 text-blue-300'
-                : 'bg-white/10 border border-white/20 text-slate-300 hover:bg-white/20'
-            }`}
-          >
-            <Activity className="w-4 h-4 inline-block mr-2" />
-            Analytics
-          </button>
-        </div>
-      </div>
-
-      {/* Analytics Tab */}
-      {activeTab === 'analytics' && analytics && (
-        <div className="space-y-6">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-400 text-sm">Total Subscriptions</p>
-                  <p className="text-2xl font-bold text-white">{analytics.summary.active || 0}</p>
-                </div>
-                <div className="p-3 bg-blue-500/20 rounded-lg">
-                  <Users className="w-6 h-6 text-blue-400" />
-                </div>
-              </div>
-              <div className="mt-2 text-xs text-slate-400">
-                <span className="text-green-400">{analytics.summary.active || 0} active</span> ·{' '}
-                <span className="text-yellow-400">{analytics.summary.pending || 0} pending</span>
-              </div>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-400 text-sm">Monthly Revenue</p>
-                  <p className="text-2xl font-bold text-white">{formatCurrency(analytics.mrr || 0)}</p>
-                </div>
-                <div className="p-3 bg-green-500/20 rounded-lg">
-                  <DollarSign className="w-6 h-6 text-green-400" />
-                </div>
-              </div>
-              <div className="mt-2 text-xs text-slate-400">
-                <span className="text-green-400">+{analytics.new_this_period || 0} new</span> this period
-              </div>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-400 text-sm">Due Today</p>
-                  <p className="text-2xl font-bold text-white">{analytics.due_today || 0}</p>
-                </div>
-                <div className="p-3 bg-yellow-500/20 rounded-lg">
-                  <Clock className="w-6 h-6 text-yellow-400" />
-                </div>
-              </div>
-              <div className="mt-2 text-xs text-slate-400">
-                <span className="text-yellow-400">{analytics.due_this_week || 0} due this week</span>
-              </div>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-400 text-sm">Churn Rate</p>
-                  <p className="text-2xl font-bold text-white">{analytics.churn_this_period || 0}</p>
-                </div>
-                <div className="p-3 bg-red-500/20 rounded-lg">
-                  <TrendingDown className="w-6 h-6 text-red-400" />
-                </div>
-              </div>
-              <div className="mt-2 text-xs text-slate-400">
-                Cancelled this period
-              </div>
-            </div>
+      <div className="px-2 sm:px-4 py-4 sm:py-8 max-w-7xl mx-auto space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">Subscription Management</h1>
+            <p className="text-slate-400 mt-1 text-sm">Manage client subscriptions and billing</p>
           </div>
+          <div className="flex w-full sm:w-auto gap-2">
+            <button
+              onClick={() => setActiveTab('list')}
+              className={`flex-1 sm:flex-none px-4 py-2 rounded-lg transition-all ${
+                activeTab === 'list'
+                  ? 'bg-blue-500/20 border border-blue-500/30 text-blue-300'
+                  : 'bg-white/10 border border-white/20 text-slate-300 hover:bg-white/20'
+              }`}
+            >
+              <Grid3X3 className="w-4 h-4 inline-block mr-2" />
+              <span className="hidden sm:inline">Subscriptions</span><span className="sm:hidden">List</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`flex-1 sm:flex-none px-4 py-2 rounded-lg transition-all ${
+                activeTab === 'analytics'
+                  ? 'bg-blue-500/20 border border-blue-500/30 text-blue-300'
+                  : 'bg-white/10 border border-white/20 text-slate-300 hover:bg-white/20'
+              }`}
+            >
+              <Activity className="w-4 h-4 inline-block mr-2" />
+              <span className="hidden sm:inline">Analytics</span><span className="sm:hidden">Stats</span>
+            </button>
+          </div>
+        </div>
 
-          {/* Status Distribution */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Subscription Status</h3>
-              <div className="space-y-3">
-                {Object.entries(analytics.summary).map(([status, count]) => (
-                  <div key={status} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2 py-1 rounded text-xs capitalize ${getStatusColor(status as SubscriptionStatus)}`}>
-                        {status.replace('_', ' ')}
-                      </span>
-                    </div>
-                    <span className="text-white font-medium">{count as number || 0}</span>
+        {/* Analytics Tab */}
+        {activeTab === 'analytics' && analytics && (
+          <div className="space-y-6">
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-slate-400 text-sm">Total Subscriptions</p>
+                    <p className="text-2xl font-bold text-white">{analytics.summary.active || 0}</p>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">By Billing Cycle</h3>
-              <div className="space-y-3">
-                {analytics.by_billing_cycle.map((item) => (
-                  <div key={item.billing_cycle} className="flex items-center justify-between">
-                    <span className="text-slate-300">{getBillingCycleLabel(item.billing_cycle)}</span>
-                    <div className="text-right">
-                      <span className="text-white font-medium">{item.count}</span>
-                      <span className="text-slate-400 ml-2">({formatCurrency(item.revenue)})</span>
-                    </div>
+                  <div className="p-3 bg-blue-500/20 rounded-lg">
+                    <Users className="w-6 h-6 text-blue-400" />
                   </div>
-                ))}
+                </div>
+                <div className="mt-2 text-xs text-slate-400">
+                  <span className="text-green-400">{analytics.summary.active || 0} active</span> ·{' '}
+                  <span className="text-yellow-400">{analytics.summary.pending || 0} pending</span>
+                </div>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-slate-400 text-sm">Monthly Revenue</p>
+                    <p className="text-2xl font-bold text-white">{formatCurrency(analytics.mrr || 0)}</p>
+                  </div>
+                  <div className="p-3 bg-green-500/20 rounded-lg">
+                    <DollarSign className="w-6 h-6 text-green-400" />
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-slate-400">
+                  <span className="text-green-400">+{analytics.new_this_period || 0} new</span> this period
+                </div>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-slate-400 text-sm">Due Today</p>
+                    <p className="text-2xl font-bold text-white">{analytics.due_today || 0}</p>
+                  </div>
+                  <div className="p-3 bg-yellow-500/20 rounded-lg">
+                    <Clock className="w-6 h-6 text-yellow-400" />
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-slate-400">
+                  <span className="text-yellow-400">{analytics.due_this_week || 0} due this week</span>
+                </div>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-slate-400 text-sm">Churn Rate</p>
+                    <p className="text-2xl font-bold text-white">{analytics.churn_this_period || 0}</p>
+                  </div>
+                  <div className="p-3 bg-red-500/20 rounded-lg">
+                    <TrendingDown className="w-6 h-6 text-red-400" />
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-slate-400">
+                  Cancelled this period
+                </div>
+              </div>
+            </div>
+
+            {/* Status Distribution */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-white mb-4">Subscription Status</h3>
+                <div className="space-y-3">
+                  {Object.entries(analytics.summary).map(([status, count]) => (
+                    <div key={status} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-1 rounded text-xs capitalize ${getStatusColor(status as SubscriptionStatus)}`}>
+                          {status.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <span className="text-white font-medium">{count as number || 0}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-white mb-4">By Billing Cycle</h3>
+                <div className="space-y-3">
+                  {analytics.by_billing_cycle.map((item) => (
+                    <div key={item.billing_cycle} className="flex items-center justify-between">
+                      <span className="text-slate-300">{getBillingCycleLabel(item.billing_cycle)}</span>
+                      <div className="text-right">
+                        <span className="text-white font-medium">{item.count}</span>
+                        <span className="text-slate-400 ml-2">({formatCurrency(item.revenue)})</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Subscriptions List Tab */}
-      {activeTab === 'list' && (
-        <>
-          {/* Filters */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 mb-6">
-            <div className="flex flex-col lg:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search by subscription number or email..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder-slate-400"
-                />
-              </div>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
-              >
-                <option value="" className="bg-slate-900">All Status</option>
-                <option value="active" className="bg-slate-900">Active</option>
-                <option value="pending" className="bg-slate-900">Pending</option>
-                <option value="suspended" className="bg-slate-900">Suspended</option>
-                <option value="cancelled" className="bg-slate-900">Cancelled</option>
-                <option value="expired" className="bg-slate-900">Expired</option>
-                <option value="trial" className="bg-slate-900">Trial</option>
-              </select>
-              <select
-                value={billingCycleFilter}
-                onChange={(e) => setBillingCycleFilter(e.target.value)}
-                className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
-              >
-                <option value="" className="bg-slate-900">All Cycles</option>
-                <option value="monthly" className="bg-slate-900">Monthly</option>
-                <option value="quarterly" className="bg-slate-900">Quarterly</option>
-                <option value="semi_annually" className="bg-slate-900">Semi-Annual</option>
-                <option value="annually" className="bg-slate-900">Annual</option>
-              </select>
-              <div className="flex rounded-lg border border-white/20 overflow-hidden">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`px-4 py-2 flex items-center gap-2 ${
-                    viewMode === 'grid' ? 'bg-blue-500/20 text-blue-300' : 'hover:bg-white/10 text-slate-300'
-                  }`}
+        {/* Subscriptions List Tab */}
+        {activeTab === 'list' && (
+          <>
+            {/* Filters */}
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 mb-6">
+              <div className="flex flex-col lg:flex-row gap-4">
+                <div className="relative w-full lg:flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by subscription number or email..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder-slate-400"
+                  />
+                </div>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-full lg:w-auto px-4 py-2.5 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
                 >
-                  <Grid3X3 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`px-4 py-2 flex items-center gap-2 ${
-                    viewMode === 'list' ? 'bg-blue-500/20 text-blue-300' : 'hover:bg-white/10 text-slate-300'
-                  }`}
+                  <option value="" className="bg-slate-900">All Status</option>
+                  <option value="active" className="bg-slate-900">Active</option>
+                  <option value="pending" className="bg-slate-900">Pending</option>
+                  <option value="suspended" className="bg-slate-900">Suspended</option>
+                  <option value="cancelled" className="bg-slate-900">Cancelled</option>
+                  <option value="expired" className="bg-slate-900">Expired</option>
+                  <option value="trial" className="bg-slate-900">Trial</option>
+                </select>
+                <select
+                  value={billingCycleFilter}
+                  onChange={(e) => setBillingCycleFilter(e.target.value)}
+                  className="w-full lg:w-auto px-4 py-2.5 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
                 >
-                  <List className="w-4 h-4" />
-                </button>
+                  <option value="" className="bg-slate-900">All Cycles</option>
+                  <option value="monthly" className="bg-slate-900">Monthly</option>
+                  <option value="quarterly" className="bg-slate-900">Quarterly</option>
+                  <option value="semi_annually" className="bg-slate-900">Semi-Annual</option>
+                  <option value="annually" className="bg-slate-900">Annual</option>
+                </select>
+                <div className="flex rounded-lg border border-white/20 overflow-hidden w-full lg:w-auto">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`flex-1 px-4 py-2 flex items-center justify-center gap-2 ${
+                      viewMode === 'grid' ? 'bg-blue-500/20 text-blue-300' : 'hover:bg-white/10 text-slate-300'
+                    }`}
+                  >
+                    <Grid3X3 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`flex-1 px-4 py-2 flex items-center justify-center gap-2 ${
+                      viewMode === 'list' ? 'bg-blue-500/20 text-blue-300' : 'hover:bg-white/10 text-slate-300'
+                    }`}
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Subscriptions Table */}
-          {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            </div>
-          ) : subscriptions.length === 0 ? (
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-12 text-center">
-              <Package className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-white mb-1">No subscriptions found</h3>
-              <p className="text-slate-400">Subscriptions will appear here once clients sign up</p>
-            </div>
-          ) : viewMode === 'list' ? (
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-white/5">
-                  <tr>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Subscription</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Customer</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Plan</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Amount</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Cycle</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Status</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Next Renewal</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {subscriptions.map((sub) => (
-                    <tr key={sub.id} className="border-b border-white/10 hover:bg-white/5">
-                      <td className="py-3 px-4">
+            {/* Subscriptions Table (Scrollable) */}
+            {loading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+              </div>
+            ) : subscriptions.length === 0 ? (
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-12 text-center">
+                <Package className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-white mb-1">No subscriptions found</h3>
+                <p className="text-slate-400">Subscriptions will appear here once clients sign up</p>
+              </div>
+            ) : viewMode === 'list' ? (
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl overflow-hidden overflow-x-auto">
+                <table className="w-full min-w-[800px]">
+                  <thead className="bg-white/5">
+                    <tr>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-400 whitespace-nowrap">Subscription</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-400 whitespace-nowrap">Customer</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-400 whitespace-nowrap">Plan</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-400 whitespace-nowrap">Amount</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-400 whitespace-nowrap">Cycle</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-400 whitespace-nowrap">Status</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-400 whitespace-nowrap">Next Renewal</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-400 whitespace-nowrap">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {subscriptions.map((sub) => (
+                      <tr key={sub.id} className="border-b border-white/10 hover:bg-white/5">
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <div>
+                            <h3 className="font-medium text-white">{sub.subscription_number || `#${sub.id}`}</h3>
+                            <p className="text-sm text-slate-400">ID: {sub.id}</p>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <div>
+                            <h3 className="font-medium text-white">User #{sub.user_id}</h3>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <div>
+                            <h3 className="font-medium text-white">{sub.product?.name || 'N/A'}</h3>
+                            <p className="text-sm text-slate-400">{sub.product?.type || ''}</p>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span className="text-white font-medium">{formatCurrency(sub.total_amount)}</span>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span className="text-slate-300 capitalize">{getBillingCycleLabel(sub.billing_cycle)}</span>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 rounded text-xs capitalize ${getStatusColor(sub.status)}`}>
+                            {sub.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span className="text-slate-300">
+                            {sub.next_renewal_at ? formatDate(sub.next_renewal_at) : 'N/A'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleViewDetails(sub)}
+                              className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all"
+                              title="View Details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            {sub.status === 'pending' && (
+                              <button
+                                onClick={() => handleActivate(sub.id)}
+                                className="p-2 text-slate-400 hover:text-green-400 hover:bg-green-500/20 rounded-lg transition-all"
+                                title="Activate"
+                              >
+                                <Play className="w-4 h-4" />
+                              </button>
+                            )}
+                            {sub.status === 'active' && (
+                              <button
+                                onClick={() => handleSuspend(sub.id)}
+                                className="p-2 text-slate-400 hover:text-yellow-400 hover:bg-yellow-500/20 rounded-lg transition-all"
+                                title="Suspend"
+                              >
+                                <Pause className="w-4 h-4" />
+                              </button>
+                            )}
+                            {(sub.status === 'suspended' || sub.status === 'cancelled') && (
+                              <button
+                                onClick={() => handleReactivate(sub.id)}
+                                className="p-2 text-slate-400 hover:text-green-400 hover:bg-green-500/20 rounded-lg transition-all"
+                                title="Reactivate"
+                              >
+                                <RefreshCw className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                {subscriptions.map((sub) => (
+                  <div
+                    key={sub.id}
+                    className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl overflow-hidden hover:bg-white/15 hover:border-white/30 transition-all"
+                  >
+                    <div className="p-4 sm:p-5">
+                      <div className="flex items-start justify-between mb-2 sm:mb-4">
                         <div>
-                          <h3 className="font-medium text-white">{sub.subscription_number || `#${sub.id}`}</h3>
-                          <p className="text-sm text-slate-400">ID: {sub.id}</p>
+                          <h3 className="font-semibold text-white">{sub.subscription_number || `#${sub.id}`}</h3>
+                          <p className="text-sm text-slate-400">User #{sub.user_id}</p>
                         </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div>
-                          <h3 className="font-medium text-white">User #{sub.user_id}</h3>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div>
-                          <h3 className="font-medium text-white">{sub.product?.name || 'N/A'}</h3>
-                          <p className="text-sm text-slate-400">{sub.product?.type || ''}</p>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="text-white font-medium">{formatCurrency(sub.total_amount)}</span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="text-slate-300 capitalize">{getBillingCycleLabel(sub.billing_cycle)}</span>
-                      </td>
-                      <td className="py-3 px-4">
                         <span className={`px-2 py-1 rounded text-xs capitalize ${getStatusColor(sub.status)}`}>
                           {sub.status}
                         </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="text-slate-300">
-                          {sub.next_renewal_at ? formatDate(sub.next_renewal_at) : 'N/A'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleViewDetails(sub)}
-                            className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all"
-                            title="View Details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          {sub.status === 'pending' && (
-                            <button
-                              onClick={() => handleActivate(sub.id)}
-                              className="p-2 text-slate-400 hover:text-green-400 hover:bg-green-500/20 rounded-lg transition-all"
-                              title="Activate"
-                            >
-                              <Play className="w-4 h-4" />
-                            </button>
-                          )}
-                          {sub.status === 'active' && (
-                            <button
-                              onClick={() => handleSuspend(sub.id)}
-                              className="p-2 text-slate-400 hover:text-yellow-400 hover:bg-yellow-500/20 rounded-lg transition-all"
-                              title="Suspend"
-                            >
-                              <Pause className="w-4 h-4" />
-                            </button>
-                          )}
-                          {(sub.status === 'suspended' || sub.status === 'cancelled') && (
-                            <button
-                              onClick={() => handleReactivate(sub.id)}
-                              className="p-2 text-slate-400 hover:text-green-400 hover:bg-green-500/20 rounded-lg transition-all"
-                              title="Reactivate"
-                            >
-                              <RefreshCw className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {subscriptions.map((sub) => (
-                <div
-                  key={sub.id}
-                  className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl overflow-hidden hover:bg-white/15 hover:border-white/30 transition-all"
-                >
-                  <div className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h3 className="font-semibold text-white">{sub.subscription_number || `#${sub.id}`}</h3>
-                        <p className="text-sm text-slate-400">User #{sub.user_id}</p>
                       </div>
-                      <span className={`px-2 py-1 rounded text-xs capitalize ${getStatusColor(sub.status)}`}>
-                        {sub.status}
+                      <div className="mt-4">
+                        <p className="text-sm text-slate-400">Plan</p>
+                        <p className="font-medium text-white">{sub.product?.name || 'N/A'}</p>
+                      </div>
+                      <div className="mt-2 sm:mt-4 flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-slate-400">Amount</p>
+                          <p className="text-xl font-bold text-blue-400">{formatCurrency(sub.total_amount)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-slate-400">Cycle</p>
+                          <p className="text-slate-300">{getBillingCycleLabel(sub.billing_cycle)}</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 sm:mt-6 flex gap-2">
+                        <button
+                          onClick={() => handleViewDetails(sub)}
+                          className="flex-1 py-2 text-sm bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30"
+                        >
+                          View Details
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Subscription Details Modal */}
+        {selectedSubscription && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-900/90 backdrop-blur-xl border border-white/20 rounded-xl w-full max-w-lg sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-white/20 flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-white">
+                  Subscription Details
+                </h3>
+                <button
+                  onClick={() => setSelectedSubscription(null)}
+                  className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between sm:block">
+                    <span className="text-slate-400">Subscription ID</span>
+                    <span className="text-white font-medium sm:mt-1 block">{selectedSubscription.subscription_number || `#${selectedSubscription.id}`}</span>
+                  </div>
+                  <div className="flex items-center justify-between sm:block">
+                    <span className="text-slate-400">Status</span>
+                    <div className="sm:mt-1">
+                      <span className={`px-2 py-1 rounded text-xs capitalize ${getStatusColor(selectedSubscription.status)}`}>
+                        {selectedSubscription.status}
                       </span>
                     </div>
-                    <div className="mt-4">
-                      <p className="text-sm text-slate-400">Plan</p>
-                      <p className="font-medium text-white">{sub.product?.name || 'N/A'}</p>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-slate-400">Amount</p>
-                        <p className="text-xl font-bold text-blue-400">{formatCurrency(sub.total_amount)}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-slate-400">Cycle</p>
-                        <p className="text-slate-300">{getBillingCycleLabel(sub.billing_cycle)}</p>
-                      </div>
-                    </div>
-                    <div className="mt-4 flex gap-2">
-                      <button
-                        onClick={() => handleViewDetails(sub)}
-                        className="flex-1 py-2 text-sm bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30"
-                      >
-                        View Details
-                      </button>
-                    </div>
+                  </div>
+                  <div className="flex items-center justify-between sm:block">
+                    <span className="text-slate-400">Plan</span>
+                    <span className="text-white sm:mt-1 block">{selectedSubscription.product?.name || 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center justify-between sm:block">
+                    <span className="text-slate-400">Billing Cycle</span>
+                    <span className="text-white sm:mt-1 block">{getBillingCycleLabel(selectedSubscription.billing_cycle)}</span>
+                  </div>
+                  <div className="flex items-center justify-between sm:block">
+                    <span className="text-slate-400">Amount</span>
+                    <span className="text-white font-medium sm:mt-1 block">{formatCurrency(selectedSubscription.total_amount)}</span>
+                  </div>
+                  <div className="flex items-center justify-between sm:block">
+                    <span className="text-slate-400">Current Period Start</span>
+                    <span className="text-white sm:mt-1 block">{selectedSubscription.current_period_start ? formatDate(selectedSubscription.current_period_start) : 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center justify-between sm:block">
+                    <span className="text-slate-400">Current Period End</span>
+                    <span className="text-white sm:mt-1 block">{selectedSubscription.current_period_end ? formatDate(selectedSubscription.current_period_end) : 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center justify-between sm:block">
+                    <span className="text-slate-400">Next Renewal</span>
+                    <span className="text-white sm:mt-1 block">{selectedSubscription.next_renewal_at ? formatDate(selectedSubscription.next_renewal_at) : 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center justify-between sm:block">
+                    <span className="text-slate-400">Auto Renew</span>
+                    <span className="text-white sm:mt-1 block">{selectedSubscription.auto_renew ? 'Yes' : 'No'}</span>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
 
-      {/* Subscription Details Modal */}
-      {selectedSubscription && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900/90 backdrop-blur-xl border border-white/20 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-white/20 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-white">
-                Subscription Details
-              </h3>
-              <button
-                onClick={() => setSelectedSubscription(null)}
-                className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Subscription ID</span>
-                <span className="text-white font-medium">{selectedSubscription.subscription_number || `#${selectedSubscription.id}`}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Status</span>
-                <span className={`px-2 py-1 rounded text-xs capitalize ${getStatusColor(selectedSubscription.status)}`}>
-                  {selectedSubscription.status}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Plan</span>
-                <span className="text-white">{selectedSubscription.product?.name || 'N/A'}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Billing Cycle</span>
-                <span className="text-white">{getBillingCycleLabel(selectedSubscription.billing_cycle)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Amount</span>
-                <span className="text-white font-medium">{formatCurrency(selectedSubscription.total_amount)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Current Period Start</span>
-                <span className="text-white">{selectedSubscription.current_period_start ? formatDate(selectedSubscription.current_period_start) : 'N/A'}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Current Period End</span>
-                <span className="text-white">{selectedSubscription.current_period_end ? formatDate(selectedSubscription.current_period_end) : 'N/A'}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Next Renewal</span>
-                <span className="text-white">{selectedSubscription.next_renewal_at ? formatDate(selectedSubscription.next_renewal_at) : 'N/A'}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Auto Renew</span>
-                <span className="text-white">{selectedSubscription.auto_renew ? 'Yes' : 'No'}</span>
-              </div>
-
-              {/* Active Add-ons */}
-              {selectedSubscription.active_addons && selectedSubscription.active_addons.length > 0 && (
-                <div className="border-t border-white/20 pt-4 mt-4">
-                  <h4 className="font-medium text-white mb-2">Active Add-ons</h4>
-                  <div className="space-y-2">
-                    {selectedSubscription.active_addons.map((addon) => (
-                      <div key={addon.id} className="flex items-center justify-between bg-white/5 p-2 rounded">
-                        <span className="text-slate-300">{addon.addon?.name || `Addon #${addon.addon_id}`}</span>
-                        <span className="text-white">{formatCurrency(addon.total_price)}</span>
-                      </div>
-                    ))}
+                {/* Active Add-ons */}
+                {selectedSubscription.active_addons && selectedSubscription.active_addons.length > 0 && (
+                  <div className="border-t border-white/20 pt-4 mt-4">
+                    <h4 className="font-medium text-white mb-2">Active Add-ons</h4>
+                    <div className="space-y-2">
+                      {selectedSubscription.active_addons.map((addon) => (
+                        <div key={addon.id} className="flex items-center justify-between bg-white/5 p-2 rounded">
+                          <span className="text-slate-300">{addon.addon?.name || `Addon #${addon.addon_id}`}</span>
+                          <span className="text-white">{formatCurrency(addon.total_price)}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Actions */}
-              <div className="border-t border-white/20 pt-4 mt-4 flex gap-2">
-                {selectedSubscription.status === 'pending' && (
-                  <button
-                    onClick={() => {
-                      handleActivate(selectedSubscription.id);
-                      setSelectedSubscription(null);
-                    }}
-                    className="flex-1 py-2 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30"
-                  >
-                    Activate
-                  </button>
-                )}
-                {selectedSubscription.status === 'active' && (
-                  <button
-                    onClick={() => {
-                      handleSuspend(selectedSubscription.id);
-                      setSelectedSubscription(null);
-                    }}
-                    className="flex-1 py-2 bg-yellow-500/20 text-yellow-300 rounded-lg hover:bg-yellow-500/30"
-                  >
-                    Suspend
-                  </button>
-                )}
-                {(selectedSubscription.status === 'suspended' || selectedSubscription.status === 'cancelled') && (
-                  <button
-                    onClick={() => {
-                      handleReactivate(selectedSubscription.id);
-                      setSelectedSubscription(null);
-                    }}
-                    className="flex-1 py-2 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30"
-                  >
-                    Reactivate
-                  </button>
-                )}
+                {/* Actions */}
+                <div className="border-t border-white/20 pt-4 mt-4 flex flex-col sm:flex-row gap-2">
+                  {selectedSubscription.status === 'pending' && (
+                    <button
+                      onClick={() => {
+                        handleActivate(selectedSubscription.id);
+                        setSelectedSubscription(null);
+                      }}
+                      className="flex-1 py-2 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30"
+                    >
+                      Activate
+                    </button>
+                  )}
+                  {selectedSubscription.status === 'active' && (
+                    <button
+                      onClick={() => {
+                        handleSuspend(selectedSubscription.id);
+                        setSelectedSubscription(null);
+                      }}
+                      className="flex-1 py-2 bg-yellow-500/20 text-yellow-300 rounded-lg hover:bg-yellow-500/30"
+                    >
+                      Suspend
+                    </button>
+                  )}
+                  {(selectedSubscription.status === 'suspended' || selectedSubscription.status === 'cancelled') && (
+                    <button
+                      onClick={() => {
+                        handleReactivate(selectedSubscription.id);
+                        setSelectedSubscription(null);
+                      }}
+                      className="flex-1 py-2 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30"
+                    >
+                      Reactivate
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </DashboardLayout>
   );
 };
 
 export default SubscriptionManagement;
-

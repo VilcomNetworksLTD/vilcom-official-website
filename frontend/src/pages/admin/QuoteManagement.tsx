@@ -1,95 +1,407 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Navigate } from 'react-router-dom';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import {
+  Loader2, RefreshCw, FileText, MessageCircle, DollarSign,
+  Users, Clock, CheckCircle2, MoreHorizontal, Eye, Send,
+  ChevronLeft, ChevronRight, Search, X, AlertCircle,
+} from 'lucide-react';
 import { adminQuotesApi, type QuoteRequest, type QuoteStatistics } from '@/services/quotes';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 
-// Status badge colors
-const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/40',
-  under_review: 'bg-blue-500/20 text-blue-400 border-blue-500/40',
-  quoted: 'bg-purple-500/20 text-purple-400 border-purple-500/40',
-  accepted: 'bg-green-500/20 text-green-400 border-green-500/40',
-  rejected: 'bg-red-500/20 text-red-400 border-red-500/40',
-  expired: 'bg-gray-500/20 text-gray-400 border-gray-500/40',
-  converted_to_subscription: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40',
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const STATUS_META: Record<string, { label: string; color: string; bg: string; dot: string }> = {
+  pending:                    { label: 'Pending',      color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  dot: 'bg-amber-400 shadow-[0_0_6px_#f59e0b]' },
+  under_review:               { label: 'Under Review', color: '#3b82f6', bg: 'rgba(59,130,246,0.12)',  dot: 'bg-blue-400 shadow-[0_0_6px_#3b82f6]' },
+  quoted:                     { label: 'Quoted',       color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)',  dot: 'bg-violet-400 shadow-[0_0_6px_#8b5cf6]' },
+  accepted:                   { label: 'Accepted',     color: '#10b981', bg: 'rgba(16,185,129,0.12)',  dot: 'bg-emerald-400 shadow-[0_0_6px_#10b981]' },
+  rejected:                   { label: 'Rejected',     color: '#ef4444', bg: 'rgba(239,68,68,0.12)',   dot: 'bg-red-400 shadow-[0_0_6px_#ef4444]' },
+  expired:                    { label: 'Expired',      color: '#6b7280', bg: 'rgba(107,114,128,0.12)', dot: 'bg-slate-500' },
+  converted_to_subscription:  { label: 'Converted',    color: '#10b981', bg: 'rgba(16,185,129,0.12)',  dot: 'bg-emerald-400 shadow-[0_0_6px_#10b981]' },
 };
 
-// Status labels
-const STATUS_LABELS: Record<string, string> = {
-  pending: 'Pending',
-  under_review: 'Under Review',
-  quoted: 'Quoted',
-  accepted: 'Accepted',
-  rejected: 'Rejected',
-  expired: 'Expired',
-  converted_to_subscription: 'Converted',
+const URGENCY_META: Record<string, { color: string; bg: string }> = {
+  critical: { color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
+  high:     { color: '#f97316', bg: 'rgba(249,115,22,0.12)' },
+  medium:   { color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },
+  low:      { color: '#6b7280', bg: 'rgba(107,114,128,0.12)' },
 };
 
-const SERVICE_TYPE_LABELS: Record<string, string> = {
-  internet_plan: 'Internet Plan',
-  hosting_package: 'Hosting Package',
-  web_development: 'Web Development',
-  cloud_services: 'Cloud Services',
-  cyber_security: 'Cyber Security',
-  network_infrastructure: 'Network Infrastructure',
-  isp_services: 'ISP Services',
-  cpe_device: 'CPE Device',
-  satellite_connectivity: 'Satellite Connectivity',
-  media_services: 'Media Services',
-  erp_services: 'ERP Services',
-  smart_integration: 'Smart Integration',
-  other: 'Other',
+const SERVICE_LABELS: Record<string, string> = {
+  internet_plan: 'Internet Plan', hosting_package: 'Hosting Package',
+  web_development: 'Web Development', cloud_services: 'Cloud Services',
+  cyber_security: 'Cyber Security', network_infrastructure: 'Network Infrastructure',
+  isp_services: 'ISP Services', cpe_device: 'CPE Device',
+  satellite_connectivity: 'Satellite Connectivity', media_services: 'Media Services',
+  erp_services: 'ERP Services', smart_integration: 'Smart Integration', other: 'Other',
 };
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+const StatCard = ({ label, value, icon: Icon, accent, sub }: {
+  label: string; value: string | number; icon: React.ElementType;
+  accent: string; sub?: React.ReactNode;
+}) => (
+  <div className="relative overflow-hidden rounded-xl bg-white/5 border border-white/10 p-3 sm:p-5 flex flex-col gap-3 sm:gap-4 hover:bg-white/10 transition-all">
+    <div className="flex items-start justify-between">
+      <p className="text-xs sm:text-sm font-medium text-slate-400">{label}</p>
+      <div className="p-1.5 sm:p-2 rounded-lg" style={{ background: `${accent}18` }}>
+        <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" style={{ color: accent }} />
+      </div>
+    </div>
+    <div>
+      <p className="text-xl sm:text-3xl font-bold text-white tracking-tight">{value}</p>
+      {sub && <div className="mt-1 sm:mt-1.5 text-xs text-slate-500 hidden sm:block">{sub}</div>}
+    </div>
+  </div>
+);
+
+const StatusBadge = ({ status }: { status: string }) => {
+  const m = STATUS_META[status] ?? { label: status, color: '#6b7280', bg: 'rgba(107,114,128,0.12)', dot: 'bg-slate-500' };
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold"
+      style={{ color: m.color, background: m.bg }}>
+      <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />
+      {m.label}
+    </span>
+  );
+};
+
+const UrgencyBadge = ({ urgency }: { urgency: string }) => {
+  const m = URGENCY_META[urgency] ?? URGENCY_META.low;
+  return (
+    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold capitalize"
+      style={{ color: m.color, background: m.bg }}>
+      {urgency}
+    </span>
+  );
+};
+
+// ─── Quote Card (Mobile) ─────────────────────────────────────────────────────
+const QuoteCard = ({ quote, onView, onMarkReview, onSubmitQuote }: {
+  quote: QuoteRequest;
+  onView: () => void;
+  onMarkReview: (id: number) => void;
+  onSubmitQuote: (quote: QuoteRequest) => void;
+}) => (
+  <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0 flex-1">
+        <p className="font-mono text-blue-400 text-sm font-semibold">{quote.quote_number}</p>
+        <p className="text-white font-semibold text-sm mt-1 truncate">{quote.contact_name}</p>
+        <p className="text-slate-500 text-xs truncate">{quote.contact_email}</p>
+        {quote.company_name && <p className="text-slate-600 text-xs truncate">{quote.company_name}</p>}
+      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="w-8 h-8 rounded-lg text-slate-500 hover:text-slate-300 flex-shrink-0">
+            <MoreHorizontal className="w-4 h-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="bg-[#0f1629] border-white/10 text-white w-44">
+          <DropdownMenuItem className="gap-2 text-slate-300 hover:text-white cursor-pointer focus:bg-white/8" onClick={onView}>
+            <Eye className="w-3.5 h-3.5" /> View Details
+          </DropdownMenuItem>
+          {(quote.status === 'pending' || quote.status === 'under_review') && (
+            <>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem className="gap-2 text-amber-400 hover:text-amber-300 cursor-pointer focus:bg-amber-500/10"
+                onClick={() => onMarkReview(quote.id)}>
+                <Clock className="w-3.5 h-3.5" /> Mark Review
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 text-violet-400 hover:text-violet-300 cursor-pointer focus:bg-violet-500/10"
+                onClick={() => onSubmitQuote(quote)}>
+                <Send className="w-3.5 h-3.5" /> Submit Quote
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+    <div className="flex items-center gap-2 flex-wrap">
+      <StatusBadge status={quote.status} />
+      <UrgencyBadge urgency={quote.urgency ?? 'low'} />
+    </div>
+    <div className="flex items-center justify-between pt-1 border-t border-white/10">
+      <span className="text-[10px] font-medium text-slate-400 capitalize px-2 py-1 rounded-lg bg-white/5 border border-white/10">
+        {SERVICE_LABELS[quote.service_type] ?? quote.service_type}
+      </span>
+      <div className="text-right">
+         {quote.quoted_price ? (
+           <span className="text-emerald-400 font-semibold text-sm">KES {quote.quoted_price.toLocaleString()}</span>
+         ) : (
+           <span className="text-slate-600 text-xs">No Quote</span>
+         )}
+      </div>
+    </div>
+  </div>
+);
+
+// ─── Quote Detail Modal ──────────────────────────────────────────────────────
+
+const QuoteDetailModal = ({
+  quote, onClose, onMarkReview, onOpenQuoteForm,
+}: {
+  quote: QuoteRequest;
+  onClose: () => void;
+  onMarkReview: (id: number) => void;
+  onOpenQuoteForm: (quote: QuoteRequest) => void;
+}) => {
+  const canAct = quote.status === 'pending' || quote.status === 'under_review';
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="bg-[#0f1629] border-white/10 text-white w-[calc(100vw-2rem)] max-w-lg sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            <FileText className="w-5 h-5 text-blue-400" />
+            <div>
+              <DialogTitle className="text-white font-bold text-lg">Quote Details</DialogTitle>
+              <p className="text-blue-400 font-mono text-sm">{quote.quote_number}</p>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-5 py-2">
+          {/* Status + Service */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wider mb-1.5">Status</p>
+              <StatusBadge status={quote.status} />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wider mb-1.5">Service Type</p>
+              <span className="text-sm font-medium text-white">
+                {SERVICE_LABELS[quote.service_type] ?? quote.service_type}
+              </span>
+            </div>
+          </div>
+
+          {/* Contact */}
+          <div className="rounded-xl bg-white/5 border border-white/10 p-4 space-y-3">
+            <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Contact Info</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                ['Name',    quote.contact_name],
+                ['Email',   quote.contact_email],
+                ['Phone',   quote.contact_phone],
+                ['Company', quote.company_name],
+                ['Urgency', quote.urgency],
+                ['Budget',  quote.budget_range],
+                ['Timeline',quote.timeline],
+              ].filter(([, v]) => v).map(([k, v]) => (
+                <div key={k as string}>
+                  <p className="text-xs text-slate-500 mb-0.5">{k as string}</p>
+                  <p className="text-sm text-white font-medium">{v as string}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* General Info */}
+          {quote.general_info && Object.keys(quote.general_info).length > 0 && (
+            <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+              <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-3">Project Overview</p>
+              <div className="space-y-2">
+                {Object.entries(quote.general_info).filter(([, v]) => v).map(([k, v]) => (
+                  <div key={k} className="flex gap-2">
+                    <span className="text-slate-500 text-xs capitalize min-w-[120px] pt-0.5">{k.replace(/_/g, ' ')}:</span>
+                    <span className="text-white text-xs">{String(v)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Technical Requirements */}
+          {quote.technical_requirements && Object.keys(quote.technical_requirements).length > 0 && (
+            <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+              <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-3">Technical Requirements</p>
+              <div className="space-y-2">
+                {Object.entries(quote.technical_requirements).filter(([, v]) => v).map(([k, v]) => (
+                  <div key={k} className="flex gap-2">
+                    <span className="text-slate-500 text-xs capitalize min-w-[120px] pt-0.5">{k.replace(/_/g, ' ')}:</span>
+                    <span className="text-white text-xs">{String(v)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Quoted price */}
+          {quote.quoted_price && (
+            <div className="rounded-xl border p-4" style={{ background: 'rgba(139,92,246,0.08)', borderColor: 'rgba(139,92,246,0.3)' }}>
+              <p className="text-xs text-violet-400 uppercase tracking-wider mb-1">Quoted Price</p>
+              <p className="text-2xl font-bold text-white">KES {quote.quoted_price.toLocaleString()}</p>
+              {quote.admin_response && (
+                <p className="text-sm text-slate-300 mt-2">{quote.admin_response}</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="flex gap-2 flex-wrap">
+          {canAct && (
+            <>
+              <Button size="sm"
+                onClick={() => { onMarkReview(quote.id); onClose(); }}
+                className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-semibold h-9 px-4 rounded-lg flex-1 sm:flex-none">
+                <Clock className="w-3.5 h-3.5 mr-1.5" /> Mark Review
+              </Button>
+              <Button size="sm"
+                onClick={() => { onClose(); onOpenQuoteForm(quote); }}
+                className="bg-violet-500/20 hover:bg-violet-500/30 text-violet-300 border border-violet-500/30 text-xs font-semibold h-9 px-4 rounded-lg flex-1 sm:flex-none">
+                <Send className="w-3.5 h-3.5 mr-1.5" /> Submit Quote
+              </Button>
+            </>
+          )}
+          <Button variant="ghost" size="sm" onClick={onClose} className="text-slate-400 hover:text-white h-9 w-full sm:w-auto sm:ml-auto">
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// ─── Submit Quote Modal ───────────────────────────────────────────────────────
+
+const SubmitQuoteModal = ({
+  quote, onClose, onSubmit,
+}: {
+  quote: QuoteRequest;
+  onClose: () => void;
+  onSubmit: (id: number, data: { quoted_price: number; staff_notes?: string; admin_response: string }) => Promise<void>;
+}) => {
+  const [form, setForm] = useState({
+    quoted_price: quote.quoted_price?.toString() ?? '',
+    admin_response: '',
+    staff_notes: '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!form.quoted_price || !form.admin_response) return;
+    setSaving(true);
+    try {
+      await onSubmit(quote.id, {
+        quoted_price:   parseFloat(form.quoted_price),
+        admin_response: form.admin_response,
+        staff_notes:    form.staff_notes || undefined,
+      });
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="bg-[#0f1629] border-white/10 text-white w-[calc(100vw-2rem)] max-w-lg">
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            <Send className="w-5 h-5 text-violet-400" />
+            <div>
+              <DialogTitle className="text-white font-bold text-lg">Submit Quote</DialogTitle>
+              <p className="text-blue-400 font-mono text-sm">{quote.quote_number}</p>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div>
+            <Label className="text-slate-400 text-sm mb-1.5 block">Quoted Price (KES) *</Label>
+            <input
+              type="number" min="0" step="0.01"
+              value={form.quoted_price}
+              onChange={e => setForm(f => ({ ...f, quoted_price: e.target.value }))}
+              placeholder="0.00"
+              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 transition text-sm"
+            />
+          </div>
+          <div>
+            <Label className="text-slate-400 text-sm mb-1.5 block">Response Message to Customer *</Label>
+            <textarea
+              rows={4}
+              value={form.admin_response}
+              onChange={e => setForm(f => ({ ...f, admin_response: e.target.value }))}
+              placeholder="Message included with the quote…"
+              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 transition text-sm resize-none"
+            />
+          </div>
+          <div>
+            <Label className="text-slate-400 text-sm mb-1.5 block">Internal Notes <span className="text-slate-600">(not visible to customer)</span></Label>
+            <textarea
+              rows={3}
+              value={form.staff_notes}
+              onChange={e => setForm(f => ({ ...f, staff_notes: e.target.value }))}
+              placeholder="Internal notes…"
+              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 transition text-sm resize-none"
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button variant="ghost" onClick={onClose} className="text-slate-400 hover:text-white">Cancel</Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={saving || !form.quoted_price || !form.admin_response}
+            className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold px-6 rounded-xl w-full sm:w-auto">
+            {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+            Send Quote
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function QuoteManagement() {
-  const [quotes, setQuotes] = useState<QuoteRequest[]>([]);
-  const [statistics, setStatistics] = useState<QuoteStatistics | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedQuote, setSelectedQuote] = useState<QuoteRequest | null>(null);
-  const [showQuoteModal, setShowQuoteModal] = useState(false);
-  const [filters, setFilters] = useState({
-    status: '',
-    service_type: '',
-    search: '',
-  });
-  const [pagination, setPagination] = useState({
-    current_page: 1,
-    last_page: 1,
-    total: 0,
-  });
+  const { hasRole, isAuthenticated } = useAuth();
+  if (!isAuthenticated) return <Navigate to="/auth" replace />;
+  if (!hasRole('admin') && !hasRole('staff')) return <Navigate to="/client/dashboard" replace />;
 
-  // Quote submission form state
-  const [quoteForm, setQuoteForm] = useState({
-    quoted_price: '',
-    staff_notes: '',
-    admin_response: '',
-  });
+  const [quotes, setQuotes]           = useState<QuoteRequest[]>([]);
+  const [statistics, setStatistics]   = useState<QuoteStatistics | null>(null);
+  const [loading, setLoading]         = useState(true);
+  const [refreshing, setRefreshing]   = useState(false);
+  const [detailQuote, setDetailQuote] = useState<QuoteRequest | null>(null);
+  const [quoteFormFor, setQuoteFormFor] = useState<QuoteRequest | null>(null);
+  const [filters, setFilters]         = useState({ status: '', service_type: '', search: '' });
+  const [pagination, setPagination]   = useState({ current_page: 1, last_page: 1, total: 0 });
 
-  useEffect(() => {
-    loadQuotes();
-    loadStatistics();
-  }, [filters, pagination.current_page]);
-
-  const loadQuotes = async () => {
-    setLoading(true);
+  const loadQuotes = async (quiet = false) => {
+    if (!quiet) setLoading(true); else setRefreshing(true);
     try {
-      const params: Record<string, unknown> = {
-        page: pagination.current_page,
-        per_page: 15,
-      };
-      if (filters.status) params.status = filters.status;
+      const params: Record<string, unknown> = { page: pagination.current_page, per_page: 15 };
+      if (filters.status)       params.status       = filters.status;
       if (filters.service_type) params.service_type = filters.service_type;
-      if (filters.search) params.search = filters.search;
+      if (filters.search)       params.search       = filters.search;
 
       const result = await adminQuotesApi.getAll(params);
-      setQuotes(result.data);
-      setPagination({
-        current_page: result.meta.current_page,
-        last_page: result.meta.last_page,
-        total: result.meta.total,
-      });
-    } catch (error) {
-      console.error('Failed to load quotes:', error);
+      setQuotes(result.data ?? []);
+      setPagination(p => ({
+        ...p,
+        current_page: result.meta?.current_page ?? 1,
+        last_page:    result.meta?.last_page    ?? 1,
+        total:        result.meta?.total        ?? 0,
+      }));
+    } catch (e) {
+      console.error('Failed to load quotes:', e);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -97,514 +409,293 @@ export default function QuoteManagement() {
     try {
       const stats = await adminQuotesApi.getStatistics();
       setStatistics(stats);
-    } catch (error) {
-      console.error('Failed to load statistics:', error);
+    } catch (e) {
+      console.error('Failed to load statistics:', e);
     }
   };
 
-  const handleMarkUnderReview = async (id: number) => {
-    try {
-      await adminQuotesApi.markUnderReview(id);
-      loadQuotes();
-      loadStatistics();
-    } catch (error) {
-      console.error('Failed to mark under review:', error);
-    }
+  const refresh = () => { loadQuotes(true); loadStatistics(); };
+
+  useEffect(() => { loadQuotes(); loadStatistics(); }, [filters, pagination.current_page]);
+
+  const handleMarkReview = async (id: number) => {
+    try { await adminQuotesApi.markUnderReview(id); refresh(); }
+    catch (e) { console.error(e); }
   };
 
-  const handleSubmitQuote = async () => {
-    if (!selectedQuote) return;
-    
-    try {
-      await adminQuotesApi.submitQuote(selectedQuote.id, {
-        quoted_price: parseFloat(quoteForm.quoted_price),
-        staff_notes: quoteForm.staff_notes || undefined,
-        admin_response: quoteForm.admin_response,
-      });
-      setShowQuoteModal(false);
-      setQuoteForm({ quoted_price: '', staff_notes: '', admin_response: '' });
-      setSelectedQuote(null);
-      loadQuotes();
-      loadStatistics();
-    } catch (error) {
-      console.error('Failed to submit quote:', error);
-    }
+  const handleSubmitQuote = async (id: number, data: {
+    quoted_price: number; staff_notes?: string; admin_response: string;
+  }) => {
+    await adminQuotesApi.submitQuote(id, data);
+    refresh();
   };
 
-  const openQuoteModal = (quote: QuoteRequest) => {
-    setSelectedQuote(quote);
-    setQuoteForm({
-      quoted_price: quote.quoted_price?.toString() || '',
-      staff_notes: '',
-      admin_response: '',
-    });
-    setShowQuoteModal(true);
-  };
+  const formatDate = (d: string) =>
+    new Date(d).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' });
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+  const formatPrice = (p?: number) => p ? `KES ${p.toLocaleString()}` : '—';
 
-  const formatPrice = (price?: number) => {
-    if (!price) return '-';
-    return `KES ${price.toLocaleString()}`;
-  };
+  const statusFilters = [
+    { v: '',             l: 'All' },
+    { v: 'pending',      l: 'Pending' },
+    { v: 'under_review', l: 'Under Review' },
+    { v: 'quoted',       l: 'Quoted' },
+    { v: 'accepted',     l: 'Accepted' },
+    { v: 'rejected',     l: 'Rejected' },
+    { v: 'expired',      l: 'Expired' },
+    { v: 'converted_to_subscription', l: 'Converted' },
+  ];
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">Quote Management</h1>
-        <p className="text-slate-400">Manage and respond to quote requests</p>
-      </div>
-
-      {/* Statistics Cards */}
-      {statistics && (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
-          <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-            <div className="text-2xl font-bold text-white">{statistics.overview.total}</div>
-            <div className="text-sm text-slate-400">Total</div>
+    <DashboardLayout userType="admin">
+      <div className="w-full px-2 sm:px-4 py-4 sm:py-8 max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
+              <span className="text-xs font-semibold text-slate-500 tracking-widest uppercase hidden sm:inline">Sales Pipeline</span>
+            </div>
+            <h1 className="text-xl sm:text-3xl font-bold text-white tracking-tight">Quote Management</h1>
+            <p className="text-slate-400 mt-0.5 sm:mt-1 text-xs sm:text-sm hidden sm:block">Manage and respond to customer quote requests</p>
           </div>
-          <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-            <div className="text-2xl font-bold text-yellow-400">{statistics.overview.pending}</div>
-            <div className="text-sm text-slate-400">Pending</div>
-          </div>
-          <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-            <div className="text-2xl font-bold text-blue-400">{statistics.overview.under_review}</div>
-            <div className="text-sm text-slate-400">Under Review</div>
-          </div>
-          <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-            <div className="text-2xl font-bold text-purple-400">{statistics.overview.quoted}</div>
-            <div className="text-sm text-slate-400">Quoted</div>
-          </div>
-          <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-            <div className="text-2xl font-bold text-green-400">{statistics.overview.accepted}</div>
-            <div className="text-sm text-slate-400">Accepted</div>
-          </div>
-          <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-            <div className="text-2xl font-bold text-emerald-400">{statistics.overview.converted}</div>
-            <div className="text-sm text-slate-400">Converted</div>
-          </div>
+          <Button variant="ghost" size="icon" onClick={refresh}
+            className="text-slate-400 hover:text-white hover:bg-white/5 rounded-xl" title="Refresh">
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
-      )}
 
-      {/* Filters */}
-      <div className="bg-slate-800 rounded-lg p-4 mb-6 border border-slate-700">
-        <div className="flex flex-wrap gap-4">
-          <div className="flex-1 min-w-[200px]">
-            <input
-              type="text"
-              placeholder="Search by quote number, name, email..."
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white"
-            />
+        {/* Stat Cards */}
+        {statistics && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
+            <StatCard label="Total"       value={statistics.overview.total}       icon={FileText}    accent="#3b82f6" />
+            <StatCard label="Pending"     value={statistics.overview.pending}     icon={Clock}       accent="#f59e0b" />
+            <StatCard label="Under Review"value={statistics.overview.under_review}icon={Users}       accent="#3b82f6" />
+            <StatCard label="Quoted"      value={statistics.overview.quoted}      icon={DollarSign}  accent="#8b5cf6" />
+            <StatCard label="Accepted"    value={statistics.overview.accepted}    icon={CheckCircle2}accent="#10b981" />
+            <StatCard label="Converted"   value={statistics.overview.converted}   icon={MessageCircle} accent="#10b981" />
           </div>
-          <select
-            value={filters.status}
-            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-            className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white"
-          >
-            <option value="">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="under_review">Under Review</option>
-            <option value="quoted">Quoted</option>
-            <option value="accepted">Accepted</option>
-            <option value="rejected">Rejected</option>
-            <option value="expired">Expired</option>
-            <option value="converted_to_subscription">Converted</option>
-          </select>
-          <select
-            value={filters.service_type}
-            onChange={(e) => setFilters({ ...filters, service_type: e.target.value })}
-            className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white"
-          >
-            <option value="">All Services</option>
-            {Object.entries(SERVICE_TYPE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-          <button
-            onClick={() => {
-              setFilters({ status: '', service_type: '', search: '' });
-              setPagination({ ...pagination, current_page: 1 });
-            }}
-            className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg"
-          >
-            Clear
-          </button>
-        </div>
-      </div>
+        )}
 
-      {/* Quotes Table */}
-      <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-slate-700">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-white">Quote #</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-white">Service</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-white">Customer</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-white">Status</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-white">Price</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-white">Urgency</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-white">Date</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-white">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-700">
-              {loading ? (
-                <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
-                    Loading...
-                  </td>
-                </tr>
-              ) : quotes.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
-                    No quote requests found
-                  </td>
-                </tr>
-              ) : (
-                quotes.map((quote) => (
-                  <tr key={quote.id} className="hover:bg-slate-700/50">
-                    <td className="px-4 py-3">
-                      <span className="font-mono text-blue-400">{quote.quote_number}</span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-300">
-                      {SERVICE_TYPE_LABELS[quote.service_type] || quote.service_type}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="text-white">{quote.contact_name}</div>
-                      <div className="text-sm text-slate-400">{quote.contact_email}</div>
-                      {quote.company_name && (
-                        <div className="text-sm text-slate-500">{quote.company_name}</div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs border ${STATUS_COLORS[quote.status]}`}>
-                        {STATUS_LABELS[quote.status]}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-white">
-                      {formatPrice(quote.quoted_price)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        quote.urgency === 'critical' ? 'bg-red-500/20 text-red-400' :
-                        quote.urgency === 'high' ? 'bg-orange-500/20 text-orange-400' :
-                        quote.urgency === 'medium' ? 'bg-blue-500/20 text-blue-400' :
-                        'bg-slate-500/20 text-slate-400'
-                      }`}>
-                        {quote.urgency}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-400 text-sm">
-                      {formatDate(quote.created_at)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setSelectedQuote(quote)}
-                          className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded"
-                        >
-                          View
-                        </button>
-                        {quote.status === 'pending' && (
-                          <button
-                            onClick={() => handleMarkUnderReview(quote.id)}
-                            className="px-3 py-1 text-sm bg-yellow-600 hover:bg-yellow-700 text-white rounded"
-                          >
-                            Review
-                          </button>
-                        )}
-                        {(quote.status === 'pending' || quote.status === 'under_review') && (
-                          <button
-                            onClick={() => openQuoteModal(quote)}
-                            className="px-3 py-1 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded"
-                          >
-                            Quote
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+        {/* Filters */}
+        <div className="space-y-3">
+          {/* Search */}
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="relative w-full sm:flex-1 min-w-[220px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <input
+                value={filters.search}
+                onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
+                placeholder="Search quote #, name, email…"
+                className="w-full pl-9 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 transition"
+              />
+              {filters.search && (
+                <button onClick={() => setFilters(f => ({ ...f, search: '' }))}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                  <X className="w-3.5 h-3.5" />
+                </button>
               )}
-            </tbody>
-          </table>
+            </div>
+
+            {/* Service type select */}
+            <select
+              value={filters.service_type}
+              onChange={e => setFilters(f => ({ ...f, service_type: e.target.value }))}
+              className="w-full sm:flex-shrink-0 px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-slate-300 focus:outline-none focus:border-blue-500/50 transition">
+              <option value="">All Services</option>
+              {Object.entries(SERVICE_LABELS).map(([v, l]) => (
+                <option key={v} value={v}>{l}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            {/* Status filter pills */}
+             <div className="flex items-center gap-1.5 flex-wrap overflow-x-auto pb-1 sm:pb-0">
+              {statusFilters.map(({ v, l }) => (
+                <button key={v} onClick={() => setFilters(f => ({ ...f, status: v }))}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap flex-shrink-0 ${
+                    filters.status === v
+                      ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                      : 'text-slate-500 hover:text-slate-300 border border-transparent hover:border-white/10'
+                  }`}>{l}</button>
+              ))}
+            </div>
+             {(filters.search || filters.service_type || filters.status) && (
+              <button
+                onClick={() => setFilters({ status: '', service_type: '', search: '' })}
+                className="text-xs text-slate-500 hover:text-slate-300 underline underline-offset-2 flex-shrink-0">
+                Clear all
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Desktop Table */}
+        <div className="hidden md:block rounded-xl border border-white/10 overflow-hidden overflow-x-auto">
+           {/* Header row */}
+           <div className="grid grid-cols-[1fr_1.2fr_1.5fr_1fr_0.8fr_0.8fr_0.8fr_auto] gap-3 px-4 sm:px-5 py-3 bg-white/[0.02] border-b border-white/10 min-w-[800px]">
+            {['Quote #','Service','Customer','Status','Price','Urgency','Date',''].map((h, i) => (
+              <div key={i} className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</div>
+            ))}
+          </div>
+
+          {/* Body */}
+          <div className="divide-y divide-white/[0.04]">
+            {loading ? (
+              <div className="flex items-center justify-center py-16 gap-3 text-slate-500">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="text-sm">Loading quotes…</span>
+              </div>
+            ) : quotes.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-slate-600">
+                <FileText className="w-10 h-10 mb-3 opacity-30" />
+                <p className="font-medium">No quote requests found</p>
+                <p className="text-sm mt-1">
+                  {filters.search || filters.status || filters.service_type
+                    ? 'Try adjusting your search or filters'
+                    : 'Quote requests from the website will appear here'}
+                </p>
+              </div>
+            ) : quotes.map(quote => (
+              <div key={quote.id}
+                className="grid grid-cols-[1fr_1.2fr_1.5fr_1fr_0.8fr_0.8fr_0.8fr_auto] gap-3 px-4 sm:px-5 py-4 items-center hover:bg-white/[0.02] transition-colors group min-w-[800px]">
+
+                {/* Quote # */}
+                <span className="font-mono text-blue-400 text-sm font-semibold truncate">
+                  {quote.quote_number}
+                </span>
+
+                {/* Service */}
+                <span className="text-xs font-medium text-slate-400 capitalize px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 w-fit truncate">
+                  {SERVICE_LABELS[quote.service_type] ?? quote.service_type}
+                </span>
+
+                {/* Customer */}
+                <div className="min-w-0">
+                  <p className="text-white font-semibold text-sm truncate">{quote.contact_name}</p>
+                  <p className="text-slate-500 text-xs truncate">{quote.contact_email}</p>
+                  {quote.company_name && (
+                    <p className="text-slate-600 text-xs truncate">{quote.company_name}</p>
+                  )}
+                </div>
+
+                {/* Status */}
+                <StatusBadge status={quote.status} />
+
+                {/* Price */}
+                <span className={`text-sm font-semibold ${quote.quoted_price ? 'text-emerald-400' : 'text-slate-600'}`}>
+                  {formatPrice(quote.quoted_price)}
+                </span>
+
+                {/* Urgency */}
+                <UrgencyBadge urgency={quote.urgency ?? 'low'} />
+
+                {/* Date */}
+                <span className="text-slate-500 text-xs">{formatDate(quote.created_at)}</span>
+
+                {/* Actions */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon"
+                      className="w-8 h-8 rounded-lg text-slate-600 hover:text-slate-300 hover:bg-white/8 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-[#0f1629] border-white/10 text-white w-44">
+                    <DropdownMenuItem
+                      className="gap-2 text-slate-300 hover:text-white cursor-pointer focus:bg-white/8 focus:text-white"
+                      onClick={() => setDetailQuote(quote)}>
+                      <Eye className="w-3.5 h-3.5" /> View Details
+                    </DropdownMenuItem>
+                    {(quote.status === 'pending' || quote.status === 'under_review') && (
+                      <>
+                        <DropdownMenuItem
+                          className="gap-2 text-amber-400 hover:text-amber-300 cursor-pointer focus:bg-amber-500/10 focus:text-amber-300"
+                          onClick={() => handleMarkReview(quote.id)}>
+                          <Clock className="w-3.5 h-3.5" /> Mark Under Review
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className="bg-white/10" />
+                        <DropdownMenuItem
+                          className="gap-2 text-violet-400 hover:text-violet-300 cursor-pointer focus:bg-violet-500/10 focus:text-violet-300"
+                          onClick={() => setQuoteFormFor(quote)}>
+                          <Send className="w-3.5 h-3.5" /> Submit Quote
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden space-y-2">
+          {loading ? (
+            <div className="flex items-center justify-center py-12 gap-3 text-slate-500">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="text-sm">Loading quotes…</span>
+            </div>
+          ) : quotes.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-slate-600">
+              <FileText className="w-10 h-10 mb-3 opacity-30" />
+              <p className="font-medium">No quote requests found</p>
+            </div>
+          ) : quotes.map(quote => (
+            <QuoteCard key={quote.id} quote={quote}
+              onView={() => setDetailQuote(quote)}
+              onMarkReview={handleMarkReview}
+              onSubmitQuote={(q) => { setDetailQuote(null); setQuoteFormFor(q); }}
+            />
+          ))}
         </div>
 
         {/* Pagination */}
         {pagination.last_page > 1 && (
-          <div className="px-4 py-3 bg-slate-700 flex items-center justify-between">
-            <div className="text-sm text-slate-400">
-              Showing {((pagination.current_page - 1) * 15) + 1} to {Math.min(pagination.current_page * 15, pagination.total)} of {pagination.total} results
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPagination({ ...pagination, current_page: pagination.current_page - 1 })}
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-slate-500">
+              Showing {((pagination.current_page - 1) * 15) + 1}–{Math.min(pagination.current_page * 15, pagination.total)} of {pagination.total}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon"
                 disabled={pagination.current_page === 1}
-                className="px-3 py-1 bg-slate-600 hover:bg-slate-500 disabled:opacity-50 text-white rounded"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => setPagination({ ...pagination, current_page: pagination.current_page + 1 })}
+                onClick={() => setPagination(p => ({ ...p, current_page: p.current_page - 1 }))}
+                className="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 disabled:opacity-30">
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="text-xs text-slate-500 px-2">
+                {pagination.current_page} / {pagination.last_page}
+              </span>
+              <Button variant="ghost" size="icon"
                 disabled={pagination.current_page === pagination.last_page}
-                className="px-3 py-1 bg-slate-600 hover:bg-slate-500 disabled:opacity-50 text-white rounded"
-              >
-                Next
-              </button>
+                onClick={() => setPagination(p => ({ ...p, current_page: p.current_page + 1 }))}
+                className="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 disabled:opacity-30">
+                <ChevronRight className="w-4 h-4" />
+              </Button>
             </div>
           </div>
         )}
+
       </div>
 
-      {/* Quote Details Modal */}
-      {selectedQuote && !showQuoteModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h2 className="text-xl font-bold text-white">Quote Details</h2>
-                  <p className="text-blue-400 font-mono">{selectedQuote.quote_number}</p>
-                </div>
-                <button
-                  onClick={() => setSelectedQuote(null)}
-                  className="text-slate-400 hover:text-white"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm text-slate-400">Status</label>
-                    <p>
-                      <span className={`px-2 py-1 rounded-full text-xs border ${STATUS_COLORS[selectedQuote.status]}`}>
-                        {STATUS_LABELS[selectedQuote.status]}
-                      </span>
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-slate-400">Service Type</label>
-                    <p className="text-white">{SERVICE_TYPE_LABELS[selectedQuote.service_type] || selectedQuote.service_type}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm text-slate-400">Contact Name</label>
-                    <p className="text-white">{selectedQuote.contact_name}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-slate-400">Email</label>
-                    <p className="text-white">{selectedQuote.contact_email}</p>
-                  </div>
-                </div>
-
-                {selectedQuote.contact_phone && (
-                  <div>
-                    <label className="text-sm text-slate-400">Phone</label>
-                    <p className="text-white">{selectedQuote.contact_phone}</p>
-                  </div>
-                )}
-
-                {selectedQuote.company_name && (
-                  <div>
-                    <label className="text-sm text-slate-400">Company</label>
-                    <p className="text-white">{selectedQuote.company_name}</p>
-                  </div>
-                )}
-
-                {selectedQuote.general_info && Object.keys(selectedQuote.general_info).length > 0 && (
-                  <div>
-                    <label className="text-sm text-slate-400">Project Overview</label>
-                    <div className="bg-slate-700 rounded p-3 mt-1">
-                      {Object.entries(selectedQuote.general_info).map(([key, value]) => (
-                        value && (
-                          <div key={key} className="mb-2">
-                            <span className="text-slate-400 capitalize">{key.replace(/_/g, ' ')}: </span>
-                            <span className="text-white">{String(value)}</span>
-                          </div>
-                        )
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedQuote.technical_requirements && Object.keys(selectedQuote.technical_requirements).length > 0 && (
-                  <div>
-                    <label className="text-sm text-slate-400">Technical Requirements</label>
-                    <div className="bg-slate-700 rounded p-3 mt-1">
-                      {Object.entries(selectedQuote.technical_requirements).map(([key, value]) => (
-                        value && (
-                          <div key={key} className="mb-2">
-                            <span className="text-slate-400 capitalize">{key.replace(/_/g, ' ')}: </span>
-                            <span className="text-white">{String(value)}</span>
-                          </div>
-                        )
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm text-slate-400">Budget Range</label>
-                    <p className="text-white">{selectedQuote.budget_range || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-slate-400">Timeline</label>
-                    <p className="text-white">{selectedQuote.timeline || '-'}</p>
-                  </div>
-                </div>
-
-                {selectedQuote.quoted_price && (
-                  <div className="bg-purple-500/20 border border-purple-500/40 rounded p-4">
-                    <label className="text-sm text-purple-400">Quoted Price</label>
-                    <p className="text-2xl font-bold text-white">{formatPrice(selectedQuote.quoted_price)}</p>
-                    {selectedQuote.admin_response && (
-                      <div className="mt-2">
-                        <label className="text-sm text-slate-400">Response:</label>
-                        <p className="text-white">{selectedQuote.admin_response}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex gap-3 pt-4">
-                  {(selectedQuote.status === 'pending' || selectedQuote.status === 'under_review') && (
-                    <>
-                      <button
-                        onClick={() => handleMarkUnderReview(selectedQuote.id)}
-                        className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded"
-                      >
-                        Mark Under Review
-                      </button>
-                      <button
-                        onClick={() => openQuoteModal(selectedQuote)}
-                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded"
-                      >
-                        Submit Quote
-                      </button>
-                    </>
-                  )}
-                  <button
-                    onClick={() => setSelectedQuote(null)}
-                    className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Modals */}
+      {detailQuote && (
+        <QuoteDetailModal
+          quote={detailQuote}
+          onClose={() => setDetailQuote(null)}
+          onMarkReview={handleMarkReview}
+          onOpenQuoteForm={q => { setDetailQuote(null); setQuoteFormFor(q); }}
+        />
       )}
 
-      {/* Quote Submission Modal */}
-      {showQuoteModal && selectedQuote && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-xl max-w-lg w-full">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h2 className="text-xl font-bold text-white">Submit Quote</h2>
-                  <p className="text-blue-400 font-mono text-sm">{selectedQuote.quote_number}</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowQuoteModal(false);
-                    setSelectedQuote(null);
-                  }}
-                  className="text-slate-400 hover:text-white"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Quoted Price (KES) *
-                  </label>
-                  <input
-                    type="number"
-                    value={quoteForm.quoted_price}
-                    onChange={(e) => setQuoteForm({ ...quoteForm, quoted_price: e.target.value })}
-                    required
-                    min="0"
-                    step="0.01"
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white"
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Response Message to Customer *
-                  </label>
-                  <textarea
-                    value={quoteForm.admin_response}
-                    onChange={(e) => setQuoteForm({ ...quoteForm, admin_response: e.target.value })}
-                    required
-                    rows={4}
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white"
-                    placeholder="Enter the message to include with the quote..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Internal Notes
-                  </label>
-                  <textarea
-                    value={quoteForm.staff_notes}
-                    onChange={(e) => setQuoteForm({ ...quoteForm, staff_notes: e.target.value })}
-                    rows={3}
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white"
-                    placeholder="Internal notes (not visible to customer)..."
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    onClick={handleSubmitQuote}
-                    disabled={!quoteForm.quoted_price || !quoteForm.admin_response}
-                    className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 text-white font-semibold rounded-lg"
-                  >
-                    Send Quote
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowQuoteModal(false);
-                      setSelectedQuote(null);
-                    }}
-                    className="px-4 py-3 bg-slate-600 hover:bg-slate-500 text-white rounded-lg"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      {quoteFormFor && (
+        <SubmitQuoteModal
+          quote={quoteFormFor}
+          onClose={() => setQuoteFormFor(null)}
+          onSubmit={handleSubmitQuote}
+        />
       )}
-    </div>
+    </DashboardLayout>
   );
 }
-
