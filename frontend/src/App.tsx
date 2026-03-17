@@ -50,6 +50,8 @@ import DashboardRedirect from "./pages/DashboardRedirect";
 import CookieConsent from "./components/CookieConsent";
 import WhatsAppButton from "./components/WhatsAppButton";
 import CategoryManagement from "./pages/admin/CategoryManagement";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLocation } from "react-router-dom";
 import ProductManagement from "./pages/admin/ProductManagement";
 import BannerManagement from "./pages/admin/BannerManagement";
 import TestimonialManagement from "./pages/admin/TestimonialManagement";
@@ -69,6 +71,18 @@ import LeadManagement from "./pages/admin/LeadManagement";
 
 const queryClient = new QueryClient();
 
+const DashboardGuard = ({ children }: { children: React.ReactNode }) => {
+  const { isAdmin, isStaff } = useAuth();
+  const location = useLocation();
+  const isAdminOrStaffPath = location.pathname.startsWith("/admin/") || location.pathname.startsWith("/staff/");
+  
+  if (isAdmin || isStaff || isAdminOrStaffPath) {
+    return null;
+  }
+  
+  return <>{children}</>;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -76,8 +90,10 @@ const App = () => (
       <Sonner />
       <AuthProvider>
         <BrowserRouter>
-          <CookieConsent />
-          <WhatsAppButton />
+          <DashboardGuard>
+            <CookieConsent />
+            <WhatsAppButton />
+          </DashboardGuard>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/plans" element={<Plans />} />

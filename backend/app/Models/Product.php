@@ -92,6 +92,7 @@ class Product extends Model implements HasMedia
         'meta_title',
         'meta_description',
         'meta_keywords',
+        'emerald_service_type_id',
     ];
 
     protected function casts(): array

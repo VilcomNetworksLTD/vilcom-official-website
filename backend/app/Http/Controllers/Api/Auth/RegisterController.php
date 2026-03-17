@@ -62,6 +62,34 @@ class RegisterController extends Controller
                 ],
             ]);
 
+            // Determine Emerald service type from selected product
+            $serviceTypeId = null;
+            if ($request->filled('selected_product_id')) {
+                $product = \App\Models\Product::find($request->selected_product_id);
+                $serviceTypeId = $product?->emerald_service_type_id;
+            }
+
+            // Create MBR in Emerald (only if we have a service type)
+            if ($serviceTypeId) {
+                try {
+                    $emerald = new \App\Services\EmeraldService();
+                    $result  = $emerald->createSubscriber($user->toArray(), $serviceTypeId);
+
+                    if (!empty($result['CustomerID'])) {
+                        $user->update([
+                            'emerald_mbr_id'     => $result['CustomerID'],
+                            'emerald_account_id' => $result['AccountID'] ?? null,
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    // Don't fail registration if Emerald is down — log and continue
+                    \Illuminate\Support\Facades\Log::error('Emerald account_add failed', [
+                        'user_id' => $user->id,
+                        'error'   => $e->getMessage(),
+                    ]);
+                }
+            }
+
             // Force assign default 'client' role (fix for dashboard redirect)
             if (!$user->hasRole('client')) {
                 $user->assignRole('client');

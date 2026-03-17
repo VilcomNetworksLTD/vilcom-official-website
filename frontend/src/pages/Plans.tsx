@@ -44,14 +44,14 @@ const productToPlan = (product: Product, index: number) => {
   return {
     id: product.id,
     slug: product.slug,
-    name: product.speed_mbps ? `${product.speed_mbps} Mbps` : product.name,
+    name: product.name, // ← Always use the product name as-is from the API
     speed: product.speed_mbps ? `${product.speed_mbps} Mbps` : "N/A",
     price: price.toLocaleString(),
-    rawPrice: price, // Keep raw price for conditional rendering
+    rawPrice: price,
     features: product.features || [],
     popular: product.badge === "Popular" || product.badge === "Best Value",
     is_featured: product.is_featured,
-    is_quote_based: product.is_quote_based || false, // Add quote-based flag
+    is_quote_based: product.is_quote_based || false,
     description: product.short_description || product.description,
   };
 };
@@ -201,8 +201,8 @@ const Plans = () => {
                     </div>
                   )}
                   <div className="relative z-10">
-                    <h3 className="font-heading text-lg font-bold text-slate-800">{plan.name}</h3>
-                    <p className="text-sky-600 text-sm font-medium mb-4">{plan.speed}</p>
+                    <h3 className="font-heading text-lg font-bold text-orange-500">{plan.name}</h3>
+                    <p className="text-black-600 text-sm font-medium mb-4">{plan.speed}</p>
                     
                     {/* Show price or Quote badge for quote-based products */}
                     {plan.is_quote_based ? (

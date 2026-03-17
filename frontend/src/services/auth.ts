@@ -2,8 +2,7 @@ import { useNavigate } from 'react-router-dom';
 
 // API Base URL - should be configured in .env
 // Strip /api/v1 if present to avoid double paths
-let API_URL = import.meta.env.VITE_API_URL || "";
-API_URL = API_URL.replace(/\/api\/v1$/, "");
+import api from '@/lib/axios';
 
 // Types
 export interface LoginCredentials {
@@ -85,18 +84,10 @@ export const isAuthenticated = (): boolean => {
 
 // API Functions
 export const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
-  const response = await fetch(`${API_URL}/auth/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    },
-    body: JSON.stringify(credentials),
-  });
+  const response = await api.post('/auth/login', credentials);
+  const data = response.data;
 
-  const data = await response.json();
-
-  if (response.ok && data.success) {
+  if (response.status < 300 && data.success) {
     if (data.data?.token) {
       setToken(data.data.token);
     }
@@ -109,18 +100,10 @@ export const login = async (credentials: LoginCredentials): Promise<AuthResponse
 };
 
 export const register = async (data: RegisterData): Promise<AuthResponse> => {
-  const response = await fetch(`${API_URL}/auth/register`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
+  const response = await api.post('/auth/register', data);
+  const result = response.data;
 
-  const result = await response.json();
-
-  if (response.ok && result.success) {
+  if (response.status < 300 && result.success) {
     if (result.data?.token) {
       setToken(result.data.token);
     }
@@ -137,14 +120,7 @@ export const logout = async (): Promise<void> => {
   
   if (token) {
     try {
-      await fetch(`${API_URL}/auth/logout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      await api.post('/auth/logout');
     } catch (error) {
       console.error('Logout API call failed:', error);
     }
@@ -158,26 +134,18 @@ export const getCurrentUser = async (): Promise<AuthResponse | null> => {
   
   if (!token) return null;
 
-  const response = await fetch(`${API_URL}/auth/user`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-  });
-
-  if (response.ok) {
-    const data = await response.json();
+  try {
+    const response = await api.get('/auth/user');
+    const data = response.data;
     if (data.success && data.data?.user) {
       setUser(data.data.user);
       return data;
     }
-  }
-  
-  // Token might be invalid
-  if (response.status === 401) {
-    removeToken();
+  } catch (error: any) {
+    // Token might be invalid
+    if (error.response?.status === 401) {
+      removeToken();
+    }
   }
   
   return null;
@@ -188,21 +156,15 @@ export const refreshToken = async (): Promise<boolean> => {
   
   if (!token) return false;
 
-  const response = await fetch(`${API_URL}/auth/refresh`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-  });
-
-  if (response.ok) {
-    const data = await response.json();
+  try {
+    const response = await api.post('/auth/refresh');
+    const data = response.data;
     if (data.data?.token) {
       setToken(data.data.token);
       return true;
     }
+  } catch {
+    // Refresh failed
   }
   
   return false;

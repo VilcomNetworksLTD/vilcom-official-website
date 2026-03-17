@@ -51,6 +51,7 @@ class UserResource extends JsonResource
             'status' => $this->status,
             'is_verified' => $this->is_verified,
             'verified_at' => $this->email_verified_at?->toIso8601String(),
+            'emerald_mbr_id' => $this->emerald_mbr_id,
             
             // Roles & Permissions
             'roles' => $this->whenLoaded('roles', function () {

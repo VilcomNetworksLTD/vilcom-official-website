@@ -81,6 +81,8 @@ class User extends Authenticatable
         // Verification
         'email_verified_at',
         'phone_verified_at',
+        'emerald_mbr_id',
+        'emerald_account_id',
     ];
 
     /**

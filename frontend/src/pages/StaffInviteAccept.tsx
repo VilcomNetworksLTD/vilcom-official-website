@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { 
   Eye, 
   EyeOff, 
@@ -14,16 +13,27 @@ import {
 } from 'lucide-react';
 import invitationsService from '@/services/invitations';
 
+interface InvitationDetails {
+  id: string;
+  email: string;
+  role: string;
+  invited_by: number;
+  expires_at: string;
+  created_at: string;
+  inviter: {
+    id: number;
+    name: string;
+  } | null;
+}
+
 const StaffInviteAccept = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const { token } = useParams();
   
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [isVerified, setIsVerified] = useState(false);
 
   // Form state
   const [form, setForm] = useState({
@@ -33,14 +43,31 @@ const StaffInviteAccept = () => {
     password_confirmation: '',
   });
 
-  // Verify token on mount
+  // Invitation state
+  const [invitation, setInvitation] = useState<InvitationDetails | null>(null);
+  const [loadingInvitation, setLoadingInvitation] = useState(true);
+
+  // Fetch invitation details
   useEffect(() => {
-    if (!token) {
-      setError('Invalid invitation link. No token provided.');
-      return;
-    }
-    // Token will be verified when form is submitted
-    setIsVerified(true);
+    const fetchInvitation = async () => {
+      if (!token) {
+        setError('Invalid invitation link. No token provided.');
+        setLoadingInvitation(false);
+        return;
+      }
+
+      try {
+        const data = await invitationsService.getByToken(token);
+        setInvitation(data);
+      } catch (err: any) {
+        setError(err.response?.data?.message || err.message || 'Invalid or expired invitation. Please contact your administrator.');
+        console.error('Fetch invitation error:', err);
+      } finally {
+        setLoadingInvitation(false);
+      }
+    };
+
+    fetchInvitation();
   }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,16 +76,22 @@ const StaffInviteAccept = () => {
     setSuccess(null);
     setIsLoading(true);
 
+    if (!token || !invitation) {
+      setError('Invitation details not available.');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const result = await invitationsService.accept({
-        token: token!,
+        token: token,
         name: form.name,
         phone: form.phone,
         password: form.password,
         password_confirmation: form.password_confirmation,
       });
 
-      setSuccess('Account created successfully! Redirecting to login...');
+      setSuccess('Staff account created successfully! Redirecting to login...');
       
       // Redirect to login after 2 seconds
       setTimeout(() => {
@@ -72,8 +105,19 @@ const StaffInviteAccept = () => {
     }
   };
 
-  // If no token
-  if (!token) {
+  if (loadingInvitation) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[hsl(235,85%,25%)] to-[hsl(225,70%,40%)]">
+        <div className="glass-dark p-8 rounded-3xl text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-cyan-400 mx-auto mb-4" />
+          <p className="text-white">Loading invitation details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If no token or error
+  if (!token || error) {
     return (
       <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-gradient-to-br from-[hsl(235,85%,25%)] via-[hsl(235,80%,30%)] to-[hsl(225,70%,40%)]">
@@ -88,7 +132,7 @@ const StaffInviteAccept = () => {
             <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-white mb-2">Invalid Invitation</h2>
             <p className="text-blue-200/70 mb-6">
-              This invitation link is invalid or has expired. Please contact your administrator for a new invitation.
+              {error || 'This invitation link is invalid or has expired. Please contact your administrator for a new invitation.'}
             </p>
             <Link
               to="/"
@@ -133,10 +177,10 @@ const StaffInviteAccept = () => {
         <div className="flex-1 flex flex-col justify-center">
           <h1 className="text-5xl xl:text-6xl font-bold text-white mb-6 leading-tight">
             Welcome to the<br />
-            <span className="font-extrabold text-cyan-300">Team!</span>
+            <span className="font-extrabold text-cyan-300">{invitation!.role.toUpperCase()} Team!</span>
           </h1>
           <p className="text-xl text-blue-100/80 max-w-md">
-            You've been invited to join Vilcom Networks. Complete your registration to get started.
+            Invited by {invitation!.inviter?.name || 'Admin'}. Complete your registration to get started.
           </p>
         </div>
 
@@ -169,13 +213,39 @@ const StaffInviteAccept = () => {
               </div>
             )}
 
+            {/* Invitation Details */}
+            <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-400/30">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Mail className="w-5 h-5" />
+                Invitation Details
+              </h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-blue-200/70">Role:</span>
+                  <span className="font-semibold text-cyan-300 capitalize">{invitation!.role}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-200/70">Email:</span>
+                  <span className="font-mono text-white bg-black/20 px-2 py-1 rounded text-xs">{invitation!.email}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-200/70">Invited by:</span>
+                  <span className="font-semibold text-white">{invitation!.inviter?.name || 'Admin'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-200/70">Expires:</span>
+                  <span className="text-green-400 font-semibold">{new Date(invitation!.expires_at).toLocaleDateString()}</span>
+                </div>
+              </div>
+            </div>
+
             {/* Header */}
             <div className="text-center mb-8">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center mx-auto mb-4">
                 <User className="w-8 h-8 text-white" />
               </div>
               <h2 className="text-3xl font-bold text-white mb-2">
-                Accept Invitation
+                Join as {invitation!.role.charAt(0).toUpperCase() + invitation!.role.slice(1)}
               </h2>
               <p className="text-blue-200/70">
                 Complete your staff account registration
@@ -204,17 +274,16 @@ const StaffInviteAccept = () => {
               <div>
                 <label className="block text-sm font-medium text-blue-100 mb-2">Email Address</label>
                 <div className="relative group">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-300/50" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-400" />
                   <input
                     type="email"
                     disabled
-                    placeholder="Email from invitation"
-                    value="Using invitation email"
-                    className="w-full pl-12 pr-4 py-4 rounded-xl bg-white/5 border border-white/10 text-blue-200/50 cursor-not-allowed"
+                    value={invitation!.email}
+                    className="w-full pl-12 pr-4 py-4 rounded-xl bg-green-500/10 border border-green-500/30 text-white font-mono cursor-not-allowed"
                   />
                 </div>
                 <p className="text-xs text-blue-200/50 mt-1">
-                  This is the email address the invitation was sent to
+                  Invitation email address (cannot be changed)
                 </p>
               </div>
 
@@ -241,7 +310,7 @@ const StaffInviteAccept = () => {
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-300/50 group-focus-within:text-blue-300 transition-colors" />
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Create a password"
+                    placeholder="Create a password (min 8 chars)"
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     required
@@ -278,16 +347,16 @@ const StaffInviteAccept = () => {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isLoading || !isVerified}
+                disabled={isLoading}
                 className="w-full py-4 rounded-xl font-semibold text-lg bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isLoading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Creating Account...
+                    Creating {invitation!.role} Account...
                   </>
                 ) : (
-                  'Create Account'
+                  `Create ${invitation!.role.charAt(0).toUpperCase() + invitation!.role.slice(1)} Account`
                 )}
               </button>
             </form>

@@ -15,6 +15,7 @@ import {
   Radio
 } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import PaymentInfo from '@/components/PaymentInfo';
 import { useAuth } from '@/contexts/AuthContext';
 
 // Circular gauge component for data usage
@@ -267,27 +268,8 @@ const ClientDashboard = () => {
 
         {/* Sidebar */}
         <div className="lg:col-span-1 space-y-6">
-          {/* Quick Pay */}
-          <div className="bg-gradient-to-br from-amber-500/30 to-yellow-500/30 backdrop-blur-md border border-white/20 rounded-2xl p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Quick Pay</h2>
-            <div className="space-y-3 mb-4">
-              <div className="flex items-center justify-between text-slate-300">
-                <span>Current Balance</span>
-                <span className="font-semibold text-white">KES 2,500</span>
-              </div>
-              <div className="flex items-center justify-between text-slate-300">
-                <span>Due Date</span>
-                <span className="font-semibold text-white">Feb 15, 2025</span>
-              </div>
-            </div>
-            <Link
-              to="/client/invoices"
-              className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-white font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-amber-500/25"
-            >
-              <CreditCard className="w-5 h-5" />
-              Pay Now
-            </Link>
-          </div>
+          {/* M-Pesa Paybill Card */}
+          <PaymentInfo emeraldMbrId={user?.emerald_mbr_id} />
 
           {/* Recent Activity */}
           <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6">

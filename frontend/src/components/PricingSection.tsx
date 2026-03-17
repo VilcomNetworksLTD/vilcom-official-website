@@ -314,7 +314,7 @@ const PricingSection = () => {
                         plan.popular ? "royal-glow hover:scale-[1.02]" : ""
                       }`}
                     >
-                      <Link to={`/plans?plan=${plan.slug}`}>Get Started</Link>
+                      <Link to={`/signup?product=${plan.slug}`}>Get Started</Link>
                     </Button>
                   </div>
                 </div>
@@ -393,7 +393,7 @@ const PricingSection = () => {
                         plan.popular ? "royal-glow hover:scale-[1.02]" : ""
                       }`}
                     >
-                      <Link to={`/plans?plan=${plan.slug}`}>Contact Sales</Link>
+                      <Link to={`/signup?product=${plan.slug}`}>Get Started</Link>
                     </Button>
                   </div>
                 </div>

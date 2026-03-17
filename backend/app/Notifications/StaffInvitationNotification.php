@@ -3,16 +3,12 @@
 namespace App\Notifications;
 
 use App\Models\StaffInvitation;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\URL;
 
-class StaffInvitationNotification extends Notification implements ShouldQueue
+class StaffInvitationNotification extends Notification
 {
-    use Queueable;
-
     public function __construct(
         public StaffInvitation $invitation
     ) {}
@@ -41,7 +37,8 @@ class StaffInvitationNotification extends Notification implements ShouldQueue
     {
         // Use frontend URL for invitation acceptance
         $frontendUrl = config('app.frontend_url', config('app.url'));
-        return $frontendUrl . '/invite/' . $this->invitation->token;
+        return rtrim($frontendUrl, '/') . '/invite/' . $this->invitation->token;
     }
+
 }
 

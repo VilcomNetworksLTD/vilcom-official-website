@@ -19,6 +19,7 @@ interface User {
   address?: string;
   city?: string;
   county?: string;
+  emerald_mbr_id?: string | null;
 }
 
 interface Role {
@@ -74,7 +75,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 
 
-const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+import api from '@/lib/axios';
 
 // ============================================
 // PROVIDER
@@ -91,34 +92,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Load user on mount
   useEffect(() => {
-    const loadUser = async () => {
+  const loadUser = async () => {
       const storedToken = localStorage.getItem('auth_token');
 
       if (storedToken) {
         setToken(storedToken);
 
         try {
-          const response = await fetch(`${API_URL}/auth/user`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'Authorization': `Bearer ${storedToken}`,
-            },
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.data?.user) {
-              setUser(data.data.user);
-              localStorage.setItem('auth_user', JSON.stringify(data.data.user));
-            }
-          } else if (response.status === 401) {
-            handleLogout();
+          const response = await api.get('/auth/user');
+          if (response.data.success && response.data.data?.user) {
+            setUser(response.data.data.user);
+            localStorage.setItem('auth_user', JSON.stringify(response.data.data.user));
           }
-        } catch (error) {
-          console.error('Failed to load user', error);
-          handleLogout();
+        } catch (error: any) {
+          if (error.response?.status === 401) {
+            handleLogout();
+          } else {
+            console.error('Failed to load user', error);
+          }
         }
       }
 
@@ -133,18 +124,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // ============================================
 
   const login = async (email: string, password: string): Promise<void> => {
-    const response = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
+    const response = await api.post('/auth/login', { email, password });
+    const data = response.data;
 
-    const data = await response.json();
-
-    if (!response.ok) {
+    if (response.status >= 300) {
       if (data.requires_2fa) {
         throw new Error('2FA_REQUIRED');
       }
@@ -167,14 +150,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     if (storedToken) {
       try {
-        await fetch(`${API_URL}/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${storedToken}`,
-          },
-        });
+        await api.post('/auth/logout');
       } catch (error) {
         console.error('Logout request failed', error);
       }
@@ -184,18 +160,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const register = async (data: RegisterData): Promise<void> => {
-    const response = await fetch(`${API_URL}/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
+    const response = await api.post('/auth/register', data);
+    const result = response.data;
 
-    const result = await response.json();
-
-    if (!response.ok) {
+    if (response.status >= 300) {
       // Surface Laravel field-level validation errors
       if (result.errors) {
         const messages = Object.values(result.errors as Record<string, string[]>)

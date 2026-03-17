@@ -74,6 +74,12 @@ const invitationsService = {
     const response = await axios.post('/staff-invitations/accept', data);
     return response.data;
   },
+
+  // Get invitation details by token (public)
+  async getByToken(token: string): Promise<any> {
+    const response = await axios.get(`/staff-invitations/${token}`);
+    return response.data;
+  },
 };
 
 export default invitationsService;

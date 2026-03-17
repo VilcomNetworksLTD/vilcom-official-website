@@ -600,9 +600,13 @@ Route::prefix('v1')->group(function () {
             ->name('api.admin.staff-invitations.destroy');
     });
 
-    // Public route for accepting invitation (no auth required)
+    // Public routes for staff invitations (no auth required)
+    Route::get('/staff-invitations/{token}', [App\Http\Controllers\Api\Admin\InvitationController::class, 'show'])
+        ->name('api.staff-invitations.show');
+
     Route::post('/staff-invitations/accept', [App\Http\Controllers\Api\Admin\InvitationController::class, 'accept'])
         ->name('api.staff-invitations.accept');
+
 
 // ============================================
     // REPORTS & ANALYTICS (Admin/Staff Only)
@@ -689,6 +693,9 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/interest', [App\Http\Controllers\Api\CoverageCheckerController::class, 'registerInterest'])
             ->name('api.coverage.interest');
+
+        Route::get('/zones', [App\Http\Controllers\Api\CoverageCheckerController::class, 'publicZones'])
+            ->name('api.coverage.zones');
 
         // Admin/Staff Coverage Management
         Route::middleware(['auth:sanctum', 'role:admin|staff'])->prefix('admin/coverage')->group(function () {

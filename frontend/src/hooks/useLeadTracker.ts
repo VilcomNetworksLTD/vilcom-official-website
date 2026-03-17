@@ -128,7 +128,7 @@ export const useLeadTracker = () => {
       // Use sendBeacon for non-blocking request
       if (typeof navigator !== "undefined" && navigator.sendBeacon) {
         const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
-        navigator.sendBeacon(`${getApiBaseUrl()}/api/v1/leads/track-visit`, blob);
+        navigator.sendBeacon(`${getApiBaseUrl()}/leads/track-visit`, blob);
       } else {
         // Fallback to regular fetch
         try {

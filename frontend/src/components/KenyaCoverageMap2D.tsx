@@ -1,511 +1,940 @@
-import React, { useState, useMemo, useEffect } from "react";
-import {
-  ComposableMap,
-  Geographies,
-  Geography,
-  ZoomableGroup,
-  Marker,
-} from "react-simple-maps";
-import { Tooltip } from "react-tooltip";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import axios from "@/lib/axios";
+import {
+  MapContainer,
+  TileLayer,
+  GeoJSON,
+  CircleMarker,
+  useMap,
+  Polyline,
+  Tooltip as LeafletTooltip,
+} from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 
-// ─── GeoJSON path — county polygons only (no sensitive coordinates) ──────────
-const geoUrl = "/kenya-counties.json";
+// @ts-ignore
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
 type CoverageType = "Home" | "Business" | "Both" | "None";
 
-interface SurveyZone {
+interface CoverageZone {
   id: number;
-  name: string;       // e.g. "Nairobi — Point A"
+  name: string;
   slug: string;
-  type: string;       // "area"
+  type: string;
   center_lat: number;
   center_lng: number;
   radius_km: number;
   status: string;
+  county?: string;
+  coverage_type?: CoverageType;
+  connectivity_index?: number;
   is_serviceable: boolean;
-  notes: string;
+  notes?: string;
 }
 
-// ─── Static county-level display data (public — no sensitive coords) ─────────
-// These only control choropleth fill colours. No survey precision here.
-const COUNTY_COVERAGE: Record<string, CoverageType> = {
-  "Nairobi":         "Both",
-  "Mombasa":         "Business",
-  "Kisumu":          "Business",
-  "Nakuru":          "Both",
-  "Kiambu":          "Business",
-  "Uasin Gishu":     "Home",
-  "Kakamega":        "Business",
-  "Bungoma":         "Business",
-  "Meru":            "Home",
-  "Isiolo":          "Home",
-  "Trans Nzoia":     "Home",
-  "Turkana":         "Home",
-  "Machakos":        "Home",
-  "Laikipia":        "Home",
-  "Kisii":           "Home",
-  "Nyandarua":       "Home",
-  "Nyeri":           "Business",
-  "Kirinyaga":       "Home",
-  "Murang'a":        "Home",
-  "Kilifi":          "Business",
-  "West Pokot":      "Home",
-  "Baringo":         "Home",
-  "Elgeyo-Marakwet": "Home",
-  "Nandi":           "Home",
-  "Bomet":           "Home",
-  "Narok":           "Home",
-  "Kajiado":         "Home",
-  "Siaya":           "Home",
-  "Busia":           "Home",
-  "Vihiga":          "Home",
-  "Homa Bay":        "Home",
-  "Migori":          "Home",
-  "Nyamira":         "Home",
-  "Tharaka-Nithi":   "None",
-  "Embu":            "Home",
-  "Kitui":           "None",
-  "Makueni":         "None",
-  "Kwale":           "None",
-  "Lamu":            "None",
-  "Tana River":      "None",
-  "Taita Taveta":    "None",
-  "Garissa":         "None",
-  "Wajir":           "None",
-  "Mandera":         "None",
-  "Marsabit":        "None",
-  "Samburu":         "None",
+// ─── Static fallback coverage data ───────────────────────────────────────────
+// Used when the API is unavailable; API data overrides these when present.
+
+const COUNTY_COVERAGE_FALLBACK: Record<string, CoverageType> = {
+  "Nairobi": "Both",     "Mombasa": "Business",  "Kisumu": "Business",
+  "Nakuru": "Both",      "Kiambu": "Business",   "Uasin Gishu": "Home",
+  "Kakamega": "Business","Bungoma": "Business",  "Meru": "Home",
+  "Isiolo": "Home",      "Trans Nzoia": "Home",  "Turkana": "Home",
+  "Machakos": "Home",    "Laikipia": "Home",     "Kisii": "Home",
+  "Nyandarua": "Home",   "Nyeri": "Business",    "Kirinyaga": "Home",
+  "Murang'a": "Home",    "Kilifi": "Business",   "West Pokot": "Home",
+  "Baringo": "Home",     "Elgeyo-Marakwet": "Home", "Nandi": "Home",
+  "Bomet": "Home",       "Narok": "Home",        "Kajiado": "Home",
+  "Siaya": "Home",       "Busia": "Home",        "Vihiga": "Home",
+  "Homa Bay": "Home",    "Migori": "Home",       "Nyamira": "Home",
+  "Tharaka-Nithi": "None","Embu": "Home",        "Kitui": "None",
+  "Makueni": "None",     "Kwale": "None",        "Lamu": "None",
+  "Tana River": "None",  "Taita Taveta": "None", "Garissa": "None",
+  "Wajir": "None",       "Mandera": "None",      "Marsabit": "None",
+  "Samburu": "None",
 };
 
-// Derive which counties have active survey data (used to boost fill brightness)
-const SURVEYED_COUNTIES = new Set([
-  "Turkana", "Trans Nzoia", "Kakamega", "Bungoma", "Kiambu",
-  "Meru", "Isiolo", "Mombasa", "Nakuru", "Uasin Gishu", "Nairobi",
-]);
-
-// ─── Region colours derived from slug prefix ──────────────────────────────────
-const REGION_PALETTE: Record<string, string> = {
-  lodwar:   "#f97316",
-  kitale:   "#22d3ee",
-  kakamega: "#a78bfa",
-  bungoma:  "#34d399",
-  ruiru:    "#f472b6",
-  meru:     "#facc15",
-  isiolo:   "#fb923c",
-  mombasa:  "#38bdf8",
-  rongai:   "#4ade80",
-  eldoret:  "#c084fc",
-  nairobi:  "#00eeff",
-  nakuru:   "#fbbf24",
+const COUNTY_WEIGHT_FALLBACK: Record<string, number> = {
+  "Nairobi": 100, "Kiambu": 85,  "Mombasa": 78,  "Nakuru": 70,
+  "Kisumu": 65,   "Kakamega": 58,"Bungoma": 55,  "Nyeri": 52,
+  "Kilifi": 50,   "Uasin Gishu": 48, "Murang'a": 42, "Kirinyaga": 40,
+  "Machakos": 38, "Meru": 36,    "Nyamira": 34,  "Kisii": 32,
+  "Homa Bay": 30, "Siaya": 28,   "Migori": 26,   "Nandi": 24,
+  "Nyandarua": 22,"Laikipia": 20,"Bomet": 18,    "Trans Nzoia": 17,
+  "Narok": 16,    "Kajiado": 15, "Baringo": 14,  "Elgeyo-Marakwet": 13,
+  "Vihiga": 12,   "Embu": 11,    "Busia": 10,    "Isiolo": 8,
+  "West Pokot": 7,"Turkana": 5,
 };
 
-const getRegionColor = (name: string): string => {
-  const key = name.toLowerCase().split(/[\s—–-]/)[0];
-  return REGION_PALETTE[key] ?? "#94a3b8";
+const COUNTY_CENTERS_FALLBACK: Record<string, [number, number]> = {
+  "Nairobi": [-1.286, 36.817],   "Mombasa": [-4.050, 39.666],
+  "Kisumu": [-0.091, 34.768],    "Nakuru": [-0.303, 36.080],
+  "Kiambu": [-1.031, 36.830],    "Uasin Gishu": [0.514, 35.270],
+  "Kakamega": [0.282, 34.752],   "Bungoma": [0.563, 34.560],
+  "Meru": [0.047, 37.649],       "Nyeri": [-0.416, 36.947],
+  "Kilifi": [-3.630, 39.850],    "Murang'a": [-0.716, 37.150],
+  "Kirinyaga": [-0.560, 37.358], "Machakos": [-1.518, 37.263],
+  "Nyamira": [-0.563, 34.934],   "Kisii": [-0.677, 34.776],
+  "Homa Bay": [-0.527, 34.457],  "Siaya": [0.061, 34.288],
+  "Migori": [-1.063, 34.473],    "Nandi": [0.183, 35.117],
+  "Nyandarua": [-0.180, 36.522], "Laikipia": [0.361, 36.793],
+  "Bomet": [-0.783, 35.343],     "Trans Nzoia": [1.017, 35.000],
+  "Narok": [-1.082, 35.872],     "Kajiado": [-2.099, 36.776],
+  "Baringo": [0.469, 35.972],    "Elgeyo-Marakwet": [0.904, 35.509],
+  "Vihiga": [0.077, 34.724],     "Embu": [-0.532, 37.457],
+  "Busia": [0.461, 34.112],      "Isiolo": [0.354, 37.582],
+  "West Pokot": [1.621, 35.117], "Turkana": [3.119, 35.599],
 };
 
-const COUNTY_FILL: Record<CoverageType, string> = {
-  Business: "#3b60c4",
-  Home:     "#b05a10",
-  Both:     "#6d28d9",
-  None:     "#1e293b",
+const HUB: [number, number] = [-1.286, 36.817]; // Nairobi
+
+// ─── View presets — Africa-first, then regional zoom ─────────────────────────
+
+interface ViewPreset {
+  id: string; label: string;
+  center: [number, number]; zoom: number; flag: string;
+}
+
+const VIEW_PRESETS: ViewPreset[] = [
+  { id: "africa",      label: "Africa",      center: [0,   20],   zoom: 3,   flag: "🌍" },
+  { id: "east_africa", label: "East Africa", center: [0,   36],   zoom: 5,   flag: "🌍" },
+  { id: "kenya",       label: "Kenya",       center: [0.5, 37.5], zoom: 6,   flag: "🇰🇪" },
+  { id: "uganda",      label: "Uganda",      center: [1.37,32.3], zoom: 7,   flag: "🇺🇬" },
+  { id: "rwanda",      label: "Rwanda",      center: [-1.9,29.9], zoom: 8,   flag: "🇷🇼" },
+  { id: "drc",         label: "DRC Congo",   center: [-2.9,23.7], zoom: 5.5, flag: "🇨🇩" },
+];
+
+// Panel presets (excludes bare "Africa" which is just the starting point)
+const PANEL_PRESETS = VIEW_PRESETS.filter(p => p.id !== "africa");
+
+// ─── Geometry helpers ─────────────────────────────────────────────────────────
+
+function smoothArc(
+  from: [number, number], to: [number, number], steps = 48
+): [number, number][] {
+  const midLat = (from[0] + to[0]) / 2;
+  const midLng = (from[1] + to[1]) / 2;
+  const dLat = to[0] - from[0];
+  const dLng = to[1] - from[1];
+  const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+  const curvature = 0.2 + dist * 0.035;
+  const ctrlLat = midLat - dLng * curvature;
+  const ctrlLng = midLng + dLat * curvature;
+  const pts: [number, number][] = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps, u = 1 - t;
+    pts.push([
+      u * u * from[0] + 2 * u * t * ctrlLat + t * t * to[0],
+      u * u * from[1] + 2 * u * t * ctrlLng + t * t * to[1],
+    ]);
+  }
+  return pts;
+}
+
+function arrowHead(
+  pts: [number, number][], size = 0.16
+): [[number, number], [number, number]][] {
+  const tip  = pts[pts.length - 1];
+  const prev = pts[Math.max(0, pts.length - 5)];
+  const dLat = tip[0] - prev[0], dLng = tip[1] - prev[1];
+  const len  = Math.sqrt(dLat * dLat + dLng * dLng) || 1;
+  const uLat = dLat / len, uLng = dLng / len;
+  const pLat = -uLng,      pLng = uLat;
+  const base: [number, number] = [tip[0] - uLat * size, tip[1] - uLng * size];
+  return [
+    [[base[0] + pLat * size * 0.5, base[1] + pLng * size * 0.5], tip],
+    [[base[0] - pLat * size * 0.5, base[1] - pLng * size * 0.5], tip],
+  ];
+}
+
+// ─── Colour helpers ───────────────────────────────────────────────────────────
+
+function weightToFill(w: number): string {
+  if (w >= 80) return "rgba(29,78,216,0.52)";
+  if (w >= 60) return "rgba(37,99,235,0.42)";
+  if (w >= 40) return "rgba(59,130,246,0.35)";
+  if (w >= 20) return "rgba(96,165,250,0.28)";
+  if (w >= 1)  return "rgba(147,197,253,0.20)";
+  return "transparent";
+}
+function weightToBorder(w: number): string {
+  if (w >= 80) return "#1d4ed8";
+  if (w >= 60) return "#2563eb";
+  if (w >= 40) return "#3b82f6";
+  if (w >= 20) return "#60a5fa";
+  if (w >= 1)  return "#93c5fd";
+  return "#e2e8f0";
+}
+function arcColor(w: number): string {
+  if (w >= 80) return "#1e40af";
+  if (w >= 60) return "#1d4ed8";
+  if (w >= 40) return "#2563eb";
+  if (w >= 20) return "#3b82f6";
+  return "#60a5fa";
+}
+function arcStroke(w: number): number {
+  if (w >= 80) return 2.2;
+  if (w >= 60) return 1.9;
+  if (w >= 40) return 1.6;
+  if (w >= 20) return 1.3;
+  return 1.0;
+}
+
+// ─── GeoJSON validation ───────────────────────────────────────────────────────
+
+const isValidGeometry = (g: any): boolean => {
+  if (!g?.type) return false;
+  const types = ["Point","MultiPoint","LineString","MultiLineString","Polygon","MultiPolygon","GeometryCollection"];
+  if (!types.includes(g.type)) return false;
+  if (g.type === "GeometryCollection") return Array.isArray(g.geometries) && g.geometries.length > 0;
+  return Array.isArray(g.coordinates) && g.coordinates.length > 0;
 };
 
-const COUNTY_FILL_ACTIVE: Record<CoverageType, string> = {
-  Business: "#5A81FA",
-  Home:     "#F28C28",
-  Both:     "#8B5CF6",
-  None:     "#334155",
+const normaliseGeoJSON = (raw: any): any | null => {
+  if (!raw || typeof raw !== "object") return null;
+  const col: any = Array.isArray(raw) ? { type: "FeatureCollection", features: raw } : raw;
+  if (col.type !== "FeatureCollection" && col.type !== "Feature") {
+    if (col.coordinates) return { type:"FeatureCollection", features:[{ type:"Feature", geometry:col, properties:{} }] };
+    return null;
+  }
+  if (col.type === "Feature") return { type:"FeatureCollection", features: isValidGeometry(col.geometry) ? [col] : [] };
+  const valid = (col.features ?? []).filter((f: any) => f?.type === "Feature" && isValidGeometry(f.geometry));
+  return valid.length ? { ...col, features: valid } : null;
+};
+
+// ─── ViewController — cinematic zoom + county fly-to ─────────────────────────
+
+const ViewController: React.FC<{
+  preset: ViewPreset;
+  selectedCounty: string | null;
+  geojsonData: any;
+  autoZoomDone: boolean;
+  onAutoZoomDone: () => void;
+}> = ({ preset, selectedCounty, geojsonData, autoZoomDone, onAutoZoomDone }) => {
+  const map = useMap();
+
+  // On first mount: start at Africa → fly to East Africa → fly to Kenya
+  useEffect(() => {
+    if (autoZoomDone) return;
+    const t1 = setTimeout(() => {
+      map.flyTo([0, 36], 5, { duration: 2.2 });
+    }, 600);
+    const t2 = setTimeout(() => {
+      map.flyTo([0.5, 37.5], 6, { duration: 1.8 });
+      onAutoZoomDone();
+    }, 3200);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // County click zoom
+  useEffect(() => {
+    if (!selectedCounty || !geojsonData) return;
+    const feat = geojsonData.features.find((f: any) =>
+      [f.properties?.shapeName, f.properties?.name, f.properties?.county]
+        .some((v: string) => v?.toLowerCase() === selectedCounty.toLowerCase())
+    );
+    if (feat) {
+      try { map.flyToBounds(L.geoJSON(feat).getBounds(), { padding:[60,60], maxZoom:9, duration:0.9 }); return; }
+      catch { /* ignore */ }
+    }
+  }, [selectedCounty, geojsonData, map]);
+
+  // Manual preset
+  useEffect(() => {
+    if (!autoZoomDone) return;
+    map.flyTo(preset.center, preset.zoom, { duration: 0.9 });
+  }, [preset, autoZoomDone]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return null;
+};
+
+// ─── Exported stats helper ────────────────────────────────────────────────────
+
+export const getCountyStats = () => {
+  const s = { total:0, home:0, business:0, both:0, none:0 };
+  Object.values(COUNTY_COVERAGE_FALLBACK).forEach(t => {
+    s.total++;
+    if (t==="Home") s.home++; else if (t==="Business") s.business++; else if (t==="Both") s.both++; else s.none++;
+  });
+  return s;
 };
 
 // ─── Props ────────────────────────────────────────────────────────────────────
+
 interface KenyaCoverageMap2DProps {
-  onCountyClick?: (countyName: string) => void;
+  onCountyClick?: (name: string) => void;
   selectedCounty?: string | null;
-  /** Pass isAdmin=true to load precise survey points from the protected API */
   isAdmin?: boolean;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
-  onCountyClick,
-  selectedCounty,
-  isAdmin = false,
-}) => {
-  const [hoveredCounty,  setHoveredCounty]  = useState<string | null>(null);
-  const [selectedPoint,  setSelectedPoint]  = useState<SurveyZone | null>(null);
-  const [tooltipContent, setTooltipContent] = useState("");
-  const [showSurveyPts,  setShowSurveyPts]  = useState(true);
-  const [surveyZones,    setSurveyZones]    = useState<SurveyZone[]>([]);
-  const [loading,        setLoading]        = useState(false);
+// ─── Main Component ───────────────────────────────────────────────────────────
 
-  // ── Fetch survey points from the admin API (only when isAdmin=true) ─────────
+const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
+  onCountyClick, selectedCounty, isAdmin = false,
+}) => {
+  const [geojsonData,    setGeojsonData]    = useState<any>(null);
+  const [hoveredCounty,  setHoveredCounty]  = useState<string | null>(null);
+  const [loading,        setLoading]        = useState(true);
+  const [mapError,       setMapError]       = useState<string | null>(null);
+  const [activePreset,   setActivePreset]   = useState<ViewPreset>(VIEW_PRESETS[0]);
+  const [autoZoomDone,   setAutoZoomDone]   = useState(false);
+
+  // ── Coverage data — from API or fallback ──────────────────────────────────
+  const [coverageZones,  setCoverageZones]  = useState<CoverageZone[]>([]);
+  const [apiLoaded,      setApiLoaded]      = useState(false);
+
+  // Derived: county → weight map (API overrides fallback)
+  const countyWeight = useMemo<Record<string, number>>(() => {
+    if (!apiLoaded || coverageZones.length === 0) return COUNTY_WEIGHT_FALLBACK;
+    const map: Record<string, number> = {};
+    coverageZones.forEach(z => {
+      const key = z.county ?? z.name;
+      const idx = z.connectivity_index ?? 10;
+      map[key] = Math.max(map[key] ?? 0, idx);
+    });
+    return map;
+  }, [coverageZones, apiLoaded]);
+
+  // Derived: county → center coords map (API real coords override fallback)
+  const countyCenters = useMemo<Record<string, [number, number]>>(() => {
+    if (!apiLoaded || coverageZones.length === 0) return COUNTY_CENTERS_FALLBACK;
+    const result: Record<string, [number, number]> = { ...COUNTY_CENTERS_FALLBACK };
+    coverageZones.forEach(z => {
+      if (z.center_lat && z.center_lng) {
+        const key = z.county ?? z.name;
+        if (!result[key]) result[key] = [z.center_lat, z.center_lng];
+      }
+    });
+    return result;
+  }, [coverageZones, apiLoaded]);
+
+  // Derived: county → coverage type
+  const countyCoverage = useMemo<Record<string, CoverageType>>(() => {
+    if (!apiLoaded || coverageZones.length === 0) return COUNTY_COVERAGE_FALLBACK;
+    const result: Record<string, CoverageType> = { ...COUNTY_COVERAGE_FALLBACK };
+    coverageZones.forEach(z => {
+      const key = z.county ?? z.name;
+      if (z.coverage_type) result[key] = z.coverage_type;
+    });
+    return result;
+  }, [coverageZones, apiLoaded]);
+
+  // ── Data fetching ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      setMapError(null);
+
+      // 1. Load GeoJSON counties
+      try {
+        // Try highres first, fall back to standard
+        let geoRes = await fetch("/kenya-counties-highres.geojson").catch(() => null);
+        if (!geoRes?.ok) geoRes = await fetch("/kenya-counties.json").catch(() => null);
+        if (!geoRes?.ok) throw new Error("Could not load county GeoJSON (tried highres + standard)");
+        const norm = normaliseGeoJSON(await geoRes.json());
+        if (!norm) throw new Error("Invalid GeoJSON structure");
+        setGeojsonData(norm);
+      } catch (e: any) {
+        setMapError(e?.message ?? "GeoJSON load error");
+        setLoading(false);
+        return;
+      }
+
+      // 2. Load coverage zones from API (non-fatal — falls back gracefully)
+      try {
+        const res = await axios.get("/coverage/zones", {
+          params: { per_page: 500 },
+        });
+        const zones: CoverageZone[] = res.data?.data ?? res.data ?? [];
+        if (zones.length > 0) {
+          // Validate that zones have usable coordinate data
+          const withCoords = zones.filter(z => z.center_lat && z.center_lng);
+          console.info(
+            `[KenyaCoverageMap2D] API returned ${zones.length} zones, ` +
+            `${withCoords.length} have coordinates.`
+          );
+          setCoverageZones(withCoords);
+          setApiLoaded(true);
+        } else {
+          console.info("[KenyaCoverageMap2D] API returned no zones — using fallback data.");
+        }
+      } catch (e) {
+        console.warn("[KenyaCoverageMap2D] Coverage API unavailable — using fallback data.", e);
+        // Non-fatal: map still renders with fallback
+      }
+
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  // Also fetch admin zones if in admin mode
+  const [adminZones, setAdminZones] = useState<CoverageZone[]>([]);
+  const [selectedAdminZone, setSelectedAdminZone] = useState<CoverageZone | null>(null);
+  const [showAdminDots, setShowAdminDots] = useState(true);
+
   useEffect(() => {
     if (!isAdmin) return;
-
-    setLoading(true);
-    axios
-      .get("/api/v1/coverage/admin/coverage/zones", {
-        params: { type: "area", per_page: 200 },
+    axios.get("/coverage/admin/coverage/zones", { params: { type: "area", per_page: 200 } })
+      .then(res => {
+        const d: CoverageZone[] = res.data?.data ?? res.data ?? [];
+        setAdminZones(d.filter(z => z.center_lat && z.center_lng && z.type === "area"));
       })
-      .then((res) => {
-        const data: SurveyZone[] = res.data?.data ?? res.data ?? [];
-        // Keep only area-type zones that have coordinates
-        setSurveyZones(data.filter(z => z.center_lat && z.center_lng && z.type === "area"));
-      })
-      .catch((err) => {
-        console.error("Failed to load survey zones:", err);
-      })
-      .finally(() => setLoading(false));
+      .catch(e => console.warn("[KenyaCoverageMap2D] Admin zones fetch failed", e));
   }, [isAdmin]);
 
-  // ── Derive unique region names for the filter panel ───────────────────────
   const regionList = useMemo(() => {
-    const regions = new Set<string>();
-    surveyZones.forEach(z => {
-      const region = z.name.split("—")[0].trim();
-      regions.add(region);
-    });
-    return Array.from(regions).sort();
-  }, [surveyZones]);
+    const s = new Set<string>();
+    adminZones.forEach(z => s.add(z.name.split("—")[0].trim()));
+    return Array.from(s).sort();
+  }, [adminZones]);
 
   const [activeRegions, setActiveRegions] = useState<Set<string>>(new Set());
-
-  // Sync activeRegions when surveyZones first loads
-  useEffect(() => {
-    setActiveRegions(new Set(regionList));
-  }, [regionList]);
-
+  useEffect(() => setActiveRegions(new Set(regionList)), [regionList]);
   const toggleRegion = (r: string) =>
-    setActiveRegions(prev => {
-      const n = new Set(prev);
-      n.has(r) ? n.delete(r) : n.add(r);
-      return n;
+    setActiveRegions(p => { const n = new Set(p); n.has(r) ? n.delete(r) : n.add(r); return n; });
+
+  const visibleAdminDots = useMemo(
+    () => showAdminDots
+      ? adminZones.filter(z => activeRegions.has(z.name.split("—")[0].trim()))
+      : [],
+    [adminZones, activeRegions, showAdminDots]
+  );
+
+  // ── Arc computation ───────────────────────────────────────────────────────
+  const arcs = useMemo(() => {
+    return Object.entries(countyCenters)
+      .filter(([name]) => name !== "Nairobi" && (countyWeight[name] ?? 0) > 0)
+      .map(([name, center]) => {
+        const w    = countyWeight[name] ?? 1;
+        const pts  = smoothArc(HUB, center as [number, number], 48);
+        const head = arrowHead(pts, 0.13 + w * 0.001);
+        return { name, pts, head, w };
+      })
+      .sort((a, b) => a.w - b.w);
+  }, [countyCenters, countyWeight]);
+
+  // ── GeoJSON styles ────────────────────────────────────────────────────────
+  const styleFeature = (feature: any) => {
+    const name = feature?.properties?.shapeName
+      ?? feature?.properties?.name
+      ?? feature?.properties?.county
+      ?? "Unknown";
+    const w      = countyWeight[name] ?? 0;
+    const isHov  = hoveredCounty  === name;
+    const isSel  = selectedCounty === name;
+    const active = isHov || isSel;
+
+    if (w === 0) return { fillColor:"transparent", color:"#dde4ed", weight:0.7, opacity:0.6, fillOpacity:0 };
+
+    return {
+      fillColor:   weightToFill(w),
+      fillOpacity: active ? 0.78 : 1,
+      color:       active ? "#1d4ed8" : weightToBorder(w),
+      weight:      active ? 2.5 : 1.4,
+      opacity:     1,
+    };
+  };
+
+  const onEachFeature = (feature: any, layer: any) => {
+    const name = feature?.properties?.shapeName
+      ?? feature?.properties?.name
+      ?? feature?.properties?.county
+      ?? "Unknown";
+    const w   = countyWeight[name] ?? 0;
+    const cov = countyCoverage[name] ?? "None";
+
+    // Check if API data exists for this county
+    const apiZone = coverageZones.find(z => (z.county ?? z.name) === name);
+    const dataSource = apiLoaded && apiZone ? "● Live" : "○ Fallback";
+
+    layer.on({
+      mouseover: (_e: any) => { setHoveredCounty(name); layer.bringToFront(); },
+      mouseout:  (_e: any) => setHoveredCounty(null),
+      click:     (_e: any) => onCountyClick?.(name),
     });
 
-  // ── Visible points ────────────────────────────────────────────────────────
-  const visiblePoints = useMemo(() => {
-    if (!showSurveyPts) return [];
-    return surveyZones.filter(z => {
-      const region = z.name.split("—")[0].trim();
-      return activeRegions.has(region);
-    });
-  }, [surveyZones, activeRegions, showSurveyPts]);
+    const tipContent = w > 0
+      ? `<strong>${name}</strong><br/>${cov === "None" ? "No coverage" : cov} · idx ${w}<br/><span style="font-size:9px;color:#94a3b8">${dataSource}</span>`
+      : `<strong>${name}</strong><br/><span style="color:#94a3b8">No coverage yet</span>`;
 
-  // ── County fill ───────────────────────────────────────────────────────────
-  const getFill = (geoName: string): string => {
-    const coverage   = COUNTY_COVERAGE[geoName] ?? "None";
-    const hasSurvey  = SURVEYED_COUNTIES.has(geoName);
-    const isHovered  = hoveredCounty  === geoName;
-    const isSel      = selectedCounty === geoName;
-    if (isSel || isHovered) return COUNTY_FILL_ACTIVE[coverage];
-    if (hasSurvey)          return COUNTY_FILL_ACTIVE[coverage];
-    return COUNTY_FILL[coverage];
+    layer.bindTooltip(tipContent, { sticky: true, className: "custom-leaflet-tooltip" });
+  };
+
+  const countyStats = useMemo(() => getCountyStats(), []);
+
+  const mapRef  = useRef<L.Map | null>(null);
+
+  // Admin dot palette
+  const ADMIN_PALETTE: Record<string, string> = {
+    lodwar:"#ea580c", kitale:"#0891b2", kakamega:"#7c3aed",
+    bungoma:"#059669", ruiru:"#db2777", meru:"#d97706",
+    isiolo:"#c2410c", mombasa:"#0284c7", rongai:"#16a34a",
+    eldoret:"#9333ea", nairobi:"#2563eb", nakuru:"#b45309",
+  };
+  const adminDotColor = (name: string) =>
+    ADMIN_PALETTE[name.toLowerCase().split(/[\s—–-]/)[0]] ?? "#64748b";
+
+  const ui = {
+    panel:"rgba(255,255,255,0.97)", border:"rgba(0,0,0,0.08)",
+    shadow:"0 4px 20px rgba(0,0,0,0.10)", text:"#1e293b",
+    textMuted:"#64748b", textFaint:"#94a3b8", accent:"#2563eb",
   };
 
   return (
-    <div style={{ width: "100%", height: "100%", position: "relative", background: "#0f172a" }}>
+    <div style={{ width:"100%", height:"100%", position:"relative", background:"#e8f0fe" }}>
 
-      {/* ── Map ── */}
-      <ComposableMap
-        projection="geoMercator"
-        projectionConfig={{ scale: 1800, center: [37.8, 0.0] }}
-        style={{ width: "100%", height: "100%" }}
-      >
-        <ZoomableGroup zoom={1} minZoom={0.8} maxZoom={12}>
-
-          {/* County choropleth */}
-          <Geographies geography={geoUrl}>
-            {({ geographies }) =>
-              geographies.map(geo => {
-                const name      = geo.properties.name ?? geo.properties.NAME ?? "";
-                const isHovered = hoveredCounty === name;
-                const isSel     = selectedCounty === name;
-                return (
-                  <Geography
-                    key={geo.rsmKey}
-                    geography={geo}
-                    fill={getFill(name)}
-                    stroke={isSel ? "#60a5fa" : isHovered ? "#94a3b8" : "#1e3a5f"}
-                    strokeWidth={isSel ? 2 : isHovered ? 1 : 0.4}
-                    onMouseEnter={() => {
-                      const cov = COUNTY_COVERAGE[name] ?? "None";
-                      setTooltipContent(`${name} — ${cov === "None" ? "No Coverage" : cov}`);
-                      setHoveredCounty(name);
-                    }}
-                    onMouseLeave={() => { setTooltipContent(""); setHoveredCounty(null); }}
-                    onClick={() => onCountyClick?.(name)}
-                    style={{
-                      default: { outline: "none", cursor: "pointer" },
-                      hover:   { outline: "none", cursor: "pointer" },
-                      pressed: { outline: "none" },
-                    }}
-                    data-tooltip-id="map-tt"
-                  />
-                );
-              })
-            }
-          </Geographies>
-
-          {/* Survey point markers — only rendered when isAdmin=true */}
-          {isAdmin && visiblePoints.map((zone) => {
-            const color      = getRegionColor(zone.name);
-            const isSelected = selectedPoint?.id === zone.id;
-            return (
-              <Marker
-                key={zone.id}
-                coordinates={[zone.center_lng, zone.center_lat]}
-                onClick={() =>
-                  setSelectedPoint(prev => (prev?.id === zone.id ? null : zone))
-                }
-                onMouseEnter={() =>
-                  setTooltipContent(
-                    `${zone.name}\n${zone.center_lat.toFixed(6)}°, ${zone.center_lng.toFixed(6)}°`
-                  )
-                }
-                onMouseLeave={() => setTooltipContent("")}
-                data-tooltip-id="map-tt"
-              >
-                {isSelected && (
-                  <circle r={7} fill="none" stroke={color} strokeWidth={1.5} opacity={0.6}>
-                    <animate attributeName="r"       from="5"  to="12" dur="1.2s" repeatCount="indefinite" />
-                    <animate attributeName="opacity" from="0.8" to="0" dur="1.2s" repeatCount="indefinite" />
-                  </circle>
-                )}
-                <circle r={isSelected ? 5 : 3.5} fill={color} fillOpacity={0.2} stroke="none" />
-                <circle
-                  r={isSelected ? 3.5 : 2.5}
-                  fill={isSelected ? "#ffffff" : color}
-                  stroke={color}
-                  strokeWidth={0.8}
-                  style={{ cursor: "pointer" }}
-                />
-                {isSelected && (
-                  <text
-                    textAnchor="middle"
-                    y={-8}
-                    style={{ fontSize: 5, fontFamily: "monospace", fill: color, fontWeight: 700, pointerEvents: "none" }}
-                  >
-                    {zone.name.split("—")[1]?.trim() ?? zone.name}
-                  </text>
-                )}
-              </Marker>
-            );
-          })}
-
-        </ZoomableGroup>
-      </ComposableMap>
-
-      {/* ── Tooltip ── */}
-      <Tooltip
-        id="map-tt"
-        content={tooltipContent}
-        style={{
-          background: "rgba(2,8,24,0.95)",
-          border: "1px solid rgba(0,200,240,0.2)",
-          borderRadius: 6,
-          padding: "8px 12px",
-          fontSize: 12,
-          color: "#e0f0ff",
-          fontFamily: "monospace",
-          whiteSpace: "pre-line",
-          zIndex: 1000,
-        }}
-      />
-
-      {/* ── Loading indicator ── */}
-      {loading && (
+      {/* Error */}
+      {mapError && !loading && (
         <div style={{
-          position: "absolute", top: 14, left: "50%", transform: "translateX(-50%)",
-          background: "rgba(2,8,24,0.88)", border: "1px solid rgba(0,180,220,0.2)",
-          backdropFilter: "blur(12px)", borderRadius: 4, padding: "6px 16px",
-          fontSize: 9, color: "rgba(0,200,240,0.6)", letterSpacing: 2, fontFamily: "monospace",
-          zIndex: 30,
+          position:"absolute", inset:0, zIndex:2000,
+          display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+          background:"rgba(248,250,252,0.97)", gap:10, padding:24,
         }}>
-          LOADING SURVEY DATA…
+          <div style={{ fontSize:11, color:"#ef4444", fontFamily:"monospace", letterSpacing:2 }}>MAP ERROR</div>
+          <div style={{ fontSize:12, color:"#64748b", maxWidth:400, textAlign:"center", lineHeight:1.7 }}>{mapError}</div>
         </div>
       )}
 
-      {/* ── Selected point card ── */}
-      {selectedPoint && isAdmin && (
+      {/* MAP */}
+      <MapContainer
+        center={[5, 20]}   // Start showing Africa
+        zoom={3}
+        style={{ width:"100%", height:"100%", background:"#dbe9f8" }}
+        zoomControl={false}
+        ref={mapRef as any}
+        maxBounds={[[-40, -20], [40, 55]]}
+        maxBoundsViscosity={0.6}
+      >
+        <TileLayer
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; OSM &copy; CARTO'
+          minZoom={3}
+        />
+
+        {/* County choropleth */}
+        {geojsonData && (
+          <GeoJSON
+            key={`geo-${selectedCounty ?? "all"}-${apiLoaded}`}
+            data={geojsonData}
+            style={styleFeature}
+            onEachFeature={onEachFeature}
+          />
+        )}
+
+        {/* Directional arc lines — lightest first */}
+        {arcs.map(({ name, pts, head, w }) => (
+          <React.Fragment key={`arc-${name}`}>
+            <Polyline
+              positions={pts}
+              pathOptions={{
+                color: arcColor(w), weight: arcStroke(w),
+                opacity: 0.62, lineCap:"round", lineJoin:"round",
+              }}
+            />
+            {head.map((seg, i) => (
+              <Polyline key={i} positions={seg}
+                pathOptions={{ color: arcColor(w), weight: arcStroke(w) * 1.15, opacity: 0.88, lineCap:"round" }}
+              />
+            ))}
+          </React.Fragment>
+        ))}
+
+        {/* Hub dot — Nairobi */}
+        <CircleMarker center={HUB} radius={7}
+          pathOptions={{ fillColor:"#1e40af", color:"#fff", weight:2.5, fillOpacity:1 }}
+        >
+          <LeafletTooltip direction="top" offset={[0,-9]} opacity={1}>
+            <span style={{ fontFamily:"monospace", fontSize:11, fontWeight:700 }}>Nairobi Hub</span>
+          </LeafletTooltip>
+        </CircleMarker>
+
+        {/* County endpoint dots */}
+        {Object.entries(countyCenters)
+          .filter(([n]) => n !== "Nairobi" && (countyWeight[n] ?? 0) > 0)
+          .map(([name, center]) => {
+            const w = countyWeight[name] ?? 1;
+            return (
+              <CircleMarker key={`dot-${name}`}
+                center={center as [number,number]}
+                radius={3.5 + w * 0.025}
+                pathOptions={{ fillColor: arcColor(w), color:"#fff", weight:1.5, fillOpacity:0.9 }}
+              >
+                <LeafletTooltip direction="top" offset={[0,-6]} opacity={1}>
+                  <span style={{ fontFamily:"monospace", fontSize:11 }}>
+                    {name} · {w}{apiLoaded ? " ●" : ""}
+                  </span>
+                </LeafletTooltip>
+              </CircleMarker>
+            );
+          })
+        }
+
+        {/* Admin survey dots */}
+        {isAdmin && visibleAdminDots.map(zone => {
+          const color = adminDotColor(zone.name);
+          const isSel = selectedAdminZone?.id === zone.id;
+          return (
+            <CircleMarker key={zone.id}
+              center={[zone.center_lat, zone.center_lng]}
+              radius={isSel ? 9 : 5}
+              pathOptions={{ fillColor:color, color:isSel?"#1e293b":color, weight:isSel?2:1, fillOpacity:isSel?0.9:0.7 }}
+              eventHandlers={{ click: () => setSelectedAdminZone(p => p?.id===zone.id ? null : zone) }}
+            >
+              <LeafletTooltip direction="top" offset={[0,-10]} opacity={1}>
+                <div style={{ fontFamily:"monospace", fontSize:12, textAlign:"center" }}>
+                  <strong>{zone.name}</strong><br/>
+                  {zone.center_lat.toFixed(4)}°, {zone.center_lng.toFixed(4)}°
+                </div>
+              </LeafletTooltip>
+            </CircleMarker>
+          );
+        })}
+
+        <ViewController
+          preset={activePreset}
+          selectedCounty={selectedCounty ?? null}
+          geojsonData={geojsonData}
+          autoZoomDone={autoZoomDone}
+          onAutoZoomDone={() => setAutoZoomDone(true)}
+        />
+      </MapContainer>
+
+      {/* ── CSS ─────────────────────────────────────────────────────────────── */}
+      <style>{`
+        .custom-leaflet-tooltip {
+          background:rgba(255,255,255,0.97);
+          border:1px solid rgba(0,0,0,0.10) !important;
+          border-radius:6px; padding:7px 11px;
+          color:#1e293b; font-family:monospace; font-size:12px;
+          box-shadow:0 4px 12px rgba(0,0,0,0.10);
+        }
+        .custom-leaflet-tooltip::before { border-top-color:rgba(255,255,255,0.97) !important; }
+        .leaflet-container { background:#dbe9f8 !important; }
+        @keyframes slideUp {
+          from { opacity:0; transform:translateX(-50%) translateY(8px); }
+          to   { opacity:1; transform:translateX(-50%) translateY(0); }
+        }
+        @keyframes fadeIn {
+          from { opacity:0; transform:translateY(-4px); }
+          to   { opacity:1; transform:translateY(0); }
+        }
+      `}</style>
+
+      {/* ── Loading ────────────────────────────────────────────────────────── */}
+      {loading && (
         <div style={{
-          position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)",
-          background: "rgba(2,8,24,0.96)",
-          border: `1.5px solid ${getRegionColor(selectedPoint.name)}60`,
-          backdropFilter: "blur(16px)", borderRadius: 8, padding: "14px 20px",
-          minWidth: 300, zIndex: 20, animation: "slideUp 0.2s ease",
-          boxShadow: `0 0 24px ${getRegionColor(selectedPoint.name)}20`,
+          position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)",
+          background:ui.panel, border:`1px solid ${ui.border}`,
+          borderRadius:8, padding:"12px 22px",
+          fontSize:10, color:ui.textMuted, letterSpacing:2,
+          fontFamily:"monospace", zIndex:1000, boxShadow:ui.shadow,
+          display:"flex", alignItems:"center", gap:10,
         }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                <div style={{
-                  width: 10, height: 10, borderRadius: "50%",
-                  background: getRegionColor(selectedPoint.name),
-                  boxShadow: `0 0 6px ${getRegionColor(selectedPoint.name)}`,
-                }} />
-                <span style={{ fontSize: 15, fontWeight: 700, color: "#e0f0ff" }}>{selectedPoint.name}</span>
-              </div>
-              <div style={{ fontSize: 10, color: "rgba(0,200,240,0.4)", letterSpacing: 1, fontFamily: "monospace" }}>
-                SURVEY COORDINATE · KENYA
-              </div>
-            </div>
-            <button
-              onClick={() => setSelectedPoint(null)}
-              style={{ background: "none", border: "none", color: "rgba(0,200,240,0.4)", cursor: "pointer", fontSize: 18, padding: 0 }}
-            >×</button>
+          <span style={{
+            display:"inline-block", width:10, height:10, borderRadius:"50%",
+            border:"2px solid #3b82f6", borderTopColor:"transparent",
+            animation:"spin 0.7s linear infinite",
+          }}/>
+          LOADING MAP DATA…
+          <style>{`@keyframes spin { to { transform:rotate(360deg); } }`}</style>
+        </div>
+      )}
+
+      {/* ── API data badge ────────────────────────────────────────────────── */}
+      {!loading && (
+        <div style={{
+          position:"absolute", top:14, left:"50%", transform:"translateX(-50%)",
+          zIndex:1000, display:"flex", gap:6, alignItems:"center",
+        }}>
+          <div style={{
+            background: apiLoaded ? "rgba(16,185,129,0.10)" : "rgba(245,158,11,0.10)",
+            border: `1px solid ${apiLoaded ? "rgba(16,185,129,0.3)" : "rgba(245,158,11,0.3)"}`,
+            borderRadius:20, padding:"4px 12px",
+            fontSize:9, fontFamily:"monospace", letterSpacing:1.2,
+            color: apiLoaded ? "#059669" : "#d97706",
+          }}>
+            {apiLoaded
+              ? `● LIVE  · ${coverageZones.length} ZONES`
+              : "○ STATIC DATA · API OFFLINE"}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            {[
-              ["LONGITUDE", `${selectedPoint.center_lng.toFixed(8)}°`],
-              ["LATITUDE",  `${selectedPoint.center_lat.toFixed(8)}°`],
-              ["RADIUS",    `${selectedPoint.radius_km}km`],
-              ["STATUS",    selectedPoint.status === "planned" ? "PLANNED" : selectedPoint.status.toUpperCase()],
-            ].map(([k, v]) => (
-              <div key={k} style={{
-                background: "rgba(0,180,220,0.06)", borderRadius: 4, padding: "8px 10px",
-                borderLeft: `2px solid ${getRegionColor(selectedPoint.name)}40`,
-              }}>
-                <div style={{ fontSize: 7, color: "rgba(0,180,220,0.4)", letterSpacing: 1.5, fontFamily: "monospace", marginBottom: 3 }}>{k}</div>
-                <div style={{ fontSize: 12, fontWeight: 700, fontFamily: "monospace", color: "#c0e8ff" }}>{v}</div>
-              </div>
+        </div>
+      )}
+
+      {/* ── Camera controls panel ─────────────────────────────────────────── */}
+      <div style={{
+        position:"absolute", top:14, right:14, zIndex:1000,
+        background:ui.panel, borderRadius:12, border:`1px solid ${ui.border}`,
+        boxShadow:ui.shadow, padding:"14px 16px", minWidth:296,
+        animation:"fadeIn 0.3s ease",
+      }}>
+        <div style={{
+          fontSize:10, fontWeight:700, color:ui.accent,
+          letterSpacing:1.5, fontFamily:"monospace", marginBottom:10,
+          textTransform:"uppercase",
+        }}>
+          Camera Controls
+        </div>
+
+        {/* Zoom row */}
+        <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+          {[
+            { label:"⊖  Zoom Out", fn: () => mapRef.current?.zoomOut() },
+            { label:"⊕  Zoom In",  fn: () => mapRef.current?.zoomIn()  },
+          ].map(b => (
+            <button key={b.label} onClick={b.fn} style={{
+              flex:1, padding:"9px 0", borderRadius:8, cursor:"pointer",
+              background:"rgba(37,99,235,0.06)", border:"1px solid rgba(37,99,235,0.20)",
+              color:ui.accent, fontSize:13, fontWeight:600,
+            }}>
+              {b.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Preset grid */}
+        <div style={{ display:"grid", gridTemplateColumns:"52px 1fr 1fr", gap:6, alignItems:"start" }}>
+          {/* Globe home → Africa */}
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, paddingTop:4 }}>
+            <button
+              onClick={() => { setActivePreset(VIEW_PRESETS[0]); setAutoZoomDone(false); }}
+              style={{
+                width:38, height:38, borderRadius:"50%",
+                border:"1px solid rgba(37,99,235,0.2)",
+                background:"rgba(37,99,235,0.07)", cursor:"pointer",
+                display:"flex", alignItems:"center", justifyContent:"center", fontSize:18,
+              }}
+            >🏠</button>
+            <span style={{ fontSize:9, color:ui.textMuted, textAlign:"center", lineHeight:1.3 }}>
+              Globe<br/>view
+            </span>
+          </div>
+
+          {/* East Africa featured button */}
+          <button
+            onClick={() => { setActivePreset(VIEW_PRESETS[1]); setAutoZoomDone(true); }}
+            style={{
+              display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+              gap:5, padding:"14px 8px", borderRadius:10, cursor:"pointer",
+              background: activePreset.id==="east_africa" ? "#ea580c" : "rgba(234,88,12,0.07)",
+              border:`1.5px solid ${activePreset.id==="east_africa" ? "#ea580c" : "rgba(234,88,12,0.25)"}`,
+              color: activePreset.id==="east_africa" ? "#fff" : "#c2410c",
+              transition:"all 0.18s",
+            }}
+          >
+            <span style={{ fontSize:20 }}>🌍</span>
+            <span style={{ fontSize:11, fontWeight:700 }}>East Africa</span>
+          </button>
+
+          {/* 2×2 country grid */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:5 }}>
+            {PANEL_PRESETS.filter(p => p.id !== "east_africa").map(p => (
+              <button key={p.id}
+                onClick={() => { setActivePreset(p); setAutoZoomDone(true); }}
+                style={{
+                  display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                  gap:2, padding:"7px 4px", borderRadius:7, cursor:"pointer",
+                  background: activePreset.id===p.id ? "rgba(37,99,235,0.12)" : "rgba(0,0,0,0.04)",
+                  border:`1.5px solid ${activePreset.id===p.id ? "#2563eb" : "rgba(0,0,0,0.08)"}`,
+                  color: activePreset.id===p.id ? "#1d4ed8" : ui.text,
+                  transition:"all 0.15s",
+                }}
+              >
+                <span style={{ fontSize:14 }}>{p.flag}</span>
+                <span style={{ fontSize:9, fontWeight:700, letterSpacing:0.4, whiteSpace:"nowrap" }}>
+                  {p.label.toUpperCase()}
+                </span>
+              </button>
             ))}
           </div>
         </div>
-      )}
 
-      {/* ── Admin: region filter sidebar ── */}
+        {/* Current view readout */}
+        <div style={{
+          marginTop:10, padding:"5px 10px",
+          background:"rgba(0,0,0,0.03)", borderRadius:6, border:`1px solid ${ui.border}`,
+          textAlign:"center", fontSize:10, color:ui.textMuted, fontFamily:"monospace",
+        }}>
+          View: {activePreset.label} · Zoom {activePreset.zoom}×
+        </div>
+      </div>
+
+      {/* ── Brand ──────────────────────────────────────────────────────────── */}
+      <div style={{
+        position:"absolute", top:14, left:14, zIndex:1000,
+        background:ui.panel, border:`1px solid ${ui.border}`,
+        borderRadius:8, padding:"10px 14px", boxShadow:ui.shadow,
+      }}>
+        <div style={{ fontSize:17, fontWeight:900, letterSpacing:3, display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{
+            background:"linear-gradient(135deg,#1d4ed8,#2563eb)",
+            WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
+          }}>VILCOM</span>
+          <span style={{ color:"#cbd5e1", fontWeight:300 }}>|</span>
+          <span style={{ color:"#ea580c", fontSize:15 }}>OPS</span>
+        </div>
+        <div style={{ fontSize:7, color:ui.textFaint, letterSpacing:2.5, marginTop:2 }}>
+          GLOBAL INFRASTRUCTURE VIEW
+        </div>
+      </div>
+
+      {/* ── Choropleth + arc legend ─────────────────────────────────────────── */}
+      <div style={{
+        position:"absolute", bottom:20, left:14, zIndex:1000,
+        background:ui.panel, border:`1px solid ${ui.border}`,
+        borderRadius:8, padding:"12px 16px", boxShadow:ui.shadow,
+      }}>
+        <div style={{ fontSize:9, fontWeight:700, color:ui.textFaint, marginBottom:8, letterSpacing:2, fontFamily:"monospace" }}>
+          CONNECTIVITY DENSITY
+        </div>
+        {[
+          { fill:"rgba(29,78,216,0.52)",  b:"#1d4ed8", label:"Very High  80–100" },
+          { fill:"rgba(37,99,235,0.42)",  b:"#2563eb", label:"High        60–79"  },
+          { fill:"rgba(59,130,246,0.35)", b:"#3b82f6", label:"Medium      40–59"  },
+          { fill:"rgba(96,165,250,0.28)", b:"#60a5fa", label:"Low         20–39"  },
+          { fill:"rgba(147,197,253,0.20)",b:"#93c5fd", label:"Minimal      1–19"  },
+          { fill:"transparent",           b:"#dde4ed", label:"No coverage"        },
+        ].map(({ fill, b, label }) => (
+          <div key={label} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:5 }}>
+            <div style={{ width:14, height:14, borderRadius:3, background:fill, border:`1.5px solid ${b}`, flexShrink:0 }} />
+            <span style={{ fontSize:10, color:ui.textMuted, fontFamily:"monospace" }}>{label}</span>
+          </div>
+        ))}
+        <div style={{ borderTop:`1px solid ${ui.border}`, marginTop:8, paddingTop:8 }}>
+          <div style={{ fontSize:9, fontWeight:700, color:ui.textFaint, marginBottom:6, letterSpacing:2, fontFamily:"monospace" }}>ARC LINES</div>
+          {[
+            { w:2.2, c:"#1e40af", label:"High capacity" },
+            { w:1.6, c:"#3b82f6", label:"Mid capacity"  },
+            { w:1.0, c:"#60a5fa", label:"Low capacity"  },
+          ].map(({ w, c, label }) => (
+            <div key={label} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:5 }}>
+              <svg width="28" height="10" style={{ flexShrink:0 }}>
+                <line x1="0" y1="5" x2="20" y2="5" stroke={c} strokeWidth={w} strokeLinecap="round"/>
+                <polyline points="16,2 20,5 16,8" fill="none" stroke={c} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span style={{ fontSize:10, color:ui.textMuted, fontFamily:"monospace" }}>{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Stats strip ───────────────────────────────────────────────────── */}
+      <div style={{
+        position:"absolute", bottom:20, left:"50%", transform:"translateX(-50%)",
+        display:"flex", gap:8, zIndex:1000,
+      }}>
+        {(!isAdmin ? [
+          { label:"BUSINESS", value:countyStats.business, color:"#1d4ed8" },
+          { label:"HOME",     value:countyStats.home,     color:"#3b82f6" },
+          { label:"BOTH",     value:countyStats.both,     color:"#1e40af" },
+          { label:"PLANNED",  value:countyStats.none,     color:"#94a3b8" },
+        ] : [
+          { label:"ZONES",    value:coverageZones.length, color:"#2563eb" },
+          { label:"REGIONS",  value:regionList.length,    color:"#7c3aed" },
+          { label:"VISIBLE",  value:visibleAdminDots.length, color:"#059669" },
+        ]).map(({ label, value, color }) => (
+          <div key={label} style={{
+            background:ui.panel, border:`1px solid ${ui.border}`,
+            borderRadius:6, padding:"6px 14px",
+            display:"flex", flexDirection:"column", alignItems:"center",
+            minWidth:72, boxShadow:ui.shadow,
+          }}>
+            <span style={{ fontSize:15, fontWeight:800, color, fontFamily:"monospace" }}>{value}</span>
+            <span style={{ fontSize:7, color:ui.textFaint, letterSpacing:1.5, fontFamily:"monospace" }}>{label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Admin sidebar ───────────────────────────────────────────────────── */}
       {isAdmin && regionList.length > 0 && (
         <div style={{
-          position: "absolute", top: 14, right: 14, display: "flex", flexDirection: "column", gap: 4,
-          background: "rgba(2,8,24,0.88)", border: "1px solid rgba(0,180,220,0.12)",
-          backdropFilter: "blur(14px)", borderRadius: 8, padding: "12px 14px",
-          maxHeight: "calc(100% - 120px)", overflowY: "auto", zIndex: 20,
+          position:"absolute", top:14, right:326, zIndex:1001,
+          display:"flex", flexDirection:"column", gap:4,
+          background:ui.panel, border:`1px solid ${ui.border}`,
+          borderRadius:10, padding:"12px 14px",
+          maxHeight:"calc(100% - 120px)", overflowY:"auto",
+          boxShadow:ui.shadow,
         }}>
-          <div style={{ fontSize: 8, color: "rgba(0,180,220,0.4)", letterSpacing: 2, marginBottom: 6, fontFamily: "monospace" }}>
-            SURVEY REGIONS
-          </div>
-
-          <button
-            onClick={() => setShowSurveyPts(p => !p)}
-            style={{
-              display: "flex", alignItems: "center", gap: 8, marginBottom: 6,
-              background: showSurveyPts ? "rgba(0,238,255,0.1)" : "rgba(2,8,24,0.5)",
-              border: `1px solid ${showSurveyPts ? "rgba(0,238,255,0.4)" : "rgba(0,180,220,0.08)"}`,
-              borderRadius: 4, padding: "5px 10px", cursor: "pointer",
-            }}
-          >
-            <span style={{ fontSize: 9, color: showSurveyPts ? "#00eeff" : "rgba(0,200,240,0.3)", fontFamily: "monospace", letterSpacing: 1 }}>
-              {showSurveyPts ? "● DOTS ON" : "○ DOTS OFF"}
+          <div style={{ fontSize:8, color:ui.textFaint, letterSpacing:2, marginBottom:6, fontFamily:"monospace" }}>SURVEY REGIONS</div>
+          <button onClick={() => setShowAdminDots(p => !p)} style={{
+            display:"flex", alignItems:"center", gap:8, marginBottom:6,
+            background: showAdminDots ? "rgba(37,99,235,0.08)" : "rgba(0,0,0,0.03)",
+            border:`1px solid ${showAdminDots ? "rgba(37,99,235,0.3)" : ui.border}`,
+            borderRadius:5, padding:"5px 10px", cursor:"pointer",
+          }}>
+            <span style={{ fontSize:9, color: showAdminDots ? "#2563eb" : ui.textFaint, fontFamily:"monospace", letterSpacing:1 }}>
+              {showAdminDots ? "● DOTS ON" : "○ DOTS OFF"}
             </span>
           </button>
-
           {regionList.map(region => {
             const active = activeRegions.has(region);
-            const color  = getRegionColor(region);
-            const count  = surveyZones.filter(z => z.name.startsWith(region)).length;
+            const color  = adminDotColor(region);
             return (
               <button key={region} onClick={() => toggleRegion(region)} style={{
-                display: "flex", alignItems: "center", gap: 8,
-                background: active ? `${color}18` : "rgba(2,8,24,0.5)",
-                border: `1px solid ${active ? color + "50" : "rgba(0,180,220,0.07)"}`,
-                borderRadius: 4, padding: "5px 10px", cursor: "pointer",
-                transition: "all 0.18s", minWidth: 150,
+                display:"flex", alignItems:"center", gap:8,
+                background: active ? `${color}14` : "rgba(0,0,0,0.02)",
+                border:`1px solid ${active ? color+"40" : ui.border}`,
+                borderRadius:5, padding:"5px 10px", cursor:"pointer",
+                transition:"all 0.18s", minWidth:150,
               }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: active ? color : "#334155", boxShadow: active ? `0 0 5px ${color}` : "none", flexShrink: 0 }} />
-                <span style={{ fontSize: 10, color: active ? color : "rgba(160,200,220,0.3)", fontFamily: "monospace", flex: 1, textAlign: "left" }}>{region}</span>
-                <span style={{ fontSize: 9, color: "rgba(160,200,220,0.25)", fontFamily: "monospace" }}>{count}pts</span>
+                <div style={{ width:8, height:8, borderRadius:"50%", background: active ? color : "#cbd5e1", flexShrink:0 }}/>
+                <span style={{ fontSize:10, color: active ? color : ui.textFaint, fontFamily:"monospace", flex:1, textAlign:"left" }}>{region}</span>
+                <span style={{ fontSize:9, color:ui.textFaint, fontFamily:"monospace" }}>
+                  {adminZones.filter(z => z.name.startsWith(region)).length}pts
+                </span>
               </button>
             );
           })}
         </div>
       )}
 
-      {/* ── Stats strip ── */}
-      {isAdmin && (
+      {/* ── Admin selected zone card ──────────────────────────────────────── */}
+      {selectedAdminZone && isAdmin && (
         <div style={{
-          position: "absolute", top: 14, left: "50%", transform: "translateX(-50%)",
-          display: "flex", gap: 8, zIndex: 20,
+          position:"absolute", bottom:72, left:"50%", transform:"translateX(-50%)",
+          background:ui.panel, borderRadius:10, padding:"14px 20px",
+          minWidth:300, zIndex:1000, border:`1px solid ${ui.border}`,
+          boxShadow:"0 12px 32px rgba(0,0,0,0.15)", animation:"slideUp 0.2s ease",
         }}>
-          {[
-            { label: "TOTAL PTS", value: surveyZones.length,  color: "#00eeff" },
-            { label: "REGIONS",   value: regionList.length,   color: "#a78bfa" },
-            { label: "VISIBLE",   value: visiblePoints.length, color: "#00e8a8" },
-          ].map(({ label, value, color }) => (
-            <div key={label} style={{
-              background: "rgba(2,8,24,0.88)", border: "1px solid rgba(0,180,220,0.12)",
-              backdropFilter: "blur(12px)", borderRadius: 4, padding: "6px 12px",
-              display: "flex", flexDirection: "column", alignItems: "center", minWidth: 80,
-            }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color, fontFamily: "monospace" }}>{value}</span>
-              <span style={{ fontSize: 7, color: "rgba(160,200,220,0.4)", letterSpacing: 1.5, fontFamily: "monospace" }}>{label}</span>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
+            <div>
+              <div style={{ fontSize:15, fontWeight:700, color:ui.text, marginBottom:2 }}>{selectedAdminZone.name}</div>
+              <div style={{ fontSize:9, color:ui.textFaint, letterSpacing:1, fontFamily:"monospace" }}>SURVEY COORDINATE</div>
             </div>
-          ))}
+            <button onClick={() => setSelectedAdminZone(null)} style={{
+              background:"rgba(0,0,0,0.06)", border:"none", color:ui.textMuted,
+              cursor:"pointer", fontSize:18, padding:"2px 6px", borderRadius:6,
+            }}>×</button>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+            {([
+              ["LONGITUDE", `${selectedAdminZone.center_lng.toFixed(6)}°`],
+              ["LATITUDE",  `${selectedAdminZone.center_lat.toFixed(6)}°`],
+              ["RADIUS",    `${selectedAdminZone.radius_km}km`],
+              ["STATUS",    selectedAdminZone.status.toUpperCase()],
+            ] as [string,string][]).map(([k,v]) => (
+              <div key={k} style={{
+                background:"rgba(0,0,0,0.03)", borderRadius:6, padding:"8px 10px",
+                borderLeft:"2px solid rgba(37,99,235,0.3)",
+              }}>
+                <div style={{ fontSize:7, color:ui.textFaint, letterSpacing:1.5, fontFamily:"monospace", marginBottom:3 }}>{k}</div>
+                <div style={{ fontSize:12, fontWeight:700, fontFamily:"monospace", color:ui.text }}>{v}</div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* ── Legend ── */}
-      <div style={{
-        position: "absolute", bottom: 14, left: 14, zIndex: 10,
-        background: "rgba(2,8,24,0.92)", border: "1px solid rgba(0,180,220,0.12)",
-        backdropFilter: "blur(12px)", borderRadius: 8, padding: "12px 16px",
-      }}>
-        <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(0,200,240,0.5)", marginBottom: 10, letterSpacing: 2, fontFamily: "monospace" }}>
-          COVERAGE KEY
-        </div>
-        {[
-          { color: COUNTY_FILL_ACTIVE.Business, label: "Business / Enterprise" },
-          { color: COUNTY_FILL_ACTIVE.Home,     label: "Home / Residential"   },
-          { color: COUNTY_FILL_ACTIVE.Both,     label: "Both Services"        },
-          { color: COUNTY_FILL_ACTIVE.None,     label: "No Coverage Yet"      },
-        ].map(({ color, label }) => (
-          <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-            <div style={{ width: 14, height: 14, background: color, borderRadius: 3, flexShrink: 0 }} />
-            <span style={{ fontSize: 11, color: "rgba(180,220,240,0.65)", fontFamily: "monospace" }}>{label}</span>
-          </div>
-        ))}
-        {isAdmin && (
-          <div style={{ borderTop: "1px solid rgba(0,180,220,0.1)", marginTop: 8, paddingTop: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#00eeff", boxShadow: "0 0 4px #00eeff", flexShrink: 0 }} />
-              <span style={{ fontSize: 11, color: "rgba(180,220,240,0.65)", fontFamily: "monospace" }}>Survey Point</span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── Top bar ── */}
-      <div style={{
-        position: "absolute", top: 14, left: 14,
-        background: "rgba(2,8,24,0.88)", border: "1px solid rgba(0,200,240,0.2)",
-        backdropFilter: "blur(16px)", borderRadius: 6, padding: "10px 14px", zIndex: 20,
-      }}>
-        <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: 4, background: "linear-gradient(135deg,#00e0ff,#0080d8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>VILCOM</div>
-        <div style={{ fontSize: 7, color: "rgba(0,200,230,0.4)", letterSpacing: 3, marginTop: 1 }}>2D COVERAGE · KENYA</div>
-      </div>
-
-      <style>{`
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateX(-50%) translateY(10px); }
-          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-      `}</style>
     </div>
   );
 };
 
 export default KenyaCoverageMap2D;
-
-export const getCountyStats = () => {
-  const stats = { total: 0, home: 0, business: 0, both: 0, none: 0 };
-  Object.values(COUNTY_COVERAGE).forEach(t => {
-    stats.total++;
-    if (t === "Home")     stats.home++;
-    else if (t === "Business") stats.business++;
-    else if (t === "Both")     stats.both++;
-    else                       stats.none++;
-  });
-  return stats;
-};

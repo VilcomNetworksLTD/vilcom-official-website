@@ -6,7 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\StaffInvitation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
-use App\Notifications\StaffInvitationNotification;
+use App\Mail\StaffInvitationMail;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class InvitationController extends Controller
@@ -40,11 +41,11 @@ class InvitationController extends Controller
 
         // Check if user already exists with this email
         $existingUser = \App\Models\User::where('email', $validated['email'])->first();
-        
+
         if ($existingUser) {
             // If user exists, just assign the role directly
             $existingUser->assignRole($validated['role']);
-            
+
             return response()->json([
                 'message' => 'User already exists. Role has been assigned directly.',
                 'user' => $existingUser,
@@ -74,10 +75,7 @@ class InvitationController extends Controller
 
         // Send invitation email
         try {
-            Notification::send(
-                (object) ['email' => $validated['email'], 'routeNotificationForMail' => fn() => $validated['email']],
-                new StaffInvitationNotification($invitation)
-            );
+            Mail::to($validated['email'])->send(new StaffInvitationMail($invitation));
         } catch (\Exception $e) {
             // Log error but don't fail the operation
             \Illuminate\Support\Facades\Log::error('Failed to send invitation email: ' . $e->getMessage());
@@ -105,10 +103,7 @@ class InvitationController extends Controller
 
         // Send invitation email
         try {
-            Notification::send(
-                (object) ['email' => $invitation->email, 'routeNotificationForMail' => fn() => $invitation->email],
-                new StaffInvitationNotification($invitation)
-            );
+            Mail::to($invitation->email)->send(new StaffInvitationMail($invitation));
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Failed to resend invitation email: ' . $e->getMessage());
         }
@@ -146,6 +141,48 @@ class InvitationController extends Controller
 
         return response()->json($stats);
     }
+
+    /**
+     * Get invitation details by token (public)
+     */
+    public function show(string $token)
+    {
+        $invitation = StaffInvitation::where('token', $token)->first();
+
+        if (!$invitation) {
+            return response()->json([
+                'message' => 'Invitation not found.',
+            ], 404);
+        }
+
+        if ($invitation->status !== StaffInvitation::STATUS_PENDING) {
+            return response()->json([
+                'message' => 'This invitation has already been ' . $invitation->status . '.',
+            ], 400);
+        }
+
+        if (!$invitation->isValid()) {
+            $invitation->markAsExpired();
+            return response()->json([
+                'message' => 'This invitation has expired.',
+            ], 400);
+        }
+
+        return response()->json([
+            'id' => $invitation->id,
+            'email' => $invitation->email,
+            'role' => $invitation->role,
+            'invited_by' => $invitation->invited_by,
+'expires_at' => $invitation->expires_at->toDateString(),
+            'created_at' => $invitation->created_at->toDateString(),
+
+            'inviter' => $invitation->inviter ? [
+                'id' => $invitation->inviter->id,
+                'name' => $invitation->inviter->name,
+            ] : null,
+        ]);
+    }
+
 
     /**
      * Accept invitation and create/register staff user
@@ -216,4 +253,6 @@ class InvitationController extends Controller
         ], 201);
     }
 }
+
+
 

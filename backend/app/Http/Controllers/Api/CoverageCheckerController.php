@@ -195,4 +195,84 @@ class CoverageCheckerController extends Controller
             'message' => "Thanks {$validated['name']}! We've noted your interest. We'll notify you when we expand to your area.",
         ], 201);
     }
+
+    /**
+     * GET /api/v1/coverage/zones
+     * Public paginated list of active coverage zones for map (with coordinates)
+     */
+    public function publicZones(Request $request)
+    {
+        $query = \App\Models\CoverageZone::query()
+            ->where('status', 'active')
+            ->where('is_serviceable', true)
+            ->whereNotNull('center_lat')
+            ->whereNotNull('center_lng')
+            ->with('products')
+            ->withCount('children')
+            ->orderBy('type')
+            ->orderBy('name');
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'LIKE', "%{$request->search}%")
+                  ->orWhere('slug', 'LIKE', "%{$request->search}%");
+            });
+        }
+
+        $perPage = min((int) $request->get('per_page', 50), 500);
+        $zones = $query->paginate($perPage);
+
+        // Transform for frontend CoverageZone type
+        $data = $zones->getCollection()->map(function ($zone) {
+            return [
+                'id' => $zone->id,
+                'name' => $zone->name,
+                'slug' => $zone->slug,
+                'type' => $zone->type,
+                'center_lat' => (float) $zone->center_lat,
+                'center_lng' => (float) $zone->center_lng,
+                'radius_km' => $zone->radius_km ?? 0,
+                'status' => $zone->status,
+                'county' => $this->extractCounty($zone->name), // derive from name
+                'coverage_type' => $zone->products->isNotEmpty() ? 'Both' : 'Home', // simple logic
+                'connectivity_index' => $this->computeConnectivityIndex($zone),
+                'is_serviceable' => (bool) $zone->is_serviceable,
+                'notes' => $zone->notes,
+                'children_count' => $zone->children_count,
+            ];
+        });
+
+        return response()->json([
+            'data' => $data,
+            'meta' => [
+                'total' => $zones->total(),
+                'per_page' => $zones->perPage(),
+                'current_page' => $zones->currentPage(),
+                'last_page' => $zones->lastPage(),
+            ],
+        ]);
+    }
+
+    private function extractCounty($name)
+    {
+        $counties = ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Kiambu']; // top ones
+        foreach ($counties as $county) {
+            if (stripos($name, $county) !== false) return $county;
+        }
+        return null;
+    }
+
+    private function computeConnectivityIndex($zone)
+    {
+        // Placeholder: based on children + type order
+        $base = $zone->children_count * 5;
+        $typeWeight = match($zone->type) {
+            'county' => 20, 'region' => 15, 'zone' => 10, 'area' => 8, default => 5
+        };
+        return min(100, $base + $typeWeight + rand(1,10));
+    }
 }

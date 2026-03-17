@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\EmeraldService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 
@@ -401,6 +403,14 @@ class UserController extends Controller
             'suspended_at' => now(),
         ]);
 
+        if ($user->emerald_account_id) {
+            try {
+                (new EmeraldService())->suspendService($user->emerald_account_id);
+            } catch (\Exception $e) {
+                Log::error('Emerald suspend failed', ['account_id' => $user->emerald_account_id, 'error' => $e->getMessage()]);
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'User suspended successfully',
@@ -435,6 +445,14 @@ class UserController extends Controller
         }
 
         $user->activate();
+
+        if ($user->emerald_account_id) {
+            try {
+                (new EmeraldService())->activateService($user->emerald_account_id);
+            } catch (\Exception $e) {
+                Log::error('Emerald activate failed', ['account_id' => $user->emerald_account_id, 'error' => $e->getMessage()]);
+            }
+        }
 
         return response()->json([
             'success' => true,
