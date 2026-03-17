@@ -192,6 +192,7 @@ const Booking = () => {
                       <span>Service:</span>
                       <span className="font-medium">{services.find(s => s.id === parseInt(formData.service_id))?.name || "Consultation"}</span>
                     </div>
+
                     <div className="flex justify-between text-white/80">
                       <span>Date:</span>
                       <span className="font-medium">{new Date(formData.booking_date).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
@@ -294,10 +295,11 @@ const Booking = () => {
                         {/* Service Selection */}
                         <div>
                           <label className="block text-sm font-semibold text-white/80 mb-2">Service *</label>
-                          <Select 
+                        <Select 
                             value={formData.service_id} 
                             onValueChange={(v) => setFormData({...formData, service_id: v})}
                           >
+
                             <SelectTrigger className="bg-white/10 border-white/20 text-white">
                               <SelectValue placeholder="Select a service" />
                             </SelectTrigger>
@@ -305,16 +307,19 @@ const Booking = () => {
                               {isLoadingServices ? (
                                 <SelectItem value="loading" disabled>Loading services...</SelectItem>
                               ) : (
-                                services.map((service) => (
-                                  <SelectItem 
-                                    key={service.id} 
-                                    value={service.id.toString()}
-                                    className="text-white focus:bg-white/10 focus:text-white"
-                                  >
-                                    {service.name}
-                                  </SelectItem>
-                                ))
+                                services
+                                  .filter((service) => service.id != null)
+                                  .map((service) => (
+                                    <SelectItem 
+                                      key={service.id} 
+                                      value={service.id.toString()}
+                                      className="text-white focus:bg-white/10 focus:text-white"
+                                    >
+                                      {service.name}
+                                    </SelectItem>
+                                  ))
                               )}
+
                             </SelectContent>
                           </Select>
                         </div>

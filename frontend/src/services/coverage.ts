@@ -115,7 +115,7 @@ export const coverageApi = {
 export const adminCoverageApi = {
   // ── Zones ────────────────────────────────────────────────────────────────
 
-  getZones: async (params?: { page?: number; per_page?: number; type?: string; status?: string; search?: string }) => {
+  getZones: async (params?: { page?: number; per_page?: number; type?: string; status?: string; search?: string } & { summary?: boolean }) => {
     const response = await axios.get('/coverage/admin/coverage/zones', { params });
     return response.data;
   },

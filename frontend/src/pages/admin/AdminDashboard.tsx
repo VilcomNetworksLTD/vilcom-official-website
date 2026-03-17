@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '@/lib/axios';
 import { clientsApi } from '@/services/clients';
 import { usersApi } from '@/services/users';
+import { adminCoverageApi } from '@/services/coverage';
 import { Link, Navigate } from 'react-router-dom';
 import { 
   Users, 
@@ -28,7 +29,9 @@ import {
   HardDrive,
   Gauge,
   Zap,
-  MapPin
+  MapPin,
+  Map
+
 } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -48,6 +51,21 @@ interface StatsType {
   totalUsers: number;
   activeClients: number;
 }
+
+interface CoverageAnalytics {
+  total_checks: number;
+  covered_checks: number;
+  uncovered_checks: number;
+  interest_signups: number;
+  pending_signups: number;
+  zones_summary: {
+    total: number;
+    active: number;
+    coming_soon: number;
+    inactive: number;
+  };
+}
+
 
 // Network Uptime Heat Map Component
 const NetworkHeatMap = () => {
@@ -145,13 +163,14 @@ const AdminDashboard = () => {
     openTickets: 0,
     resolvedTickets: 0,
     pendingInvoices: 0,
-    coverageAreas: 12,
+    coverageAreas: 0,
     totalStaff: 0,
     churnRate: 2.3,
     avgRevenuePerUser: 0,
     totalUsers: 0,
     activeClients: 0
   });
+  const [coverageStats, setCoverageStats] = useState<CoverageAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -161,28 +180,33 @@ const AdminDashboard = () => {
         setLoading(true);
         setError(null);
 
-        const [userRes, clientRes] = await Promise.all([
+        const [userRes, clientRes, coverageRes] = await Promise.allSettled([
           usersApi.statistics(),
-          clientsApi.statistics()
+          clientsApi.statistics(),
+          adminCoverageApi.getAnalytics(),
         ]);
 
-        const userStats = userRes.data.data;
-        const clientStats = clientRes.data.data;
+        const userStats   = userRes.status   === 'fulfilled' ? userRes.value.data   : null;
+        const clientStats = clientRes.status  === 'fulfilled' ? clientRes.value.data  : null;
+        const coverageData: CoverageAnalytics | null =
+          coverageRes.status === 'fulfilled' ? (coverageRes.value as CoverageAnalytics) : null;
+
+        if (coverageData) setCoverageStats(coverageData);
 
         setStats({
           totalClients: clientStats?.total_clients || userStats?.clients || 0,
           totalUsers: userStats?.total || 0,
           totalStaff: (userStats?.staff || 0) + (userStats?.admins || 0),
           activeClients: clientStats?.active_clients || userStats?.active || 0,
-          activeSubscriptions: clientStats?.active_subscriptions || 0,
-          monthlyRevenue: clientStats?.monthly_revenue || 0,
-          annualRevenue: clientStats?.annual_revenue || 0,
-          openTickets: clientStats?.open_tickets || 0,
-          resolvedTickets: clientStats?.resolved_tickets || 0,
-          pendingInvoices: clientStats?.pending_invoices || 0,
-          coverageAreas: 12,
-          churnRate: clientStats?.churn_rate || 2.3,
-          avgRevenuePerUser: clientStats?.avg_revenue_per_user || 0
+          activeSubscriptions: 0,   // not in current API; extend ClientStatistics when available
+          monthlyRevenue: 0,        // not in current API; extend ClientStatistics when available
+          annualRevenue: 0,         // not in current API; extend ClientStatistics when available
+          openTickets: 0,           // not in current API; extend ClientStatistics when available
+          resolvedTickets: 0,       // not in current API; extend ClientStatistics when available
+          pendingInvoices: 0,       // not in current API; extend ClientStatistics when available
+          coverageAreas: coverageData?.zones_summary?.total ?? 0,
+          churnRate: 2.3,           // not in current API; static placeholder
+          avgRevenuePerUser: 0,     // not in current API; extend ClientStatistics when available
         });
       } catch (err) {
         console.error('Failed to fetch dashboard stats:', err);
