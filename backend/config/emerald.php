@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'base_url'        => env('EMERALD_BASE_URL', 'https://emerald.yourisp.co.ke'),
+    'base_url'        => env('EMERALD_BASE_URL', 'https://developer.vilcom-net.co.ke'),
     'admin_user'      => env('EMERALD_ADMIN_USER'),
     'admin_password'  => env('EMERALD_ADMIN_PASSWORD'),
 

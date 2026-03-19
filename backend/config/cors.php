@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'paths' => ['api/*',  'auth/*', 'sanctum/csrf-cookie'],
+'paths' => ['api/*', 'leads/*', 'auth/*', 'sanctum/csrf-cookie'],
 
     'allowed_methods' => ['*'],
 
@@ -35,9 +35,9 @@ return [
         'https://backend.vilcom-net.co.ke',
     ],
 
-    'allowed_origins_patterns' => [
+'allowed_origins_patterns' => [
         // Allow any subdomain of vilcom-net.co.ke
-        '/^https:\/\/.*\.vilcom-net\.ke$/',
+        '/^https:\/\/.*\.vilcom-net\.co\.ke$/',
     ],
 
     'allowed_headers' => ['*'],

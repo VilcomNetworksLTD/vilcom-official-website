@@ -30,29 +30,33 @@ class EmeraldService
         $this->domainId       = config('emerald.domain_id');
     }
 
-    protected function post(array $params): array
-    {
-        $response = Http::withBasicAuth($this->adminUser, $this->adminPass)
-            ->asForm()
-            ->timeout(15)
-            ->post($this->baseUrl . '/emerald/api.pl', $params);
+   protected function post(array $params): array
+{
+    // Add credentials as POST params (NOT Basic Auth headers)
+    $params['login_user']     = $this->adminUser;
+    $params['login_password'] = $this->adminPass;
+    $params['format']         = 'json'; // get JSON back instead of XML
 
-        $result = $response->json();
+    $response = Http::asForm()
+        ->timeout(15)
+        ->post($this->baseUrl . '/api.ews', $params);
 
-        Log::info('Emerald API', [
-            'action'   => $params['action'],
-            'status'   => $response->status(),
-            'response' => $result,
-        ]);
+    $result = $response->json();
 
-        if ($response->failed()) {
-            throw new \RuntimeException(
-                'Emerald API error: HTTP ' . $response->status()
-            );
-        }
+    Log::info('Emerald API', [
+        'action'   => $params['action'],
+        'status'   => $response->status(),
+        'response' => $result,
+    ]);
 
-        return $result ?? [];
+    if (isset($result['retcode']) && $result['retcode'] != 0) {
+        throw new \RuntimeException(
+            'Emerald API error: ' . ($result['message'] ?? 'Unknown error')
+        );
     }
+
+    return $result ?? [];
+}
 
     /**
      * Create MBR + service in Emerald (account_add)

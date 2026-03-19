@@ -20,12 +20,12 @@ class Product extends Model implements HasMedia
         'short_description',
         'sku',
         'type',
-        
+
         // Internet Plan
         'speed_mbps',
         'connection_type',
         'plan_category',
-        
+
         // Hosting
         'storage_gb',
         'bandwidth_gb',
@@ -34,16 +34,16 @@ class Product extends Model implements HasMedia
         'domains_allowed',
         'ssl_included',
         'backup_included',
-        
+
         // Web Development
         'pages_included',
         'revisions_included',
         'delivery_days',
-        
+
         // Bulk SMS
         'sms_credits',
         'cost_per_sms',
-        
+
         // Pricing
         'price_monthly',
         'price_quarterly',
@@ -51,43 +51,43 @@ class Product extends Model implements HasMedia
         'price_annually',
         'price_one_time',
         'setup_fee',
-        
+
         // Promotional
         'promotional_price',
         'promotional_start',
         'promotional_end',
-        
+
         // Features
         'features',
         'technical_specs',
-        
+
         // Availability
         'coverage_areas',
         'available_nationwide',
-        
+
         // Stock/Capacity
         'stock_quantity',
         'capacity_limit',
         'current_capacity',
         'track_capacity',
-        
+
         // Display
         'image',
         'gallery',
         'icon',
         'badge',
-        
+
         // Status
         'is_active',
         'is_featured',
         'is_quote_based',
         'requires_approval',
         'sort_order',
-        
+
         // Requirements
         'requirements',
         'terms_conditions',
-        
+
         // SEO
         'meta_title',
         'meta_description',
@@ -166,6 +166,11 @@ class Product extends Model implements HasMedia
     {
         return $this->hasMany(Subscription::class)->where('status', 'active');
     }
+
+    public function emeraldMapping()
+{
+    return $this->hasOne(\App\Models\EmeraldProductMapping::class);
+}
 
     /**
      * Get available addons for this product
@@ -388,8 +393,8 @@ class Product extends Model implements HasMedia
      */
     public function isOnPromotion()
     {
-        return $this->promotional_price 
-            && $this->promotional_start <= now() 
+        return $this->promotional_price
+            && $this->promotional_start <= now()
             && $this->promotional_end >= now();
     }
 
@@ -423,7 +428,7 @@ class Product extends Model implements HasMedia
         if ($this->available_nationwide) {
             return true;
         }
-        
+
         $coverageAreas = $this->coverage_areas ?? [];
         return in_array($area, $coverageAreas);
     }
@@ -443,11 +448,11 @@ class Product extends Model implements HasMedia
     public function getPriceDisplayInfo(): array
     {
         $isQuoteBased = $this->isQuoteBased();
-        
+
         // Determine the primary price to display
         $primaryPrice = null;
         $primaryLabel = '';
-        
+
         if (!$isQuoteBased) {
             // Has fixed pricing - determine best price to show
             if ($this->price_annually) {
@@ -461,7 +466,7 @@ class Product extends Model implements HasMedia
                 $primaryLabel = ' (one-time)';
             }
         }
-        
+
         return [
             'is_quote_based' => $isQuoteBased,
             'has_fixed_price' => !$isQuoteBased,
@@ -488,19 +493,19 @@ class Product extends Model implements HasMedia
         if ($this->isQuoteBased()) {
             return 'quote';
         }
-        
+
         if ($this->price_one_time && !$this->price_monthly && !$this->price_annually) {
             return 'one_time';
         }
-        
+
         if ($this->price_annually) {
             return 'recurring_annual';
         }
-        
+
         if ($this->price_monthly) {
             return 'recurring_monthly';
         }
-        
+
         return 'none';
     }
 
@@ -559,7 +564,7 @@ class Product extends Model implements HasMedia
     public function getAvailablePricingOptions()
     {
         $options = [];
-        
+
         if ($this->price_monthly) {
             $options['monthly'] = [
                 'price' => $this->price_monthly,
@@ -567,7 +572,7 @@ class Product extends Model implements HasMedia
                 'per_month' => $this->price_monthly,
             ];
         }
-        
+
         if ($this->price_quarterly) {
             $options['quarterly'] = [
                 'price' => $this->price_quarterly,
@@ -575,7 +580,7 @@ class Product extends Model implements HasMedia
                 'per_month' => round($this->price_quarterly / 3, 2),
             ];
         }
-        
+
         if ($this->price_semi_annually) {
             $options['semi_annually'] = [
                 'price' => $this->price_semi_annually,
@@ -583,7 +588,7 @@ class Product extends Model implements HasMedia
                 'per_month' => round($this->price_semi_annually / 6, 2),
             ];
         }
-        
+
         if ($this->price_annually) {
             $options['annually'] = [
                 'price' => $this->price_annually,
@@ -591,7 +596,7 @@ class Product extends Model implements HasMedia
                 'per_month' => round($this->price_annually / 12, 2),
             ];
         }
-        
+
         return $options;
     }
 
@@ -601,14 +606,14 @@ class Product extends Model implements HasMedia
     public function getFormattedSpecs()
     {
         $specs = [];
-        
+
         switch ($this->type) {
             case 'internet_plan':
                 if ($this->speed_mbps) $specs['Speed'] = "{$this->speed_mbps} Mbps";
                 if ($this->connection_type) $specs['Connection'] = ucfirst($this->connection_type);
                 if ($this->plan_category) $specs['Category'] = ucfirst($this->plan_category);
                 break;
-                
+
             case 'hosting_package':
                 if ($this->storage_gb) $specs['Storage'] = "{$this->storage_gb} GB";
                 if ($this->bandwidth_gb) $specs['Bandwidth'] = "{$this->bandwidth_gb} GB/month";
@@ -618,24 +623,24 @@ class Product extends Model implements HasMedia
                 if ($this->ssl_included) $specs['SSL Certificate'] = 'Included';
                 if ($this->backup_included) $specs['Backup'] = 'Included';
                 break;
-                
+
             case 'web_development':
                 if ($this->pages_included) $specs['Pages'] = $this->pages_included;
                 if ($this->revisions_included) $specs['Revisions'] = $this->revisions_included;
                 if ($this->delivery_days) $specs['Delivery'] = "{$this->delivery_days} days";
                 break;
-                
+
             case 'bulk_sms':
                 if ($this->sms_credits) $specs['SMS Credits'] = number_format($this->sms_credits);
                 if ($this->cost_per_sms) $specs['Cost per SMS'] = "KES {$this->cost_per_sms}";
                 break;
         }
-        
+
         // Add custom technical specs
         if ($this->technical_specs) {
             $specs = array_merge($specs, $this->technical_specs);
         }
-        
+
         return $specs;
     }
 

@@ -5,93 +5,86 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Models\User;
-use App\Services\EmeraldService;
+use App\Services\EmeraldBillingOrchestrator;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
-    /**
-     * Why Impersonate?
-     *
-     * The impersonation feature is critical for:
-     * 1. Debugging - Admins can see exactly what a client sees
-     * 2. Support - Help customers by viewing their account state
-     * 3. Testing - Verify permissions work correctly for different roles
-     * 4. Verification - Confirm issue reports from clients
-     *
-     * Security: Only admins can impersonate, and it creates a separate
-     * auth token while tracking the original admin for audit purposes.
-     */
+    public function __construct(
+        protected EmeraldBillingOrchestrator $orchestrator
+    ) {}
 
-   /**
-     * Display a listing of the users.
+    // ════════════════════════════════════════════════════════════════════
+    // LIST / SEARCH
+    // ════════════════════════════════════════════════════════════════════
+
+    /**
+     * List users with role-based filtering.
      *
-     * Multi-tenant filtering:
-     * - Admin: can see ALL users (clients + staff)
-     * - Staff: can only see clients (not other staff)
-     * - Sales: can see clients
+     * Admin  → all users
+     * Staff  → clients only
+     * Sales  → clients only
      */
     public function index(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $currentUser = $request->user();
+        $query       = User::with(['roles', 'subscriptions']);
 
-        // Start query
-        $query = User::with(['roles', 'subscriptions']);
-
-        // Role-based filtering (multi-tenant)
+        // ── Role filter ──────────────────────────────────────────────────
         if ($request->has('roles') && is_array($request->roles)) {
-            // Support roles[] array filter — e.g. roles[]=staff&roles[]=sales
-            $query->whereHas('roles', function ($q) use ($request) {
-                $q->whereIn('name', $request->roles);
-            });
+            $query->whereHas('roles', fn($q) =>
+                $q->whereIn('name', $request->roles)
+            );
         } elseif ($request->has('role')) {
-            // Legacy single role filter — keep for backwards compatibility
             $query->role($request->role);
-        } elseif (!$user->hasRole('admin')) {
-            // Non-admins see clients + staff roles only
-            $query->whereHas('roles', function ($q) {
-                $q->whereIn('name', ['client', 'staff', 'sales', 'technical_support']);
-            });
+        } elseif (!$currentUser->hasRole('admin')) {
+            $query->whereHas('roles', fn($q) =>
+                $q->whereIn('name', ['client', 'staff', 'sales', 'technical_support'])
+            );
         }
 
-        // Status filtering
+        // ── Filters ──────────────────────────────────────────────────────
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        // Customer type filtering
         if ($request->filled('customer_type')) {
             $query->where('customer_type', $request->customer_type);
         }
 
-        // Search
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
+            $query->where(fn($q) =>
+                $q->where('name',  'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%");
-            });
+                  ->orWhere('phone', 'like', "%{$search}%")
+            );
         }
 
-        // Department filtering (for staff)
         if ($request->filled('department')) {
             $query->byDepartment($request->department);
         }
 
-        // Sorting
-        $sortBy    = $request->sort_by    ?? 'created_at';
-        $sortOrder = $request->sort_order ?? 'desc';
-        $query->orderBy($sortBy, $sortOrder);
+        // ── Has / has-not Emerald account ────────────────────────────────
+        if ($request->filled('has_emerald')) {
+            if ($request->boolean('has_emerald')) {
+                $query->whereNotNull('emerald_mbr_id');
+            } else {
+                $query->whereNull('emerald_mbr_id');
+            }
+        }
 
-        // Pagination
-        $perPage = $request->per_page ?? 15;
-        $users   = $query->paginate($perPage);
+        // ── Sort & paginate ──────────────────────────────────────────────
+        $query->orderBy(
+            $request->sort_by    ?? 'created_at',
+            $request->sort_order ?? 'desc'
+        );
+
+        $users = $query->paginate($request->per_page ?? 15);
 
         return response()->json([
             'success' => true,
@@ -105,185 +98,192 @@ class UserController extends Controller
         ]);
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    // CREATE
+    // ════════════════════════════════════════════════════════════════════
+
     /**
-     * Store a newly created user (Staff/Admin only).
-     *
+     * Create a user (Staff/Admin only).
      * Staff can only create clients.
-     * Admin can create any user type.
+     * Admin can create any role.
      */
     public function store(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $currentUser = $request->user();
 
-        // Determine what role can be assigned
-        if ($user->hasRole('admin')) {
-            $allowedRoles = ['client', 'staff', 'sales', 'technical_support', 'web_developer', 'content_manager'];
-        } elseif ($user->hasAnyRole(['staff', 'sales'])) {
-            // Staff/sales can only create clients
-            $allowedRoles = ['client'];
-        } else {
+        $allowedRoles = match (true) {
+            $currentUser->hasRole('admin')           => ['client', 'staff', 'sales', 'technical_support', 'web_developer', 'content_manager'],
+            $currentUser->hasAnyRole(['staff','sales']) => ['client'],
+            default                                  => [],
+        };
+
+        if (empty($allowedRoles)) {
             return response()->json([
                 'success' => false,
-                'message' => 'You do not have permission to create users',
+                'message' => 'You do not have permission to create users.',
             ], 403);
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
-            'phone' => 'nullable|string|max:20',
-            'customer_type' => 'required|in:individual,business',
-            'company_name' => 'nullable|string|max:255',
+            'name'                 => 'required|string|max:255',
+            'email'                => 'required|email|unique:users,email',
+            'password'             => 'required|string|min:8|confirmed',
+            'phone'                => 'nullable|string|max:20',
+            'customer_type'        => 'required|in:individual,business',
+            'company_name'         => 'nullable|string|max:255',
             'company_registration' => 'nullable|string|max:100',
-            'tax_pin' => 'nullable|string|max:50',
-            'address' => 'nullable|string|max:500',
-            'city' => 'nullable|string|max:100',
-            'county' => 'nullable|string|max:100',
-            'country' => 'nullable|string|max:100',
-            'postal_code' => 'nullable|string|max:20',
-            'role' => ['required', Rule::in($allowedRoles)],
+            'tax_pin'              => 'nullable|string|max:50',
+            'address'              => 'nullable|string|max:500',
+            'city'                 => 'nullable|string|max:100',
+            'county'               => 'nullable|string|max:100',
+            'country'              => 'nullable|string|max:100',
+            'postal_code'          => 'nullable|string|max:20',
+            'role'                 => ['required', Rule::in($allowedRoles)],
+            'product_id'           => 'nullable|exists:products,id', // optional Emerald provision
         ]);
 
         $newUser = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => $validated['password'],
-            'phone' => $validated['phone'] ?? null,
-            'customer_type' => $validated['customer_type'],
-            'company_name' => $validated['company_name'] ?? null,
+            'name'                 => $validated['name'],
+            'email'                => $validated['email'],
+            'password'             => $validated['password'],
+            'phone'                => $validated['phone'] ?? null,
+            'customer_type'        => $validated['customer_type'],
+            'company_name'         => $validated['company_name'] ?? null,
             'company_registration' => $validated['company_registration'] ?? null,
-            'tax_pin' => $validated['tax_pin'] ?? null,
-            'address' => $validated['address'] ?? null,
-            'city' => $validated['city'] ?? null,
-            'county' => $validated['county'] ?? null,
-            'country' => $validated['country'] ?? 'Kenya',
-            'postal_code' => $validated['postal_code'] ?? null,
-            'status' => 'active',
+            'tax_pin'              => $validated['tax_pin'] ?? null,
+            'address'              => $validated['address'] ?? null,
+            'city'                 => $validated['city'] ?? null,
+            'county'               => $validated['county'] ?? null,
+            'country'              => $validated['country'] ?? 'Kenya',
+            'postal_code'          => $validated['postal_code'] ?? null,
+            'status'               => 'active',
         ]);
 
-        // Assign role
         $newUser->assignRole($validated['role']);
+
+        // Optionally provision Emerald if product provided
+        if (!empty($validated['product_id'])) {
+            $result = $this->orchestrator->provisionNewSubscriber(
+                $newUser,
+                (int) $validated['product_id']
+            );
+
+            if ($result->isFailed()) {
+                Log::warning('Emerald provisioning failed on manual user create', [
+                    'user_id'    => $newUser->id,
+                    'product_id' => $validated['product_id'],
+                    'reason'     => $result->message,
+                ]);
+            }
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'User created successfully',
-            'data' => new UserResource($newUser->load('roles')),
+            'message' => 'User created successfully.',
+            'data'    => new UserResource($newUser->load('roles')),
         ], 201);
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    // READ
+    // ════════════════════════════════════════════════════════════════════
+
     /**
-     * Display the specified user.
-     *
-     * Permission-based visibility:
-     * - Admin: can view any user
-     * - Staff: can view clients
-     * - Users can view their own profile
+     * Show a single user.
+     * Own profile / admin / staff-viewing-client.
      */
     public function show(Request $request, User $user): JsonResponse
     {
         $currentUser = $request->user();
 
-        // Users can view their own profile
-        if ($currentUser->id === $user->id) {
-            $user->load(['roles', 'subscriptions', 'invoices', 'tickets']);
+        $canView = $currentUser->id === $user->id
+            || $currentUser->hasRole('admin')
+            || ($currentUser->hasAnyRole(['staff', 'sales', 'technical_support'])
+                && $user->hasRole('client'));
+
+        if (!$canView) {
             return response()->json([
-                'success' => true,
-                'data' => new UserResource($user),
-            ]);
+                'success' => false,
+                'message' => 'You do not have permission to view this user.',
+            ], 403);
         }
 
-        // Admin can view anyone
-        if ($currentUser->hasRole('admin')) {
-            $user->load(['roles', 'subscriptions', 'invoices', 'tickets']);
-            return response()->json([
-                'success' => true,
-                'data' => new UserResource($user),
-            ]);
-        }
-
-        // Staff can view clients
-        if ($currentUser->hasAnyRole(['staff', 'sales', 'technical_support']) && $user->hasRole('client')) {
-            $user->load(['roles', 'subscriptions', 'invoices', 'tickets']);
-            return response()->json([
-                'success' => true,
-                'data' => new UserResource($user),
-            ]);
-        }
+        $user->load(['roles', 'subscriptions', 'invoices', 'tickets']);
 
         return response()->json([
-            'success' => false,
-            'message' => 'You do not have permission to view this user',
-        ], 403);
+            'success' => true,
+            'data'    => new UserResource($user),
+        ]);
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    // UPDATE
+    // ════════════════════════════════════════════════════════════════════
+
     /**
-     * Update the specified user.
+     * Update a user.
      *
-     * Multi-tenant update rules:
-     * - Users can update their own profile (limited fields)
-     * - Staff can update clients
-     * - Admin can update anyone
+     * Own profile  → limited fields
+     * Admin        → all fields + role change
+     * Staff/Sales  → client fields only
      */
     public function update(Request $request, User $user): JsonResponse
     {
-        $currentUser = $request->user();
+        $currentUser  = $request->user();
         $isOwnProfile = $currentUser->id === $user->id;
 
-        // Determine editable fields based on role
         if ($isOwnProfile) {
-            // Users can update their own profile with limited fields
             $validated = $request->validate([
-                'name' => 'sometimes|string|max:255',
-                'phone' => 'nullable|string|max:20',
-                'address' => 'nullable|string|max:500',
-                'city' => 'nullable|string|max:100',
-                'county' => 'nullable|string|max:100',
-                'country' => 'nullable|string|max:100',
+                'name'        => 'sometimes|string|max:255',
+                'phone'       => 'nullable|string|max:20',
+                'address'     => 'nullable|string|max:500',
+                'city'        => 'nullable|string|max:100',
+                'county'      => 'nullable|string|max:100',
+                'country'     => 'nullable|string|max:100',
                 'postal_code' => 'nullable|string|max:20',
-            ]);
-        } elseif ($currentUser->hasRole('admin')) {
-            // Admin can update any user with all fields
-            $validated = $request->validate([
-                'name' => 'sometimes|string|max:255',
-                'email' => 'sometimes|email|unique:users,email,' . $user->id,
-                'phone' => 'nullable|string|max:20',
-                'company_name' => 'nullable|string|max:255',
-                'company_registration' => 'nullable|string|max:100',
-                'tax_pin' => 'nullable|string|max:50',
-                'address' => 'nullable|string|max:500',
-                'city' => 'nullable|string|max:100',
-                'county' => 'nullable|string|max:100',
-                'country' => 'nullable|string|max:100',
-                'postal_code' => 'nullable|string|max:20',
-                'customer_type' => 'sometimes|in:individual,business',
-                'status' => 'sometimes|in:active,inactive,suspended,pending_verification',
-                'role' => 'sometimes|exists:roles,name',
             ]);
 
-            // Update role if provided
+        } elseif ($currentUser->hasRole('admin')) {
+            $validated = $request->validate([
+                'name'                 => 'sometimes|string|max:255',
+                'email'                => 'sometimes|email|unique:users,email,' . $user->id,
+                'phone'                => 'nullable|string|max:20',
+                'company_name'         => 'nullable|string|max:255',
+                'company_registration' => 'nullable|string|max:100',
+                'tax_pin'              => 'nullable|string|max:50',
+                'address'              => 'nullable|string|max:500',
+                'city'                 => 'nullable|string|max:100',
+                'county'               => 'nullable|string|max:100',
+                'country'              => 'nullable|string|max:100',
+                'postal_code'          => 'nullable|string|max:20',
+                'customer_type'        => 'sometimes|in:individual,business',
+                'status'               => 'sometimes|in:active,inactive,suspended,pending_verification',
+                'role'                 => 'sometimes|exists:roles,name',
+            ]);
+
             if (isset($validated['role'])) {
                 $user->syncRoles([$validated['role']]);
                 unset($validated['role']);
             }
+
         } elseif ($currentUser->hasAnyRole(['staff', 'sales']) && $user->hasRole('client')) {
-            // Staff can update clients
             $validated = $request->validate([
-                'name' => 'sometimes|string|max:255',
-                'phone' => 'nullable|string|max:20',
-                'company_name' => 'nullable|string|max:255',
+                'name'                 => 'sometimes|string|max:255',
+                'phone'                => 'nullable|string|max:20',
+                'company_name'         => 'nullable|string|max:255',
                 'company_registration' => 'nullable|string|max:100',
-                'address' => 'nullable|string|max:500',
-                'city' => 'nullable|string|max:100',
-                'county' => 'nullable|string|max:100',
-                'country' => 'nullable|string|max:100',
-                'postal_code' => 'nullable|string|max:20',
-                'status' => 'sometimes|in:active,inactive,suspended',
+                'address'              => 'nullable|string|max:500',
+                'city'                 => 'nullable|string|max:100',
+                'county'               => 'nullable|string|max:100',
+                'country'              => 'nullable|string|max:100',
+                'postal_code'          => 'nullable|string|max:20',
+                'status'               => 'sometimes|in:active,inactive,suspended',
             ]);
+
         } else {
             return response()->json([
                 'success' => false,
-                'message' => 'You do not have permission to update this user',
+                'message' => 'You do not have permission to update this user.',
             ], 403);
         }
 
@@ -291,50 +291,46 @@ class UserController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'User updated successfully',
-            'data' => new UserResource($user->load('roles')),
+            'message' => 'User updated successfully.',
+            'data'    => new UserResource($user->load('roles')),
         ]);
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    // DELETE
+    // ════════════════════════════════════════════════════════════════════
+
     /**
-     * Remove the specified user (Admin only).
-     *
-     * Cannot delete:
-     * - Yourself
-     * - Users with active subscriptions
-     * - Other admins
+     * Delete a user (Admin only).
+     * Cannot delete: yourself, other admins, users with active subscriptions.
      */
     public function destroy(Request $request, User $user): JsonResponse
     {
-        // Must be admin
         if (!$request->user()->hasRole('admin')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Only administrators can delete users',
+                'message' => 'Only administrators can delete users.',
             ], 403);
         }
 
-        // Cannot delete yourself
         if ($user->id === $request->user()->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'You cannot delete your own account',
+                'message' => 'You cannot delete your own account.',
             ], 422);
         }
 
-        // Cannot delete other admins
         if ($user->hasRole('admin')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cannot delete administrator accounts',
+                'message' => 'Cannot delete administrator accounts.',
             ], 422);
         }
 
-        // Check if user has active subscriptions
         if ($user->subscriptions()->where('status', 'active')->exists()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cannot delete user with active subscriptions. Cancel subscriptions first.',
+                'message' => 'Cannot delete user with active subscriptions. Cancel them first.',
             ], 422);
         }
 
@@ -342,186 +338,231 @@ class UserController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'User deleted successfully',
+            'message' => 'User deleted successfully.',
         ]);
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    // SUSPEND / ACTIVATE
+    // ════════════════════════════════════════════════════════════════════
+
     /**
-     * Suspend the specified user.
-     *
-     * Permissions:
-     * - Admin: can suspend anyone except other admins
-     * - Staff: can suspend clients only
-     *
-     * Also suspends user's active subscriptions.
+     * Suspend a user and their subscriptions.
+     * Syncs suspension to Emerald via orchestrator.
      */
     public function suspend(Request $request, User $user): JsonResponse
     {
         $currentUser = $request->user();
 
-        // Validate reason
         $validated = $request->validate([
             'reason' => 'required|string|max:500',
         ]);
 
-        // Cannot suspend yourself
         if ($user->id === $currentUser->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'You cannot suspend your own account',
+                'message' => 'You cannot suspend your own account.',
             ], 422);
         }
 
-        // Cannot suspend other admins
         if ($user->hasRole('admin') && !$currentUser->hasRole('admin')) {
             return response()->json([
                 'success' => false,
-                'message' => 'You cannot suspend administrator accounts',
+                'message' => 'You cannot suspend administrator accounts.',
             ], 422);
         }
 
-        // Staff can only suspend clients
         if ($currentUser->hasAnyRole(['staff', 'sales']) && !$user->hasRole('client')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Staff can only suspend client accounts',
+                'message' => 'Staff can only suspend client accounts.',
             ], 422);
         }
 
         if ($user->isSuspended()) {
             return response()->json([
                 'success' => false,
-                'message' => 'User is already suspended',
+                'message' => 'User is already suspended.',
             ], 422);
         }
 
+        // Suspend in local DB
         $user->suspend($validated['reason']);
 
-        // Suspend active subscriptions
         $user->subscriptions()->where('status', 'active')->update([
-            'status' => 'suspended',
+            'status'       => 'suspended',
             'suspended_at' => now(),
         ]);
 
-        if ($user->emerald_account_id) {
-            try {
-                (new EmeraldService())->suspendService($user->emerald_account_id);
-            } catch (\Exception $e) {
-                Log::error('Emerald suspend failed', ['account_id' => $user->emerald_account_id, 'error' => $e->getMessage()]);
-            }
-        }
+        // Sync to Emerald via orchestrator
+        $this->orchestrator->suspendSubscriber($user);
+
+        Log::info('User suspended', [
+            'suspended_by' => $currentUser->id,
+            'user_id'      => $user->id,
+            'reason'       => $validated['reason'],
+        ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'User suspended successfully',
-            'data' => new UserResource($user),
+            'message' => 'User suspended successfully.',
+            'data'    => new UserResource($user),
         ]);
     }
 
     /**
-     * Activate/unsuspend the specified user.
-     *
-     * Permissions:
-     * - Admin: can activate anyone
-     * - Staff: can activate clients only
+     * Reactivate a suspended user.
+     * Syncs activation to Emerald via orchestrator.
      */
     public function activate(Request $request, User $user): JsonResponse
     {
         $currentUser = $request->user();
 
-        // Staff can only activate clients
         if ($currentUser->hasAnyRole(['staff', 'sales']) && !$user->hasRole('client')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Staff can only activate client accounts',
+                'message' => 'Staff can only activate client accounts.',
             ], 422);
         }
 
         if (!$user->isSuspended()) {
             return response()->json([
                 'success' => false,
-                'message' => 'User is not suspended',
+                'message' => 'User is not suspended.',
             ], 422);
         }
 
+        // Reactivate in local DB
         $user->activate();
 
-        if ($user->emerald_account_id) {
-            try {
-                (new EmeraldService())->activateService($user->emerald_account_id);
-            } catch (\Exception $e) {
-                Log::error('Emerald activate failed', ['account_id' => $user->emerald_account_id, 'error' => $e->getMessage()]);
-            }
-        }
+        $user->subscriptions()->where('status', 'suspended')->update([
+            'status'       => 'active',
+            'suspended_at' => null,
+        ]);
+
+        // Sync to Emerald via orchestrator
+        $this->orchestrator->activateSubscriber($user);
+
+        Log::info('User activated', [
+            'activated_by' => $currentUser->id,
+            'user_id'      => $user->id,
+        ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'User activated successfully',
-            'data' => new UserResource($user),
+            'message' => 'User activated successfully.',
+            'data'    => new UserResource($user),
         ]);
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    // EMERALD PROVISIONING
+    // ════════════════════════════════════════════════════════════════════
+
     /**
-     * Impersonate the specified user (Admin only).
+     * Manually provision an Emerald MBR for a user.
+     * Used when:
+     * - User registered without selecting a product
+     * - Provisioning failed at signup
+     * - Staff creates a user manually
      *
-     * This allows admin to:
-     * - See exactly what the user sees
-     * - Debug issues reported by users
-     * - Test permissions from user perspective
-     * - Provide better support
+     * Admin / Staff only.
+     */
+    public function provisionEmerald(Request $request, User $user): JsonResponse
+    {
+        if (!$request->user()->hasAnyRole(['admin', 'staff'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Insufficient permissions.',
+            ], 403);
+        }
+
+        if ($user->emerald_mbr_id) {
+            return response()->json([
+                'success' => false,
+                'message' => "User already provisioned (MBR ID: {$user->emerald_mbr_id}).",
+            ], 422);
+        }
+
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+        ]);
+
+        $result = $this->orchestrator->provisionNewSubscriber(
+            $user,
+            (int) $request->product_id
+        );
+
+        if ($result->isSuccess()) {
+            return response()->json([
+                'success'     => true,
+                'message'     => 'Emerald MBR provisioned successfully.',
+                'customer_id' => $result->customerId,
+                'account_id'  => $result->accountId,
+                'data'        => new UserResource($user->fresh()),
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Provisioning failed: ' . ($result->message ?? 'Unknown error'),
+        ], 422);
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // IMPERSONATION
+    // ════════════════════════════════════════════════════════════════════
+
+    /**
+     * Impersonate a user (Admin only).
      *
-     * Security: Creates a new token and tracks the original admin.
+     * Creates a separate token so admin can see exactly what the user sees.
+     * Tracks original admin ID in session for audit trail.
      */
     public function impersonate(Request $request, User $user): JsonResponse
     {
         $admin = $request->user();
 
-        // Only admins can impersonate
         if (!$admin->hasRole('admin')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Only administrators can impersonate users',
+                'message' => 'Only administrators can impersonate users.',
             ], 403);
         }
 
-        // Cannot impersonate yourself (use normal auth)
         if ($user->id === $admin->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'You cannot impersonate yourself',
+                'message' => 'You cannot impersonate yourself.',
             ], 422);
         }
 
-        // Cannot impersonate other admins
         if ($user->hasRole('admin')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cannot impersonate administrator accounts',
+                'message' => 'Cannot impersonate administrator accounts.',
             ], 422);
         }
 
-        // Store original admin ID in session for audit
         $request->session()->put('impersonator_id', $admin->id);
 
-        // Log impersonation action
-        \Log::info('Admin impersonating user', [
-            'admin_id' => $admin->id,
-            'admin_email' => $admin->email,
-            'impersonated_user_id' => $user->id,
-            'impersonated_user_email' => $user->email,
-            'ip_address' => $request->ip(),
+        Log::info('Admin impersonating user', [
+            'admin_id'               => $admin->id,
+            'admin_email'            => $admin->email,
+            'impersonated_user_id'   => $user->id,
+            'impersonated_user_email'=> $user->email,
+            'ip_address'             => $request->ip(),
         ]);
 
-        // Create impersonation token
         $token = $user->createToken('impersonation_' . $user->id)->plainTextToken;
 
         return response()->json([
             'success' => true,
             'message' => 'You are now impersonating ' . $user->name,
-            'data' => [
-                'token' => $token,
-                'user' => new UserResource($user),
-                'impersonator_id' => $admin->id,
+            'data'    => [
+                'token'              => $token,
+                'user'               => new UserResource($user),
+                'impersonator_id'    => $admin->id,
                 'impersonator_email' => $admin->email,
             ],
         ]);
@@ -537,123 +578,42 @@ class UserController extends Controller
         if (!$impersonatorId) {
             return response()->json([
                 'success' => false,
-                'message' => 'You are not impersonating anyone',
+                'message' => 'You are not impersonating anyone.',
             ], 422);
         }
 
-        // Get the original admin
         $admin = User::find($impersonatorId);
 
         if (!$admin) {
             return response()->json([
                 'success' => false,
-                'message' => 'Original admin account not found',
+                'message' => 'Original admin account not found.',
             ], 422);
         }
 
-        // Revoke current (impersonation) token
         $request->user()->currentAccessToken()->delete();
 
-        // Generate new token for admin
         $token = $admin->createToken('auth_token')->plainTextToken;
 
-        // Clear session
         $request->session()->forget('impersonator_id');
 
-        // Log stop impersonation
-        \Log::info('Stopped impersonating user', [
-            'admin_id' => $admin->id,
+        Log::info('Stopped impersonating', [
+            'admin_id'    => $admin->id,
             'admin_email' => $admin->email,
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Returned to your admin account',
-            'data' => [
+            'message' => 'Returned to your admin account.',
+            'data'    => [
                 'token' => $token,
-                'user' => new UserResource($admin),
+                'user'  => new UserResource($admin),
             ],
         ]);
     }
 
     /**
-     * Get user statistics (Admin only).
-     */
-    public function statistics(): JsonResponse
-    {
-        $stats = [
-            'total' => User::count(),
-            'active' => User::active()->count(),
-            'inactive' => User::inactive()->count(),
-            'suspended' => User::suspended()->count(),
-            'pending_verification' => User::pendingVerification()->count(),
-
-            // Role breakdown
-            'clients' => User::clients()->count(),
-            'staff' => User::staff()->count(),
-            'admins' => User::admins()->count(),
-
-            // Customer type
-            'individuals' => User::individuals()->count(),
-            'businesses' => User::businesses()->count(),
-
-            // Verification
-            'verified' => User::verified()->count(),
-
-            // Growth
-            'recent_registrations' => User::where('created_at', '>=', now()->subDays(30))->count(),
-            'recent_registrations_7days' => User::where('created_at', '>=', now()->subDays(7))->count(),
-        ];
-
-        return response()->json([
-            'success' => true,
-            'data' => $stats,
-        ]);
-    }
-
-    /**
-     * Get available roles for user creation.
-     * Returns roles based on current user's permissions.
-     */
-    public function roles(Request $request): JsonResponse
-    {
-        $currentUser = $request->user();
-
-        if ($currentUser->hasRole('admin')) {
-            $roles = Role::whereNotIn('name', ['admin'])->get();
-        } elseif ($currentUser->hasAnyRole(['staff', 'sales'])) {
-            $roles = Role::where('name', 'client')->get();
-        } else {
-            return response()->json([
-                'success' => false,
-                'message' => 'You do not have permission to view roles',
-            ], 403);
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => $roles,
-        ]);
-    }
-
-    /**
-     * Get departments (for staff filtering).
-     */
-    public function departments(): JsonResponse
-    {
-        $departments = User::whereNotNull('department')
-            ->where('department', '!=', '')
-            ->distinct()
-            ->pluck('department');
-
-        return response()->json([
-            'success' => true,
-            'data' => $departments,
-        ]);
-    }
-
-    /**
-     * Check if current user is impersonating another user.
+     * Check current impersonation status.
      */
     public function impersonationStatus(Request $request): JsonResponse
     {
@@ -663,11 +623,11 @@ class UserController extends Controller
             $impersonator = User::find($impersonatorId);
             return response()->json([
                 'success' => true,
-                'data' => [
+                'data'    => [
                     'is_impersonating' => true,
-                    'impersonator' => $impersonator ? [
-                        'id' => $impersonator->id,
-                        'name' => $impersonator->name,
+                    'impersonator'     => $impersonator ? [
+                        'id'    => $impersonator->id,
+                        'name'  => $impersonator->name,
                         'email' => $impersonator->email,
                     ] : null,
                 ],
@@ -676,11 +636,93 @@ class UserController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => [
+            'data'    => [
                 'is_impersonating' => false,
-                'impersonator' => null,
+                'impersonator'     => null,
             ],
         ]);
     }
-}
 
+    // ════════════════════════════════════════════════════════════════════
+    // STATISTICS & METADATA
+    // ════════════════════════════════════════════════════════════════════
+
+    /**
+     * User statistics overview (Admin only).
+     */
+    public function statistics(): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'total'               => User::count(),
+                'active'              => User::active()->count(),
+                'inactive'            => User::inactive()->count(),
+                'suspended'           => User::suspended()->count(),
+                'pending_verification'=> User::pendingVerification()->count(),
+
+                // Roles
+                'clients' => User::clients()->count(),
+                'staff'   => User::staff()->count(),
+                'admins'  => User::admins()->count(),
+
+                // Type
+                'individuals' => User::individuals()->count(),
+                'businesses'  => User::businesses()->count(),
+
+                // Verification
+                'verified' => User::verified()->count(),
+
+                // Emerald status
+                'provisioned_in_emerald'   => User::whereNotNull('emerald_mbr_id')->count(),
+                'unprovisioned_in_emerald' => User::whereNull('emerald_mbr_id')
+                                                   ->role('client')
+                                                   ->count(),
+
+                // Growth
+                'registered_last_30_days' => User::where('created_at', '>=', now()->subDays(30))->count(),
+                'registered_last_7_days'  => User::where('created_at', '>=', now()->subDays(7))->count(),
+            ],
+        ]);
+    }
+
+    /**
+     * Get available roles (based on caller's permissions).
+     */
+    public function roles(Request $request): JsonResponse
+    {
+        $currentUser = $request->user();
+
+        $roles = match (true) {
+            $currentUser->hasRole('admin')              => Role::whereNotIn('name', ['admin'])->get(),
+            $currentUser->hasAnyRole(['staff', 'sales'])=> Role::where('name', 'client')->get(),
+            default                                     => collect(),
+        };
+
+        if ($roles->isEmpty() && !$currentUser->hasAnyRole(['admin', 'staff', 'sales'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view roles.',
+            ], 403);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data'    => $roles,
+        ]);
+    }
+
+    /**
+     * Get distinct departments (for staff filtering).
+     */
+    public function departments(): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data'    => User::whereNotNull('department')
+                             ->where('department', '!=', '')
+                             ->distinct()
+                             ->pluck('department'),
+        ]);
+    }
+}

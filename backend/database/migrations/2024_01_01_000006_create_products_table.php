@@ -3,13 +3,9 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('products', function (Blueprint $table) {
@@ -17,11 +13,6 @@ return new class extends Migration
 
             // Relationships
             $table->foreignId('category_id')->constrained()->onDelete('restrict');
-
-            // Emerald integration field
-            $table->unsignedInteger('emerald_service_type_id')
-                  ->nullable()
-                  ->comment('Maps to AccountTypeID / Service Type ID in Emerald billing system');
 
             // Basic Information
             $table->string('name');
@@ -78,7 +69,7 @@ return new class extends Migration
             $table->timestamp('promotional_start')->nullable();
             $table->timestamp('promotional_end')->nullable();
 
-            // Features & Inclusions (JSON)
+            // Features
             $table->json('features')->nullable();
             $table->json('technical_specs')->nullable();
 
@@ -86,7 +77,7 @@ return new class extends Migration
             $table->json('coverage_areas')->nullable();
             $table->boolean('available_nationwide')->default(false);
 
-            // Stock/Capacity Management
+            // Capacity
             $table->integer('stock_quantity')->nullable();
             $table->integer('capacity_limit')->nullable();
             $table->integer('current_capacity')->default(0);
@@ -98,7 +89,7 @@ return new class extends Migration
             $table->string('icon')->nullable();
             $table->string('badge')->nullable();
 
-            // Status & Visibility
+            // Status
             $table->boolean('is_active')->default(true);
             $table->boolean('is_featured')->default(false);
             $table->boolean('requires_approval')->default(false);
@@ -114,7 +105,6 @@ return new class extends Migration
             $table->text('meta_description')->nullable();
             $table->text('meta_keywords')->nullable();
 
-            // Timestamps & Soft Deletes
             $table->softDeletes();
             $table->timestamps();
 
@@ -128,23 +118,9 @@ return new class extends Migration
             $table->index('is_quote_based');
             $table->index('speed_mbps');
             $table->index('plan_category');
-            $table->index('emerald_service_type_id');
         });
-
-        // ─────────────────────────────────────────────────────────────
-        // Seed default emerald_service_type_id for internet plans
-        // Replace the <ID> with your actual Emerald AccountTypeID
-        // ─────────────────────────────────────────────────────────────
-        DB::table('products')
-            ->where('type', 'internet_plan')
-            ->update([
-                'emerald_service_type_id' => 1,   // ← CHANGE THIS TO YOUR REAL Emerald Service Type ID
-            ]);
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('products');

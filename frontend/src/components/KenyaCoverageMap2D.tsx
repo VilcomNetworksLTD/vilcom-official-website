@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import axios from "@/lib/axios";
+import { coverageApi, adminCoverageApi, CoverageZone as ServiceCoverageZone } from "@/services/coverage";
 import {
   MapContainer,
   TileLayer,
@@ -21,28 +21,10 @@ L.Icon.Default.mergeOptions({
 });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
 type CoverageType = "Home" | "Business" | "Both" | "None";
-
-interface CoverageZone {
-  id: number;
-  name: string;
-  slug: string;
-  type: string;
-  center_lat: number;
-  center_lng: number;
-  radius_km: number;
-  status: string;
-  county?: string;
-  coverage_type?: CoverageType;
-  connectivity_index?: number;
-  is_serviceable: boolean;
-  notes?: string;
-}
+type CoverageZone = ServiceCoverageZone;
 
 // ─── Static fallback coverage data ───────────────────────────────────────────
-// Used when the API is unavailable; API data overrides these when present.
-
 const COUNTY_COVERAGE_FALLBACK: Record<string, CoverageType> = {
   "Nairobi": "Both",     "Mombasa": "Business",  "Kisumu": "Business",
   "Nakuru": "Both",      "Kiambu": "Business",   "Uasin Gishu": "Home",
@@ -94,10 +76,9 @@ const COUNTY_CENTERS_FALLBACK: Record<string, [number, number]> = {
   "West Pokot": [1.621, 35.117], "Turkana": [3.119, 35.599],
 };
 
-const HUB: [number, number] = [-1.286, 36.817]; // Nairobi
+const HUB: [number, number] = [-1.286, 36.817];
 
-// ─── View presets — Africa-first, then regional zoom ─────────────────────────
-
+// ─── View presets ─────────────────────────────────────────────────────────────
 interface ViewPreset {
   id: string; label: string;
   center: [number, number]; zoom: number; flag: string;
@@ -112,14 +93,10 @@ const VIEW_PRESETS: ViewPreset[] = [
   { id: "drc",         label: "DRC Congo",   center: [-2.9,23.7], zoom: 5.5, flag: "🇨🇩" },
 ];
 
-// Panel presets (excludes bare "Africa" which is just the starting point)
 const PANEL_PRESETS = VIEW_PRESETS.filter(p => p.id !== "africa");
 
 // ─── Geometry helpers ─────────────────────────────────────────────────────────
-
-function smoothArc(
-  from: [number, number], to: [number, number], steps = 48
-): [number, number][] {
+function smoothArc(from: [number, number], to: [number, number], steps = 48): [number, number][] {
   const midLat = (from[0] + to[0]) / 2;
   const midLng = (from[1] + to[1]) / 2;
   const dLat = to[0] - from[0];
@@ -139,15 +116,13 @@ function smoothArc(
   return pts;
 }
 
-function arrowHead(
-  pts: [number, number][], size = 0.16
-): [[number, number], [number, number]][] {
+function arrowHead(pts: [number, number][], size = 0.16): [[number, number], [number, number]][] {
   const tip  = pts[pts.length - 1];
   const prev = pts[Math.max(0, pts.length - 5)];
   const dLat = tip[0] - prev[0], dLng = tip[1] - prev[1];
   const len  = Math.sqrt(dLat * dLat + dLng * dLng) || 1;
   const uLat = dLat / len, uLng = dLng / len;
-  const pLat = -uLng,      pLng = uLat;
+  const pLat = -uLng, pLng = uLat;
   const base: [number, number] = [tip[0] - uLat * size, tip[1] - uLng * size];
   return [
     [[base[0] + pLat * size * 0.5, base[1] + pLng * size * 0.5], tip],
@@ -156,7 +131,6 @@ function arrowHead(
 }
 
 // ─── Colour helpers ───────────────────────────────────────────────────────────
-
 function weightToFill(w: number): string {
   if (w >= 80) return "rgba(29,78,216,0.52)";
   if (w >= 60) return "rgba(37,99,235,0.42)";
@@ -189,7 +163,6 @@ function arcStroke(w: number): number {
 }
 
 // ─── GeoJSON validation ───────────────────────────────────────────────────────
-
 const isValidGeometry = (g: any): boolean => {
   if (!g?.type) return false;
   const types = ["Point","MultiPoint","LineString","MultiLineString","Polygon","MultiPolygon","GeometryCollection"];
@@ -210,8 +183,14 @@ const normaliseGeoJSON = (raw: any): any | null => {
   return valid.length ? { ...col, features: valid } : null;
 };
 
-// ─── ViewController — cinematic zoom + county fly-to ─────────────────────────
+// ─── ZoomController — exposes zoomIn/zoomOut via callback ref ────────────────
+const ZoomController: React.FC<{ onReady: (map: L.Map) => void }> = ({ onReady }) => {
+  const map = useMap();
+  useEffect(() => { onReady(map); }, [map, onReady]);
+  return null;
+};
 
+// ─── ViewController ───────────────────────────────────────────────────────────
 const ViewController: React.FC<{
   preset: ViewPreset;
   selectedCounty: string | null;
@@ -221,20 +200,13 @@ const ViewController: React.FC<{
 }> = ({ preset, selectedCounty, geojsonData, autoZoomDone, onAutoZoomDone }) => {
   const map = useMap();
 
-  // On first mount: start at Africa → fly to East Africa → fly to Kenya
   useEffect(() => {
     if (autoZoomDone) return;
-    const t1 = setTimeout(() => {
-      map.flyTo([0, 36], 5, { duration: 2.2 });
-    }, 600);
-    const t2 = setTimeout(() => {
-      map.flyTo([0.5, 37.5], 6, { duration: 1.8 });
-      onAutoZoomDone();
-    }, 3200);
+    const t1 = setTimeout(() => { map.flyTo([0, 36], 5, { duration: 2.2 }); }, 600);
+    const t2 = setTimeout(() => { map.flyTo([0.5, 37.5], 6, { duration: 1.8 }); onAutoZoomDone(); }, 3200);
     return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line
 
-  // County click zoom
   useEffect(() => {
     if (!selectedCounty || !geojsonData) return;
     const feat = geojsonData.features.find((f: any) =>
@@ -247,17 +219,15 @@ const ViewController: React.FC<{
     }
   }, [selectedCounty, geojsonData, map]);
 
-  // Manual preset
   useEffect(() => {
     if (!autoZoomDone) return;
     map.flyTo(preset.center, preset.zoom, { duration: 0.9 });
-  }, [preset, autoZoomDone]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [preset, autoZoomDone]); // eslint-disable-line
 
   return null;
 };
 
 // ─── Exported stats helper ────────────────────────────────────────────────────
-
 export const getCountyStats = () => {
   const s = { total:0, home:0, business:0, both:0, none:0 };
   Object.values(COUNTY_COVERAGE_FALLBACK).forEach(t => {
@@ -268,7 +238,6 @@ export const getCountyStats = () => {
 };
 
 // ─── Props ────────────────────────────────────────────────────────────────────
-
 interface KenyaCoverageMap2DProps {
   onCountyClick?: (name: string) => void;
   selectedCounty?: string | null;
@@ -276,7 +245,6 @@ interface KenyaCoverageMap2DProps {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-
 const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
   onCountyClick, selectedCounty, isAdmin = false,
 }) => {
@@ -287,11 +255,13 @@ const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
   const [activePreset,   setActivePreset]   = useState<ViewPreset>(VIEW_PRESETS[0]);
   const [autoZoomDone,   setAutoZoomDone]   = useState(false);
 
-  // ── Coverage data — from API or fallback ──────────────────────────────────
+  // ── NEW: collapsible controls panel ──────────────────────────────────────
+  const [controlsOpen, setControlsOpen] = useState(false);
+
+  // ── Coverage data ─────────────────────────────────────────────────────────
   const [coverageZones,  setCoverageZones]  = useState<CoverageZone[]>([]);
   const [apiLoaded,      setApiLoaded]      = useState(false);
 
-  // Derived: county → weight map (API overrides fallback)
   const countyWeight = useMemo<Record<string, number>>(() => {
     if (!apiLoaded || coverageZones.length === 0) return COUNTY_WEIGHT_FALLBACK;
     const map: Record<string, number> = {};
@@ -303,7 +273,6 @@ const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
     return map;
   }, [coverageZones, apiLoaded]);
 
-  // Derived: county → center coords map (API real coords override fallback)
   const countyCenters = useMemo<Record<string, [number, number]>>(() => {
     if (!apiLoaded || coverageZones.length === 0) return COUNTY_CENTERS_FALLBACK;
     const result: Record<string, [number, number]> = { ...COUNTY_CENTERS_FALLBACK };
@@ -316,7 +285,6 @@ const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
     return result;
   }, [coverageZones, apiLoaded]);
 
-  // Derived: county → coverage type
   const countyCoverage = useMemo<Record<string, CoverageType>>(() => {
     if (!apiLoaded || coverageZones.length === 0) return COUNTY_COVERAGE_FALLBACK;
     const result: Record<string, CoverageType> = { ...COUNTY_COVERAGE_FALLBACK };
@@ -330,15 +298,11 @@ const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
   // ── Data fetching ─────────────────────────────────────────────────────────
   useEffect(() => {
     const load = async () => {
-      setLoading(true);
-      setMapError(null);
-
-      // 1. Load GeoJSON counties
+      setLoading(true); setMapError(null);
       try {
-        // Try highres first, fall back to standard
         let geoRes = await fetch("/kenya-counties-highres.geojson").catch(() => null);
         if (!geoRes?.ok) geoRes = await fetch("/kenya-counties.json").catch(() => null);
-        if (!geoRes?.ok) throw new Error("Could not load county GeoJSON (tried highres + standard)");
+        if (!geoRes?.ok) throw new Error("Could not load county GeoJSON");
         const norm = normaliseGeoJSON(await geoRes.json());
         if (!norm) throw new Error("Invalid GeoJSON structure");
         setGeojsonData(norm);
@@ -347,45 +311,33 @@ const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
         setLoading(false);
         return;
       }
-
-      // 2. Load coverage zones from API (non-fatal — falls back gracefully)
       try {
-        const res = await axios.get("/coverage/zones", {
-          params: { per_page: 500 },
-        });
-        const zones: CoverageZone[] = res.data?.data ?? res.data ?? [];
+        const res = await coverageApi.getZones({ per_page: 500 });
+        const zones: CoverageZone[] = res.data ?? [];
         if (zones.length > 0) {
-          // Validate that zones have usable coordinate data
           const withCoords = zones.filter(z => z.center_lat && z.center_lng);
-          console.info(
-            `[KenyaCoverageMap2D] API returned ${zones.length} zones, ` +
-            `${withCoords.length} have coordinates.`
-          );
           setCoverageZones(withCoords);
           setApiLoaded(true);
-        } else {
-          console.info("[KenyaCoverageMap2D] API returned no zones — using fallback data.");
         }
       } catch (e) {
-        console.warn("[KenyaCoverageMap2D] Coverage API unavailable — using fallback data.", e);
-        // Non-fatal: map still renders with fallback
+        console.warn("[KenyaCoverageMap2D] Coverage API unavailable — using fallback.", e);
       }
-
       setLoading(false);
     };
     load();
   }, []);
 
-  // Also fetch admin zones if in admin mode
-  const [adminZones, setAdminZones] = useState<CoverageZone[]>([]);
-  const [selectedAdminZone, setSelectedAdminZone] = useState<CoverageZone | null>(null);
-  const [showAdminDots, setShowAdminDots] = useState(true);
+  // ── Admin zones ───────────────────────────────────────────────────────────
+  const [adminZones,         setAdminZones]         = useState<CoverageZone[]>([]);
+  const [selectedAdminZone,  setSelectedAdminZone]  = useState<CoverageZone | null>(null);
+  const [showAdminDots,      setShowAdminDots]      = useState(true);
 
   useEffect(() => {
     if (!isAdmin) return;
-    axios.get("/coverage/admin/coverage/zones", { params: { type: "area", per_page: 200 } })
+    adminCoverageApi
+      .getZones({ type: "area", per_page: 200 })
       .then(res => {
-        const d: CoverageZone[] = res.data?.data ?? res.data ?? [];
+        const d: CoverageZone[] = res.data ?? [];
         setAdminZones(d.filter(z => z.center_lat && z.center_lng && z.type === "area"));
       })
       .catch(e => console.warn("[KenyaCoverageMap2D] Admin zones fetch failed", e));
@@ -403,13 +355,11 @@ const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
     setActiveRegions(p => { const n = new Set(p); n.has(r) ? n.delete(r) : n.add(r); return n; });
 
   const visibleAdminDots = useMemo(
-    () => showAdminDots
-      ? adminZones.filter(z => activeRegions.has(z.name.split("—")[0].trim()))
-      : [],
+    () => showAdminDots ? adminZones.filter(z => activeRegions.has(z.name.split("—")[0].trim())) : [],
     [adminZones, activeRegions, showAdminDots]
   );
 
-  // ── Arc computation ───────────────────────────────────────────────────────
+  // ── Arcs ──────────────────────────────────────────────────────────────────
   const arcs = useMemo(() => {
     return Object.entries(countyCenters)
       .filter(([name]) => name !== "Nairobi" && (countyWeight[name] ?? 0) > 0)
@@ -424,17 +374,12 @@ const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
 
   // ── GeoJSON styles ────────────────────────────────────────────────────────
   const styleFeature = (feature: any) => {
-    const name = feature?.properties?.shapeName
-      ?? feature?.properties?.name
-      ?? feature?.properties?.county
-      ?? "Unknown";
-    const w      = countyWeight[name] ?? 0;
-    const isHov  = hoveredCounty  === name;
-    const isSel  = selectedCounty === name;
+    const name = feature?.properties?.shapeName ?? feature?.properties?.name ?? feature?.properties?.county ?? "Unknown";
+    const w     = countyWeight[name] ?? 0;
+    const isHov = hoveredCounty  === name;
+    const isSel = selectedCounty === name;
     const active = isHov || isSel;
-
     if (w === 0) return { fillColor:"transparent", color:"#dde4ed", weight:0.7, opacity:0.6, fillOpacity:0 };
-
     return {
       fillColor:   weightToFill(w),
       fillOpacity: active ? 0.78 : 1,
@@ -445,35 +390,26 @@ const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
   };
 
   const onEachFeature = (feature: any, layer: any) => {
-    const name = feature?.properties?.shapeName
-      ?? feature?.properties?.name
-      ?? feature?.properties?.county
-      ?? "Unknown";
+    const name = feature?.properties?.shapeName ?? feature?.properties?.name ?? feature?.properties?.county ?? "Unknown";
     const w   = countyWeight[name] ?? 0;
     const cov = countyCoverage[name] ?? "None";
-
-    // Check if API data exists for this county
-    const apiZone = coverageZones.find(z => (z.county ?? z.name) === name);
+    const apiZone    = coverageZones.find(z => (z.county ?? z.name) === name);
     const dataSource = apiLoaded && apiZone ? "● Live" : "○ Fallback";
-
     layer.on({
       mouseover: (_e: any) => { setHoveredCounty(name); layer.bringToFront(); },
       mouseout:  (_e: any) => setHoveredCounty(null),
       click:     (_e: any) => onCountyClick?.(name),
     });
-
     const tipContent = w > 0
       ? `<strong>${name}</strong><br/>${cov === "None" ? "No coverage" : cov} · idx ${w}<br/><span style="font-size:9px;color:#94a3b8">${dataSource}</span>`
       : `<strong>${name}</strong><br/><span style="color:#94a3b8">No coverage yet</span>`;
-
     layer.bindTooltip(tipContent, { sticky: true, className: "custom-leaflet-tooltip" });
   };
 
   const countyStats = useMemo(() => getCountyStats(), []);
+  const [leafletMap, setLeafletMap] = useState<L.Map | null>(null);
+  const handleMapReady = React.useCallback((map: L.Map) => setLeafletMap(map), []);
 
-  const mapRef  = useRef<L.Map | null>(null);
-
-  // Admin dot palette
   const ADMIN_PALETTE: Record<string, string> = {
     lodwar:"#ea580c", kitale:"#0891b2", kakamega:"#7c3aed",
     bungoma:"#059669", ruiru:"#db2777", meru:"#d97706",
@@ -506,11 +442,9 @@ const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
 
       {/* MAP */}
       <MapContainer
-        center={[5, 20]}   // Start showing Africa
-        zoom={3}
+        center={[5, 20]} zoom={3}
         style={{ width:"100%", height:"100%", background:"#dbe9f8" }}
         zoomControl={false}
-        ref={mapRef as any}
         maxBounds={[[-40, -20], [40, 55]]}
         maxBoundsViscosity={0.6}
       >
@@ -520,7 +454,6 @@ const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
           minZoom={3}
         />
 
-        {/* County choropleth */}
         {geojsonData && (
           <GeoJSON
             key={`geo-${selectedCounty ?? "all"}-${apiLoaded}`}
@@ -530,25 +463,15 @@ const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
           />
         )}
 
-        {/* Directional arc lines — lightest first */}
         {arcs.map(({ name, pts, head, w }) => (
           <React.Fragment key={`arc-${name}`}>
-            <Polyline
-              positions={pts}
-              pathOptions={{
-                color: arcColor(w), weight: arcStroke(w),
-                opacity: 0.62, lineCap:"round", lineJoin:"round",
-              }}
-            />
+            <Polyline positions={pts} pathOptions={{ color: arcColor(w), weight: arcStroke(w), opacity: 0.62, lineCap:"round", lineJoin:"round" }} />
             {head.map((seg, i) => (
-              <Polyline key={i} positions={seg}
-                pathOptions={{ color: arcColor(w), weight: arcStroke(w) * 1.15, opacity: 0.88, lineCap:"round" }}
-              />
+              <Polyline key={i} positions={seg} pathOptions={{ color: arcColor(w), weight: arcStroke(w) * 1.15, opacity: 0.88, lineCap:"round" }} />
             ))}
           </React.Fragment>
         ))}
 
-        {/* Hub dot — Nairobi */}
         <CircleMarker center={HUB} radius={7}
           pathOptions={{ fillColor:"#1e40af", color:"#fff", weight:2.5, fillOpacity:1 }}
         >
@@ -557,7 +480,6 @@ const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
           </LeafletTooltip>
         </CircleMarker>
 
-        {/* County endpoint dots */}
         {Object.entries(countyCenters)
           .filter(([n]) => n !== "Nairobi" && (countyWeight[n] ?? 0) > 0)
           .map(([name, center]) => {
@@ -578,13 +500,12 @@ const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
           })
         }
 
-        {/* Admin survey dots */}
         {isAdmin && visibleAdminDots.map(zone => {
           const color = adminDotColor(zone.name);
           const isSel = selectedAdminZone?.id === zone.id;
           return (
             <CircleMarker key={zone.id}
-              center={[zone.center_lat, zone.center_lng]}
+              center={[zone.center_lat!, zone.center_lng!]}
               radius={isSel ? 9 : 5}
               pathOptions={{ fillColor:color, color:isSel?"#1e293b":color, weight:isSel?2:1, fillOpacity:isSel?0.9:0.7 }}
               eventHandlers={{ click: () => setSelectedAdminZone(p => p?.id===zone.id ? null : zone) }}
@@ -592,13 +513,14 @@ const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
               <LeafletTooltip direction="top" offset={[0,-10]} opacity={1}>
                 <div style={{ fontFamily:"monospace", fontSize:12, textAlign:"center" }}>
                   <strong>{zone.name}</strong><br/>
-                  {zone.center_lat.toFixed(4)}°, {zone.center_lng.toFixed(4)}°
+                  {zone.center_lat!.toFixed(4)}°, {zone.center_lng!.toFixed(4)}°
                 </div>
               </LeafletTooltip>
             </CircleMarker>
           );
         })}
 
+        <ZoomController onReady={handleMapReady} />
         <ViewController
           preset={activePreset}
           selectedCounty={selectedCounty ?? null}
@@ -608,7 +530,7 @@ const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
         />
       </MapContainer>
 
-      {/* ── CSS ─────────────────────────────────────────────────────────────── */}
+      {/* ── CSS ── */}
       <style>{`
         .custom-leaflet-tooltip {
           background:rgba(255,255,255,0.97);
@@ -619,17 +541,13 @@ const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
         }
         .custom-leaflet-tooltip::before { border-top-color:rgba(255,255,255,0.97) !important; }
         .leaflet-container { background:#dbe9f8 !important; }
-        @keyframes slideUp {
-          from { opacity:0; transform:translateX(-50%) translateY(8px); }
-          to   { opacity:1; transform:translateX(-50%) translateY(0); }
-        }
         @keyframes fadeIn {
           from { opacity:0; transform:translateY(-4px); }
           to   { opacity:1; transform:translateY(0); }
         }
       `}</style>
 
-      {/* ── Loading ────────────────────────────────────────────────────────── */}
+      {/* ── Loading ── */}
       {loading && (
         <div style={{
           position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)",
@@ -649,226 +567,230 @@ const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
         </div>
       )}
 
-      {/* ── API data badge ────────────────────────────────────────────────── */}
+      {/* ── API badge (top-center, small) ── */}
       {!loading && (
         <div style={{
-          position:"absolute", top:14, left:"50%", transform:"translateX(-50%)",
-          zIndex:1000, display:"flex", gap:6, alignItems:"center",
+          position:"absolute", top:10, left:"50%", transform:"translateX(-50%)",
+          zIndex:1000, pointerEvents:"none",
         }}>
           <div style={{
             background: apiLoaded ? "rgba(16,185,129,0.10)" : "rgba(245,158,11,0.10)",
             border: `1px solid ${apiLoaded ? "rgba(16,185,129,0.3)" : "rgba(245,158,11,0.3)"}`,
-            borderRadius:20, padding:"4px 12px",
+            borderRadius:20, padding:"3px 10px",
             fontSize:9, fontFamily:"monospace", letterSpacing:1.2,
             color: apiLoaded ? "#059669" : "#d97706",
           }}>
-            {apiLoaded
-              ? `● LIVE  · ${coverageZones.length} ZONES`
-              : "○ STATIC DATA · API OFFLINE"}
+            {apiLoaded ? `● LIVE · ${coverageZones.length} ZONES` : "○ STATIC DATA"}
           </div>
         </div>
       )}
 
-      {/* ── Camera controls panel ─────────────────────────────────────────── */}
+      {/* ── Brand (top-left, compact) ── */}
       <div style={{
-        position:"absolute", top:14, right:14, zIndex:1000,
-        background:ui.panel, borderRadius:12, border:`1px solid ${ui.border}`,
-        boxShadow:ui.shadow, padding:"14px 16px", minWidth:296,
-        animation:"fadeIn 0.3s ease",
-      }}>
-        <div style={{
-          fontSize:10, fontWeight:700, color:ui.accent,
-          letterSpacing:1.5, fontFamily:"monospace", marginBottom:10,
-          textTransform:"uppercase",
-        }}>
-          Camera Controls
-        </div>
-
-        {/* Zoom row */}
-        <div style={{ display:"flex", gap:8, marginBottom:10 }}>
-          {[
-            { label:"⊖  Zoom Out", fn: () => mapRef.current?.zoomOut() },
-            { label:"⊕  Zoom In",  fn: () => mapRef.current?.zoomIn()  },
-          ].map(b => (
-            <button key={b.label} onClick={b.fn} style={{
-              flex:1, padding:"9px 0", borderRadius:8, cursor:"pointer",
-              background:"rgba(37,99,235,0.06)", border:"1px solid rgba(37,99,235,0.20)",
-              color:ui.accent, fontSize:13, fontWeight:600,
-            }}>
-              {b.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Preset grid */}
-        <div style={{ display:"grid", gridTemplateColumns:"52px 1fr 1fr", gap:6, alignItems:"start" }}>
-          {/* Globe home → Africa */}
-          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, paddingTop:4 }}>
-            <button
-              onClick={() => { setActivePreset(VIEW_PRESETS[0]); setAutoZoomDone(false); }}
-              style={{
-                width:38, height:38, borderRadius:"50%",
-                border:"1px solid rgba(37,99,235,0.2)",
-                background:"rgba(37,99,235,0.07)", cursor:"pointer",
-                display:"flex", alignItems:"center", justifyContent:"center", fontSize:18,
-              }}
-            >🏠</button>
-            <span style={{ fontSize:9, color:ui.textMuted, textAlign:"center", lineHeight:1.3 }}>
-              Globe<br/>view
-            </span>
-          </div>
-
-          {/* East Africa featured button */}
-          <button
-            onClick={() => { setActivePreset(VIEW_PRESETS[1]); setAutoZoomDone(true); }}
-            style={{
-              display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-              gap:5, padding:"14px 8px", borderRadius:10, cursor:"pointer",
-              background: activePreset.id==="east_africa" ? "#ea580c" : "rgba(234,88,12,0.07)",
-              border:`1.5px solid ${activePreset.id==="east_africa" ? "#ea580c" : "rgba(234,88,12,0.25)"}`,
-              color: activePreset.id==="east_africa" ? "#fff" : "#c2410c",
-              transition:"all 0.18s",
-            }}
-          >
-            <span style={{ fontSize:20 }}>🌍</span>
-            <span style={{ fontSize:11, fontWeight:700 }}>East Africa</span>
-          </button>
-
-          {/* 2×2 country grid */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:5 }}>
-            {PANEL_PRESETS.filter(p => p.id !== "east_africa").map(p => (
-              <button key={p.id}
-                onClick={() => { setActivePreset(p); setAutoZoomDone(true); }}
-                style={{
-                  display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-                  gap:2, padding:"7px 4px", borderRadius:7, cursor:"pointer",
-                  background: activePreset.id===p.id ? "rgba(37,99,235,0.12)" : "rgba(0,0,0,0.04)",
-                  border:`1.5px solid ${activePreset.id===p.id ? "#2563eb" : "rgba(0,0,0,0.08)"}`,
-                  color: activePreset.id===p.id ? "#1d4ed8" : ui.text,
-                  transition:"all 0.15s",
-                }}
-              >
-                <span style={{ fontSize:14 }}>{p.flag}</span>
-                <span style={{ fontSize:9, fontWeight:700, letterSpacing:0.4, whiteSpace:"nowrap" }}>
-                  {p.label.toUpperCase()}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Current view readout */}
-        <div style={{
-          marginTop:10, padding:"5px 10px",
-          background:"rgba(0,0,0,0.03)", borderRadius:6, border:`1px solid ${ui.border}`,
-          textAlign:"center", fontSize:10, color:ui.textMuted, fontFamily:"monospace",
-        }}>
-          View: {activePreset.label} · Zoom {activePreset.zoom}×
-        </div>
-      </div>
-
-      {/* ── Brand ──────────────────────────────────────────────────────────── */}
-      <div style={{
-        position:"absolute", top:14, left:14, zIndex:1000,
+        position:"absolute", top:10, left:10, zIndex:1000,
         background:ui.panel, border:`1px solid ${ui.border}`,
-        borderRadius:8, padding:"10px 14px", boxShadow:ui.shadow,
+        borderRadius:8, padding:"7px 11px", boxShadow:ui.shadow,
       }}>
-        <div style={{ fontSize:17, fontWeight:900, letterSpacing:3, display:"flex", alignItems:"center", gap:8 }}>
+        <div style={{ fontSize:14, fontWeight:900, letterSpacing:3, display:"flex", alignItems:"center", gap:6 }}>
           <span style={{
             background:"linear-gradient(135deg,#1d4ed8,#2563eb)",
             WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
           }}>VILCOM</span>
           <span style={{ color:"#cbd5e1", fontWeight:300 }}>|</span>
-          <span style={{ color:"#ea580c", fontSize:15 }}>OPS</span>
-        </div>
-        <div style={{ fontSize:7, color:ui.textFaint, letterSpacing:2.5, marginTop:2 }}>
-          GLOBAL INFRASTRUCTURE VIEW
+          <span style={{ color:"#ea580c", fontSize:12 }}>OPS</span>
         </div>
       </div>
 
-      {/* ── Choropleth + arc legend ─────────────────────────────────────────── */}
+      {/* ── Right-side control cluster: zoom + region jump grouped together ── */}
       <div style={{
-        position:"absolute", bottom:20, left:14, zIndex:1000,
-        background:ui.panel, border:`1px solid ${ui.border}`,
-        borderRadius:8, padding:"12px 16px", boxShadow:ui.shadow,
+        position:"absolute", right:12, top:"50%", transform:"translateY(-50%)",
+        zIndex:1000, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6,
       }}>
-        <div style={{ fontSize:9, fontWeight:700, color:ui.textFaint, marginBottom:8, letterSpacing:2, fontFamily:"monospace" }}>
-          CONNECTIVITY DENSITY
+        {/* Zoom + map button pill — all in one card */}
+        <div style={{
+          display:"flex", flexDirection:"column",
+          background:"rgba(255,255,255,0.97)",
+          borderRadius:14, border:"1.5px solid rgba(37,99,235,0.18)",
+          boxShadow:"0 4px 20px rgba(0,0,0,0.13)",
+          overflow:"hidden",
+        }}>
+          {[
+            { label:"＋", title:"Zoom in",  fn: () => leafletMap?.zoomIn()  },
+            { label:"－", title:"Zoom out", fn: () => leafletMap?.zoomOut() },
+          ].map((b, i) => (
+            <button
+              key={b.label}
+              onClick={b.fn}
+              title={b.title}
+              style={{
+                width:42, height:42,
+                border:"none",
+                borderBottom: i === 0 ? "1px solid rgba(37,99,235,0.12)" : "none",
+                background:"transparent",
+                color:"#2563eb", fontSize:22, fontWeight:700,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                cursor:"pointer", transition:"all 0.15s", lineHeight:1,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#2563eb"; e.currentTarget.style.color = "#fff"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#2563eb"; }}
+            >
+              {b.label}
+            </button>
+          ))}
+
+          {/* Divider */}
+          <div style={{ height:1, background:"rgba(37,99,235,0.12)", margin:"0 8px" }} />
+
+          {/* Map / region jump button — same pill, right below zoom */}
+          <button
+            onClick={() => setControlsOpen(p => !p)}
+            title="Jump to region"
+            style={{
+              width:42, height:42, border:"none",
+              background: controlsOpen ? "#2563eb" : "transparent",
+              color: controlsOpen ? "#fff" : "#2563eb",
+              cursor:"pointer", fontSize:17,
+              display:"flex", alignItems:"center", justifyContent:"center",
+              transition:"all 0.2s",
+            }}
+            onMouseEnter={e => {
+              if (!controlsOpen) { e.currentTarget.style.background = "rgba(37,99,235,0.08)"; }
+            }}
+            onMouseLeave={e => {
+              if (!controlsOpen) { e.currentTarget.style.background = "transparent"; }
+            }}
+          >
+            🗺
+          </button>
+        </div>
+
+        {/* Collapsible preset panel — pops out to the left of the pill */}
+        {controlsOpen && (
+          <div style={{
+            position:"absolute", right:52, top:0,
+            background:ui.panel, borderRadius:12, border:`1px solid ${ui.border}`,
+            boxShadow:"0 8px 32px rgba(0,0,0,0.15)", padding:"12px 14px", width:192,
+            animation:"fadeIn 0.2s ease",
+          }}>
+            <div style={{
+              fontSize:9, fontWeight:700, color:ui.accent,
+              letterSpacing:1.5, fontFamily:"monospace", marginBottom:10,
+              textTransform:"uppercase",
+            }}>
+              Jump To Region
+            </div>
+
+            <button
+              onClick={() => { setActivePreset(VIEW_PRESETS[0]); setAutoZoomDone(false); setControlsOpen(false); }}
+              style={{
+                width:"100%", display:"flex", alignItems:"center", gap:8,
+                padding:"7px 10px", borderRadius:7, cursor:"pointer", marginBottom:6,
+                background:"rgba(37,99,235,0.06)", border:"1px solid rgba(37,99,235,0.15)",
+                color:ui.text, fontSize:12, fontWeight:600,
+              }}
+            >
+              🏠 <span>Globe View (reset)</span>
+            </button>
+
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:5 }}>
+              {PANEL_PRESETS.map(p => (
+                <button key={p.id}
+                  onClick={() => { setActivePreset(p); setAutoZoomDone(true); setControlsOpen(false); }}
+                  style={{
+                    display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                    gap:2, padding:"7px 4px", borderRadius:7, cursor:"pointer",
+                    background: activePreset.id===p.id ? "rgba(37,99,235,0.12)" : "rgba(0,0,0,0.04)",
+                    border:`1.5px solid ${activePreset.id===p.id ? "#2563eb" : "rgba(0,0,0,0.08)"}`,
+                    color: activePreset.id===p.id ? "#1d4ed8" : ui.text,
+                    transition:"all 0.15s",
+                  }}
+                >
+                  <span style={{ fontSize:14 }}>{p.flag}</span>
+                  <span style={{ fontSize:9, fontWeight:700, letterSpacing:0.4, whiteSpace:"nowrap" }}>
+                    {p.label.toUpperCase()}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div style={{
+              marginTop:8, padding:"4px 8px",
+              background:"rgba(0,0,0,0.03)", borderRadius:5, border:`1px solid ${ui.border}`,
+              textAlign:"center", fontSize:9, color:ui.textMuted, fontFamily:"monospace",
+            }}>
+              {activePreset.label} · zoom {activePreset.zoom}×
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Choropleth legend (bottom-left, compact) ── */}
+      <div style={{
+        position:"absolute", bottom:10, left:10, zIndex:1000,
+        background:ui.panel, border:`1px solid ${ui.border}`,
+        borderRadius:8, padding:"10px 12px", boxShadow:ui.shadow,
+      }}>
+        <div style={{ fontSize:8, fontWeight:700, color:ui.textFaint, marginBottom:6, letterSpacing:2, fontFamily:"monospace" }}>
+          CONNECTIVITY
         </div>
         {[
-          { fill:"rgba(29,78,216,0.52)",  b:"#1d4ed8", label:"Very High  80–100" },
-          { fill:"rgba(37,99,235,0.42)",  b:"#2563eb", label:"High        60–79"  },
-          { fill:"rgba(59,130,246,0.35)", b:"#3b82f6", label:"Medium      40–59"  },
-          { fill:"rgba(96,165,250,0.28)", b:"#60a5fa", label:"Low         20–39"  },
-          { fill:"rgba(147,197,253,0.20)",b:"#93c5fd", label:"Minimal      1–19"  },
-          { fill:"transparent",           b:"#dde4ed", label:"No coverage"        },
+          { fill:"rgba(29,78,216,0.52)",  b:"#1d4ed8", label:"Very High" },
+          { fill:"rgba(37,99,235,0.42)",  b:"#2563eb", label:"High"      },
+          { fill:"rgba(59,130,246,0.35)", b:"#3b82f6", label:"Medium"    },
+          { fill:"rgba(96,165,250,0.28)", b:"#60a5fa", label:"Low"       },
+          { fill:"rgba(147,197,253,0.20)",b:"#93c5fd", label:"Minimal"   },
+          { fill:"transparent",           b:"#dde4ed", label:"None"      },
         ].map(({ fill, b, label }) => (
-          <div key={label} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:5 }}>
-            <div style={{ width:14, height:14, borderRadius:3, background:fill, border:`1.5px solid ${b}`, flexShrink:0 }} />
-            <span style={{ fontSize:10, color:ui.textMuted, fontFamily:"monospace" }}>{label}</span>
+          <div key={label} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3 }}>
+            <div style={{ width:11, height:11, borderRadius:2, background:fill, border:`1.5px solid ${b}`, flexShrink:0 }} />
+            <span style={{ fontSize:9, color:ui.textMuted, fontFamily:"monospace" }}>{label}</span>
           </div>
         ))}
-        <div style={{ borderTop:`1px solid ${ui.border}`, marginTop:8, paddingTop:8 }}>
-          <div style={{ fontSize:9, fontWeight:700, color:ui.textFaint, marginBottom:6, letterSpacing:2, fontFamily:"monospace" }}>ARC LINES</div>
-          {[
-            { w:2.2, c:"#1e40af", label:"High capacity" },
-            { w:1.6, c:"#3b82f6", label:"Mid capacity"  },
-            { w:1.0, c:"#60a5fa", label:"Low capacity"  },
-          ].map(({ w, c, label }) => (
-            <div key={label} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:5 }}>
-              <svg width="28" height="10" style={{ flexShrink:0 }}>
-                <line x1="0" y1="5" x2="20" y2="5" stroke={c} strokeWidth={w} strokeLinecap="round"/>
-                <polyline points="16,2 20,5 16,8" fill="none" stroke={c} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <span style={{ fontSize:10, color:ui.textMuted, fontFamily:"monospace" }}>{label}</span>
-            </div>
-          ))}
-        </div>
       </div>
 
-      {/* ── Stats strip ───────────────────────────────────────────────────── */}
+      {/* ── Stats strip (bottom-center) ── */}
       <div style={{
-        position:"absolute", bottom:20, left:"50%", transform:"translateX(-50%)",
-        display:"flex", gap:8, zIndex:1000,
+        position:"absolute", bottom:10, left:"50%", transform:"translateX(-50%)",
+        display:"flex", gap:6, zIndex:1000,
       }}>
         {(!isAdmin ? [
-          { label:"BUSINESS", value:countyStats.business, color:"#1d4ed8" },
-          { label:"HOME",     value:countyStats.home,     color:"#3b82f6" },
-          { label:"BOTH",     value:countyStats.both,     color:"#1e40af" },
-          { label:"PLANNED",  value:countyStats.none,     color:"#94a3b8" },
+          { label:"BIZ",     value:countyStats.business, color:"#1d4ed8" },
+          { label:"HOME",    value:countyStats.home,     color:"#3b82f6" },
+          { label:"BOTH",    value:countyStats.both,     color:"#1e40af" },
+          { label:"PLANNED", value:countyStats.none,     color:"#94a3b8" },
         ] : [
-          { label:"ZONES",    value:coverageZones.length, color:"#2563eb" },
-          { label:"REGIONS",  value:regionList.length,    color:"#7c3aed" },
-          { label:"VISIBLE",  value:visibleAdminDots.length, color:"#059669" },
+          { label:"ZONES",   value:coverageZones.length,    color:"#2563eb" },
+          { label:"REGIONS", value:regionList.length,       color:"#7c3aed" },
+          { label:"VISIBLE", value:visibleAdminDots.length, color:"#059669" },
         ]).map(({ label, value, color }) => (
           <div key={label} style={{
             background:ui.panel, border:`1px solid ${ui.border}`,
-            borderRadius:6, padding:"6px 14px",
+            borderRadius:6, padding:"5px 10px",
             display:"flex", flexDirection:"column", alignItems:"center",
-            minWidth:72, boxShadow:ui.shadow,
+            minWidth:54, boxShadow:ui.shadow,
           }}>
-            <span style={{ fontSize:15, fontWeight:800, color, fontFamily:"monospace" }}>{value}</span>
-            <span style={{ fontSize:7, color:ui.textFaint, letterSpacing:1.5, fontFamily:"monospace" }}>{label}</span>
+            <span style={{ fontSize:13, fontWeight:800, color, fontFamily:"monospace" }}>{value}</span>
+            <span style={{ fontSize:7, color:ui.textFaint, letterSpacing:1, fontFamily:"monospace" }}>{label}</span>
           </div>
         ))}
       </div>
 
-      {/* ── Admin sidebar ───────────────────────────────────────────────────── */}
+      {/* ── Admin sidebar ── */}
       {isAdmin && regionList.length > 0 && (
         <div style={{
-          position:"absolute", top:14, right:326, zIndex:1001,
+          position:"absolute", top:10, right:56, zIndex:1001,
           display:"flex", flexDirection:"column", gap:4,
           background:ui.panel, border:`1px solid ${ui.border}`,
-          borderRadius:10, padding:"12px 14px",
+          borderRadius:10, padding:"10px 12px",
           maxHeight:"calc(100% - 120px)", overflowY:"auto",
           boxShadow:ui.shadow,
         }}>
-          <div style={{ fontSize:8, color:ui.textFaint, letterSpacing:2, marginBottom:6, fontFamily:"monospace" }}>SURVEY REGIONS</div>
+          <div style={{ fontSize:8, color:ui.textFaint, letterSpacing:2, marginBottom:4, fontFamily:"monospace" }}>SURVEY REGIONS</div>
           <button onClick={() => setShowAdminDots(p => !p)} style={{
-            display:"flex", alignItems:"center", gap:8, marginBottom:6,
+            display:"flex", alignItems:"center", gap:6, marginBottom:4,
             background: showAdminDots ? "rgba(37,99,235,0.08)" : "rgba(0,0,0,0.03)",
             border:`1px solid ${showAdminDots ? "rgba(37,99,235,0.3)" : ui.border}`,
-            borderRadius:5, padding:"5px 10px", cursor:"pointer",
+            borderRadius:5, padding:"4px 8px", cursor:"pointer",
           }}>
             <span style={{ fontSize:9, color: showAdminDots ? "#2563eb" : ui.textFaint, fontFamily:"monospace", letterSpacing:1 }}>
               {showAdminDots ? "● DOTS ON" : "○ DOTS OFF"}
@@ -879,16 +801,16 @@ const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
             const color  = adminDotColor(region);
             return (
               <button key={region} onClick={() => toggleRegion(region)} style={{
-                display:"flex", alignItems:"center", gap:8,
+                display:"flex", alignItems:"center", gap:6,
                 background: active ? `${color}14` : "rgba(0,0,0,0.02)",
                 border:`1px solid ${active ? color+"40" : ui.border}`,
-                borderRadius:5, padding:"5px 10px", cursor:"pointer",
-                transition:"all 0.18s", minWidth:150,
+                borderRadius:5, padding:"4px 8px", cursor:"pointer",
+                transition:"all 0.18s", minWidth:130,
               }}>
-                <div style={{ width:8, height:8, borderRadius:"50%", background: active ? color : "#cbd5e1", flexShrink:0 }}/>
+                <div style={{ width:7, height:7, borderRadius:"50%", background: active ? color : "#cbd5e1", flexShrink:0 }}/>
                 <span style={{ fontSize:10, color: active ? color : ui.textFaint, fontFamily:"monospace", flex:1, textAlign:"left" }}>{region}</span>
-                <span style={{ fontSize:9, color:ui.textFaint, fontFamily:"monospace" }}>
-                  {adminZones.filter(z => z.name.startsWith(region)).length}pts
+                <span style={{ fontSize:8, color:ui.textFaint, fontFamily:"monospace" }}>
+                  {adminZones.filter(z => z.name.startsWith(region)).length}
                 </span>
               </button>
             );
@@ -896,37 +818,37 @@ const KenyaCoverageMap2D: React.FC<KenyaCoverageMap2DProps> = ({
         </div>
       )}
 
-      {/* ── Admin selected zone card ──────────────────────────────────────── */}
+      {/* ── Admin selected zone card ── */}
       {selectedAdminZone && isAdmin && (
         <div style={{
           position:"absolute", bottom:72, left:"50%", transform:"translateX(-50%)",
-          background:ui.panel, borderRadius:10, padding:"14px 20px",
-          minWidth:300, zIndex:1000, border:`1px solid ${ui.border}`,
-          boxShadow:"0 12px 32px rgba(0,0,0,0.15)", animation:"slideUp 0.2s ease",
+          background:ui.panel, borderRadius:10, padding:"14px 18px",
+          minWidth:280, zIndex:1000, border:`1px solid ${ui.border}`,
+          boxShadow:"0 12px 32px rgba(0,0,0,0.15)", animation:"fadeIn 0.2s ease",
         }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
             <div>
-              <div style={{ fontSize:15, fontWeight:700, color:ui.text, marginBottom:2 }}>{selectedAdminZone.name}</div>
-              <div style={{ fontSize:9, color:ui.textFaint, letterSpacing:1, fontFamily:"monospace" }}>SURVEY COORDINATE</div>
+              <div style={{ fontSize:14, fontWeight:700, color:ui.text, marginBottom:2 }}>{selectedAdminZone.name}</div>
+              <div style={{ fontSize:8, color:ui.textFaint, letterSpacing:1, fontFamily:"monospace" }}>SURVEY COORDINATE</div>
             </div>
             <button onClick={() => setSelectedAdminZone(null)} style={{
               background:"rgba(0,0,0,0.06)", border:"none", color:ui.textMuted,
-              cursor:"pointer", fontSize:18, padding:"2px 6px", borderRadius:6,
+              cursor:"pointer", fontSize:16, padding:"2px 6px", borderRadius:5,
             }}>×</button>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:7 }}>
             {([
-              ["LONGITUDE", `${selectedAdminZone.center_lng.toFixed(6)}°`],
-              ["LATITUDE",  `${selectedAdminZone.center_lat.toFixed(6)}°`],
+              ["LONGITUDE", `${selectedAdminZone.center_lng!.toFixed(6)}°`],
+              ["LATITUDE",  `${selectedAdminZone.center_lat!.toFixed(6)}°`],
               ["RADIUS",    `${selectedAdminZone.radius_km}km`],
               ["STATUS",    selectedAdminZone.status.toUpperCase()],
             ] as [string,string][]).map(([k,v]) => (
               <div key={k} style={{
-                background:"rgba(0,0,0,0.03)", borderRadius:6, padding:"8px 10px",
+                background:"rgba(0,0,0,0.03)", borderRadius:5, padding:"7px 9px",
                 borderLeft:"2px solid rgba(37,99,235,0.3)",
               }}>
-                <div style={{ fontSize:7, color:ui.textFaint, letterSpacing:1.5, fontFamily:"monospace", marginBottom:3 }}>{k}</div>
-                <div style={{ fontSize:12, fontWeight:700, fontFamily:"monospace", color:ui.text }}>{v}</div>
+                <div style={{ fontSize:7, color:ui.textFaint, letterSpacing:1.5, fontFamily:"monospace", marginBottom:2 }}>{k}</div>
+                <div style={{ fontSize:11, fontWeight:700, fontFamily:"monospace", color:ui.text }}>{v}</div>
               </div>
             ))}
           </div>
