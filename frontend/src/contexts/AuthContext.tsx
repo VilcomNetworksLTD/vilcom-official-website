@@ -20,6 +20,8 @@ interface User {
   city?: string;
   county?: string;
   emerald_mbr_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface Role {

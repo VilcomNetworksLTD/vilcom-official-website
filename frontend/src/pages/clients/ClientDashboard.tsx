@@ -59,7 +59,7 @@ const CircularGauge = ({ percentage, color }: { percentage: number; color: strin
 };
 
 const ClientDashboard = () => {
-  const { hasRole, isAuthenticated } = useAuth();
+  const { user, hasRole, isAuthenticated } = useAuth();
   
   // Access Control: Only allow client users to access this dashboard
   if (!isAuthenticated) {
@@ -76,8 +76,6 @@ const ClientDashboard = () => {
     return <Navigate to="/staff/dashboard" replace />;
   }
   
-  // Determine userType from auth context
-  const userType = hasRole('admin') ? 'admin' : hasRole(['staff', 'sales', 'technical_support', 'web_developer', 'content_manager']) ? 'staff' : 'client';
   
   const [stats] = useState({
     dataUsed: 45.2,
@@ -94,10 +92,10 @@ const ClientDashboard = () => {
 
   // Quick actions for client dashboard with golden/yellow theme
   const quickActions = [
-    { icon: Wifi, label: 'My Services', href: '/client/subscriptions', color: 'from-amber-500 to-yellow-500', bgColor: 'bg-amber-500/20' },
-    { icon: CreditCard, label: 'Pay Bills', href: '/client/subscriptions', color: 'from-orange-500 to-amber-500', bgColor: 'bg-orange-500/20' },
-    { icon: Ticket, label: 'Support Ticket', href: '/client/subscriptions', color: 'from-yellow-500 to-orange-500', bgColor: 'bg-yellow-500/20' },
-    { icon: Package, label: 'Upgrade Plan', href: '/plans', color: 'from-amber-600 to-yellow-600', bgColor: 'bg-amber-600/20' },
+    { icon: Wifi, label: 'My Services', href: '/client/services', color: 'from-amber-500 to-yellow-500', bgColor: 'bg-amber-500/20' },
+    { icon: CreditCard, label: 'Pay Bills', href: '/client/services', color: 'from-orange-500 to-amber-500', bgColor: 'bg-orange-500/20' },
+    { icon: Ticket, label: 'Support Ticket', href: '/client/tickets', color: 'from-yellow-500 to-orange-500', bgColor: 'bg-yellow-500/20' },
+    { icon: Package, label: 'Upgrade Plan', href: '/client/services#available-services', color: 'from-amber-600 to-yellow-600', bgColor: 'bg-amber-600/20' },
   ];
 
   // Recent activities (mock data)
@@ -244,7 +242,7 @@ const ClientDashboard = () => {
           <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-white">Current Plan</h2>
-              <Link to="/plans" className="text-sm text-amber-400 hover:text-amber-300">Upgrade</Link>
+              <Link to="/client/services#available-services" className="text-sm text-amber-400 hover:text-amber-300">Upgrade</Link>
             </div>
             <div className="flex items-center justify-between p-5 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 rounded-xl border border-amber-500/30">
               <div className="flex items-center gap-4">
@@ -307,7 +305,7 @@ const ClientDashboard = () => {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">Member Since</span>
-                <span className="text-white font-medium">{new Date().getFullYear()}</span>
+                <span className="text-white font-medium">{user?.created_at ? new Date(user.created_at).getFullYear() : new Date().getFullYear()}</span>
               </div>
             </div>
             <Link to="/client/settings" className="block text-center text-sm text-amber-400 hover:text-amber-300 mt-4">

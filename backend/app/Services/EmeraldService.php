@@ -1,4 +1,5 @@
 <?php
+// app/Services/EmeraldService.php
 
 namespace App\Services;
 
@@ -16,95 +17,87 @@ class EmeraldService
     protected int    $addressTypeId;
     protected int    $sendMethodId;
     protected int    $domainId;
+    protected int    $serviceCategoryId;
 
     public function __construct()
     {
-        $this->baseUrl        = config('emerald.base_url');
-        $this->adminUser      = config('emerald.admin_user');
-        $this->adminPass      = config('emerald.admin_password');
-        $this->groupId        = config('emerald.group_id');
-        $this->billingCycleId = config('emerald.billing_cycle_id');
-        $this->payPeriodId    = config('emerald.pay_period_id');
-        $this->addressTypeId  = config('emerald.address_type_id');
-        $this->sendMethodId   = config('emerald.send_method_id');
-        $this->domainId       = config('emerald.domain_id');
+        $this->baseUrl           = config('emerald.base_url');
+        $this->adminUser         = config('emerald.admin_user');
+        $this->adminPass         = config('emerald.admin_password');
+        $this->groupId           = config('emerald.group_id');
+        $this->billingCycleId    = config('emerald.billing_cycle_id');
+        $this->payPeriodId       = config('emerald.pay_period_id');
+        $this->addressTypeId     = config('emerald.address_type_id');
+        $this->sendMethodId      = config('emerald.send_method_id');
+        $this->domainId          = config('emerald.domain_id');
+        $this->serviceCategoryId = config('emerald.service_category_id');
     }
 
-   protected function post(array $params): array
-{
-    // Add credentials as POST params (NOT Basic Auth headers)
-    $params['login_user']     = $this->adminUser;
-    $params['login_password'] = $this->adminPass;
-    $params['format']         = 'json'; // get JSON back instead of XML
+    protected function post(array $params): array
+    {
+        $params['login_user']     = $this->adminUser;
+        $params['login_password'] = $this->adminPass;
+        $params['format']         = 'json';
 
-    $response = Http::asForm()
-        ->timeout(15)
-        ->post($this->baseUrl . '/api.ews', $params);
+        $response = Http::asForm()
+            ->timeout(15)
+            ->post($this->baseUrl . '/api.ews', $params);
 
-    $result = $response->json();
+        $result = $response->json();
 
-    Log::info('Emerald API', [
-        'action'   => $params['action'],
-        'status'   => $response->status(),
-        'response' => $result,
-    ]);
+        Log::info('Emerald API', [
+            'action'   => $params['action'],
+            'status'   => $response->status(),
+            'response' => $result,
+        ]);
 
-    if (isset($result['retcode']) && $result['retcode'] != 0) {
-        throw new \RuntimeException(
-            'Emerald API error: ' . ($result['message'] ?? 'Unknown error')
-        );
+        // retcode -1 with CustomerID = partial success (setupcharge warning)
+        // only throw on real failures
+        if (isset($result['retcode'])
+            && (int)$result['retcode'] !== 0
+            && empty($result['CustomerID'])
+        ) {
+            throw new \RuntimeException(
+                'Emerald error: ' . ($result['message'] ?? 'Unknown error')
+            );
+        }
+
+        return $result ?? [];
     }
-
-    return $result ?? [];
-}
 
     /**
-     * Create MBR + service in Emerald (account_add)
-     * Returns: ['CustomerID' => ..., 'AccountID' => ...]
+     * Create MBR + service (account_add)
      */
     public function createSubscriber(array $user, int $serviceTypeId): array
     {
         [$firstName, $lastName] = $this->splitName($user['name']);
 
         return $this->post([
-            'action'          => 'account_add',
-            'FirstName'       => $firstName,
-            'LastName'        => $lastName,
-            'Email'           => $user['email'],
-            'PhoneMobile'     => $this->formatPhone($user['phone'] ?? ''),
-            'Address1'        => $user['address'] ?? '',
-            'City'            => $user['city'] ?? '',
-            'Zip'             => $user['postal_code'] ?? '',
-            'Company'         => $user['company_name'] ?? '',
-            'GroupID'         => $this->groupId,
-            'BillingCycleID'  => $this->billingCycleId,
-            'PayPeriodID'     => $this->payPeriodId,
-            'AddressTypeID'   => $this->addressTypeId,
-            'SendMethodID'    => $this->sendMethodId,
-            'DomainID'        => $this->domainId,
-            'AccountTypeID'   => $serviceTypeId,
-            'Region'          => $this->resolveRegion($user['county'] ?? ''),
-            'Login'           => $this->generateLogin($user['email']),
-            'Password'        => $this->generateServicePassword(),
-            'Active'          => 1,
-            'Recurring'       => 1,
-            'PayMethod'       => 'Renewal',
-            'ExternalRef'     => (string) $user['id'],
-        ]);
-    }
-
-    /**
-     * Post a payment to an MBR (payment_add)
-     */
-    public function postPayment(int $mbrId, float $amount, string $transRef): array
-    {
-        return $this->post([
-            'action'     => 'payment_add',
-            'CustomerID' => $mbrId,
-            'Amount'     => number_format($amount, 2, '.', ''),
-            'TransID'    => $transRef,
-            'PayType'    => 'Cash',
-            'Comment'    => 'M-Pesa: ' . $transRef,
+            'action'            => 'account_add',
+            'FirstName'         => $firstName,
+            'LastName'          => $lastName,
+            'Email'             => $user['email'],
+            'PhoneMobile'       => $this->formatPhone($user['phone'] ?? ''),
+            'Address1'          => $user['address'] ?? '',
+            'City'              => $user['city'] ?? '',
+            'Zip'               => $user['postal_code'] ?? '',
+            'Company'           => $user['company_name'] ?? '',
+            'GroupID'           => $this->groupId,
+            'BillingCycleID'    => $this->billingCycleId,
+            'PayPeriodID'       => $this->payPeriodId,
+            'AddressTypeID'     => $this->addressTypeId,
+            'SendMethodID'      => $this->sendMethodId,
+            'DomainID'          => $this->domainId,
+            'AccountTypeID'     => $serviceTypeId,
+            'ServiceCategoryID' => $this->serviceCategoryId,
+            'Region'            => $this->resolveRegion($user['county'] ?? ''),
+            'Login'             => $this->generateLogin($user['email']),
+            'Password'          => $this->generateServicePassword(),
+            'SetupCharge'       => 0,
+            'Active'            => 1,
+            'Recurring'         => 1,
+            'PayMethod'         => 'Renewal',
+            'ExternalRef'       => (string) $user['id'],
         ]);
     }
 
@@ -116,6 +109,21 @@ class EmeraldService
         return $this->post([
             'action'     => 'mbr_detail',
             'CustomerID' => $mbrId,
+        ]);
+    }
+
+    /**
+     * Post a payment (payment_add)
+     */
+    public function postPayment(int $mbrId, float $amount, string $transRef): array
+    {
+        return $this->post([
+            'action'     => 'payment_add',
+            'CustomerID' => $mbrId,
+            'Amount'     => number_format($amount, 2, '.', ''),
+            'TransID'    => $transRef,
+            'PayType'    => 'Cash',
+            'Comment'    => 'M-Pesa: ' . $transRef,
         ]);
     }
 
@@ -143,7 +151,7 @@ class EmeraldService
         ]);
     }
 
-    // ── Helpers ─────────────────────────────────────────
+    // ── Helpers ──────────────────────────────────────
 
     private function splitName(string $name): array
     {
@@ -153,10 +161,12 @@ class EmeraldService
 
     private function formatPhone(string $phone): string
     {
-        // Convert 07XX → 2547XX for Emerald
         $phone = preg_replace('/\D/', '', $phone);
         if (str_starts_with($phone, '0')) {
             $phone = '254' . substr($phone, 1);
+        }
+        if (str_starts_with($phone, '+')) {
+            $phone = ltrim($phone, '+');
         }
         return $phone;
     }
@@ -165,25 +175,48 @@ class EmeraldService
     {
         $base = strtolower(explode('@', $email)[0]);
         $base = preg_replace('/[^a-z0-9]/', '', $base);
-        return substr($base, 0, 12) . rand(10, 99);
+        return substr($base, 0, 10) . rand(100, 999);
     }
 
     private function generateServicePassword(): string
     {
-        return bin2hex(random_bytes(6)); // 12-char hex
+        return bin2hex(random_bytes(6));
     }
 
-    private function resolveRegion(string $county): string
+    public function resolveRegion(string $county): string
     {
-        // Maps your signup form county → Emerald region name
         $map = [
-            'nairobi'  => 'Nairobi_Kilimani',
-            'nakuru'   => 'Nakuru_Pipeline',
-            'eldoret'  => 'Eldoret_Elgonview',
-            'mombasa'  => 'Mombasa_Buxton',
-            'kisumu'   => 'Nairobi_Kilimani',  // no Kisumu region yet — fallback
-            'other'    => 'Nairobi_Kilimani',
+            // Nairobi
+            'nairobi'   => 'Nairobi_Kilimani',
+            'westlands' => 'Westlands',
+            'karen'     => 'Nairobi_Karen (Area 1)',
+            'kileleshwa'=> 'Nairobi_Kileleshwa',
+            'kilimani'  => 'Nairobi_Kilimani',
+            'ruaraka'   => 'Nairobi_Ruaraka (Area 1)',
+            'buruburu'  => 'Nairobi_Buruburu (Area 1)',
+            'south_c'   => 'Nairobi_South_C (Area 5)',
+            // Rift
+            'nakuru'    => 'Nakuru_Pipeline',
+            'eldoret'   => 'Eldoret_Elgonview',
+            // Coast
+            'mombasa'   => 'Mombasa_Buxton (Area 1)',
+            // Mt Kenya
+            'meru'      => 'Meru_Milimani (Area 2)',
+            'isiolo'    => 'Isiolo Area 1',
+            // Kajiado/Rongai
+            'rongai'    => 'Rongai_Cleanshelf (Area 1 & 3)',
+            'kajiado'   => 'Rongai_Cleanshelf (Area 1 & 3)',
+            // Western
+            'kakamega'  => 'Kakamega_Naivas (Area 1)',
+            'bungoma'   => 'Bungoma_Town (Area 2)',
+            'kitale'    => 'Kitale_Area_1',
+            // Kiambu
+            'kiambu'    => 'Kiambu Runda (Area 1)',
+            'ruiru'     => 'Ruiru_Corner (Area 3)',
+            'thika'     => 'Ruiru_Corner (Area 3)',
+            // Default
+            'other'     => 'Nairobi_Kilimani',
         ];
-        return $map[strtolower($county)] ?? 'Nairobi_Kilimani';
+        return $map[strtolower(trim($county))] ?? 'Nairobi_Kilimani';
     }
 }

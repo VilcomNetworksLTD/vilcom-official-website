@@ -63,6 +63,7 @@ import RolesManagement from "./pages/admin/RolesManagement";
 import QuoteManagement from "./pages/admin/QuoteManagement";
 import WhatsAppMessages from "./pages/admin/WhatsAppMessages";
 import MySubscriptions from "./pages/clients/MySubscriptions";
+import MyServices from "./pages/clients/MyServices";
 import CoverageManagement from "./pages/admin/CoverageManagement";
 import Users from "./pages/admin/Users";
 import Clients from "./pages/admin/Clients";
@@ -74,9 +75,11 @@ const queryClient = new QueryClient();
 const DashboardGuard = ({ children }: { children: React.ReactNode }) => {
   const { isAdmin, isStaff } = useAuth();
   const location = useLocation();
-  const isAdminOrStaffPath = location.pathname.startsWith("/admin/") || location.pathname.startsWith("/staff/");
+  const isDashboardPath = location.pathname.startsWith("/admin") || 
+                          location.pathname.startsWith("/staff") || 
+                          location.pathname.startsWith("/client");
   
-  if (isAdmin || isStaff || isAdminOrStaffPath) {
+  if (isAdmin || isStaff || isDashboardPath) {
     return null;
   }
   
@@ -161,7 +164,8 @@ const App = () => (
   <Route path="/admin/leads" element={<LeadManagement />} />
             
             {/* Client Routes */}
-            <Route path="/client/subscriptions" element={<MySubscriptions />} />
+            <Route path="/client/subscriptions" element={<MyServices />} />
+            <Route path="/client/services" element={<MyServices />} />
            
 <Route path="/client/tickets"  element={<MyTickets />} />
             <Route path="*" element={<NotFound />} />

@@ -140,8 +140,7 @@ const clientSections: SidebarSection[] = [
     title: 'Services',
     items: [
       { icon: Wifi,    label: 'My Services',  href: '/client/services' },
-      { icon: Package, label: 'Upgrade Plan', href: '/plans' },
-      { icon: Wifi,    label: 'Subscriptions',href: '/client/subscriptions' },
+      { icon: Package, label: 'Upgrade Plan', href: '/client/services#available-services' },
     ],
   },
   {

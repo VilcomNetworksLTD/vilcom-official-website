@@ -533,6 +533,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/{user}/activate', [App\Http\Controllers\Api\UserController::class, 'activate'])
             ->name('api.users.activate');
 
+        Route::post('/{user}/provision-emerald', [App\Http\Controllers\Api\UserController::class, 'provisionEmerald'])
+            ->name('api.users.provision-emerald');
+
         // Admin Only Routes
         Route::middleware(['role:admin'])->group(function () {
             Route::post('/{user}/impersonate', [App\Http\Controllers\Api\UserController::class, 'impersonate'])
@@ -1223,6 +1226,26 @@ Route::prefix('v1')->group(function () {
         // Bulk assign
         Route::post('/bulk-assign', [App\Http\Controllers\Api\Admin\LeadController::class, 'bulkAssign'])
             ->name('api.admin.leads.bulk-assign');
+    });
+
+    // ============================================
+    // CLIENT DASHBOARD ROUTES
+    // ============================================
+    Route::prefix('client')->middleware('auth:sanctum')->group(function () {
+        Route::get('/dashboard', [
+            App\Http\Controllers\Api\Client\DashboardController::class,
+            'index'
+        ])->name('api.client.dashboard');
+
+        Route::get('/invoices', [
+            App\Http\Controllers\Api\Client\DashboardController::class,
+            'invoices'
+        ])->name('api.client.invoices');
+
+        Route::get('/payments', [
+            App\Http\Controllers\Api\Client\DashboardController::class,
+            'payments'
+        ])->name('api.client.payments');
     });
 });
 
