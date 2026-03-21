@@ -5,9 +5,17 @@ export interface User {
   name: string;
   email: string;
   phone: string | null;
+  address: string | null;
+  city: string | null;
+  county: string | null;
+  country: string | null;
+  postal_code: string | null;
   customer_type: "individual" | "business";
   company_name: string | null;
-  status: "active" | "inactive" | "suspended";
+  company_registration: string | null;
+  tax_pin: string | null;
+  status: "active" | "inactive" | "suspended" | "pending_verification";
+  emerald_mbr_id: string | null;
   created_at: string;
   updated_at: string;
   roles: Array<{ id: number; name: string }>;
@@ -28,11 +36,12 @@ export interface UserFilters {
   search?: string;
   status?: string;
   customer_type?: string;
-  role?: string;                                        // single role (legacy)
-  roles?: ('staff' | 'sales' | 'technical_support' | 'admin' | 'client')[]; // multi-role
+  role?: string;
+  roles?: ("staff" | "sales" | "technical_support" | "admin" | "client")[];
   sort_by?: string;
   sort_order?: "asc" | "desc";
   per_page?: number;
+  page?: number;
 }
 
 export interface PaginatedResponse<T> {
@@ -43,9 +52,41 @@ export interface PaginatedResponse<T> {
   total: number;
 }
 
+/** Fields the authenticated user may update on their own profile. */
+export interface ProfileUpdatePayload {
+  name?: string;
+  phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  county?: string | null;
+  country?: string | null;
+  postal_code?: string | null;
+}
+
 export const usersApi = {
+  // ── Own profile ────────────────────────────────────────────────────────────
+
+  /**
+   * Fetch the currently authenticated user's full profile.
+   * GET /v1/auth/user
+   */
+  getCurrent: (): Promise<{ data: User }> => {
+    return api.get("/auth/user");
+  },
+
+  /**
+   * Update the currently authenticated user's own profile.
+   * PUT /v1/auth/user  →  UserController@updateCurrent
+   *
+   * Permitted fields: name, phone, address, city, county, country, postal_code
+   */
+  updateCurrent: (data: ProfileUpdatePayload): Promise<{ data: User }> => {
+    return api.put("/auth/user", data);
+  },
+
+  // ── Admin / Staff management ───────────────────────────────────────────────
+
   list: (filters: UserFilters = {}): Promise<PaginatedResponse<User>> => {
-    // axios serialises arrays as roles[]=staff&roles[]=sales which Laravel reads as $request->roles
     return api.get("/users", { params: filters });
   },
 
@@ -57,7 +98,9 @@ export const usersApi = {
     return api.get(`/users/${id}`);
   },
 
-  create: (data: Partial<User> & { password: string; role: string }): Promise<{ data: User }> => {
+  create: (
+    data: Partial<User> & { password: string; role: string }
+  ): Promise<{ data: User }> => {
     return api.post("/users", data);
   },
 
@@ -75,5 +118,26 @@ export const usersApi = {
 
   activate: (id: number): Promise<{ data: User }> => {
     return api.post(`/users/${id}/activate`);
+  },
+
+  provisionEmerald: (
+    id: number,
+    product_id: number
+  ): Promise<{ data: User; customer_id: string; account_id: string }> => {
+    return api.post(`/users/${id}/provision-emerald`, { product_id });
+  },
+
+  impersonate: (
+    id: number
+  ): Promise<{ data: { token: string; user: User; impersonator_id: number } }> => {
+    return api.post(`/users/${id}/impersonate`);
+  },
+
+  stopImpersonating: (): Promise<{ data: { token: string; user: User } }> => {
+    return api.post("/users/stop-impersonating");
+  },
+
+  roles: (): Promise<{ data: Array<{ id: number; name: string }> }> => {
+    return api.get("/users/roles");
   },
 };

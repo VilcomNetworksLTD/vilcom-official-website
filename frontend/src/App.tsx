@@ -69,20 +69,29 @@ import Users from "./pages/admin/Users";
 import Clients from "./pages/admin/Clients";
 import LeadManagement from "./pages/admin/LeadManagement";
 
+// ── Role-specific profile pages ───────────────────────────────────────────────
+import AdminProfile  from "./pages/admin/AdminProfile";
+import StaffProfile  from "./pages/staff/StaffProfile";
+import ClientProfile from "./pages/clients/ClientProfile";
+
+
+ 
+// Password reset flow (public pages)
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword  from "./pages/auth/ResetPassword";
 
 const queryClient = new QueryClient();
+
+const DASHBOARD_PREFIXES = ["/admin", "/staff", "/client"];
 
 const DashboardGuard = ({ children }: { children: React.ReactNode }) => {
   const { isAdmin, isStaff } = useAuth();
   const location = useLocation();
-  const isDashboardPath = location.pathname.startsWith("/admin") || 
-                          location.pathname.startsWith("/staff") || 
-                          location.pathname.startsWith("/client");
-  
-  if (isAdmin || isStaff || isDashboardPath) {
-    return null;
-  }
-  
+  const isDashboardPath = DASHBOARD_PREFIXES.some((p) =>
+    location.pathname.startsWith(p)
+  );
+
+  if (isAdmin || isStaff || isDashboardPath) return null;
   return <>{children}</>;
 };
 
@@ -98,77 +107,92 @@ const App = () => (
             <WhatsAppButton />
           </DashboardGuard>
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/plans" element={<Plans />} />
-            <Route path="/fiber" element={<Plans />} />
-            <Route path="/coverage" element={<Coverage />} />
-            <Route path="/speed-test" element={<SpeedTest />} />
-            <Route path="/hosting" element={<Hosting />} />
-            <Route path="/web-development" element={<WebDevelopment />} />
-            <Route path="/cloud-solutions" element={<CloudSolutions />} />
-            <Route path="/cyber-security" element={<CyberSecurity />} />
-            <Route path="/smart-integration" element={<SmartIntegration />} />
-            <Route path="/software-development" element={<SoftwareDevelopment />} />
-            <Route path="/erp-service" element={<ErpService />} />
-            <Route path="/isp-billing" element={<IspBilling />} />
-            <Route path="/isp-cpe" element={<IspCpe />} />
-            <Route path="/isp-device-management" element={<IspDeviceManagement />} />
-            <Route path="/firewall-solutions" element={<FirewallSolutions />} />
-            <Route path="/deep-packet-inspection" element={<DeepPacketInspection />} />
-            <Route path="/satellite-connectivity" element={<SatelliteConnectivity />} />
-            <Route path="/domains" element={<Domains />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/auth" element={<Auth />} />
-<Route path="/quote" element={<Quote />} />
-            <Route path="/book" element={<Booking />} />
-            <Route path="/booking" element={<Booking />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/signup/:planId" element={<Signup />} />
-            <Route path="/invite/:token" element={<StaffInviteAccept />} />
-            <Route path="/careers" element={<Careers />} />
-            <Route path="/certifications" element={<Certifications />} />
-            <Route path="/contact-us" element={<ContactUs />} />
-            <Route path="/faqs" element={<FAQs />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/auth/verify-email" element={<EmailVerify />} />
-            <Route path="/portfolio" element={<Portfolio />} />
-            <Route path="/gallery" element={<Gallery />} />
-            <Route path="/media" element={<Media />} />
-            
-            {/* Dashboard Routes */}
-            <Route path="/dashboard" element={<DashboardRedirect />} />
-            <Route path="/client/dashboard" element={<ClientDashboard />} />
-            <Route path="/staff/dashboard" element={<StaffDashboard />} />
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            
-            {/* Admin Management Routes */}
-            <Route path="/admin/categories" element={<CategoryManagement />} />
-            <Route path="/admin/products" element={<ProductManagement />} />
-            <Route path="/admin/subscriptions" element={<SubscriptionManagement />} />
-            <Route path="/admin/quotes" element={<QuoteManagement />} />
-            <Route path="/admin/whatsapp-messages" element={<WhatsAppMessages />} /> 
-            <Route path="/admin/tickets"   element={<TicketManagement />} />
+            {/* ── Public ── */}
+            <Route path="/"                         element={<Index />} />
+            <Route path="/plans"                    element={<Plans />} />
+            <Route path="/fiber"                    element={<Plans />} />
+            <Route path="/coverage"                 element={<Coverage />} />
+            <Route path="/speed-test"               element={<SpeedTest />} />
+            <Route path="/hosting"                  element={<Hosting />} />
+            <Route path="/web-development"          element={<WebDevelopment />} />
+            <Route path="/cloud-solutions"          element={<CloudSolutions />} />
+            <Route path="/cyber-security"           element={<CyberSecurity />} />
+            <Route path="/smart-integration"        element={<SmartIntegration />} />
+            <Route path="/software-development"     element={<SoftwareDevelopment />} />
+            <Route path="/erp-service"              element={<ErpService />} />
+            <Route path="/isp-billing"              element={<IspBilling />} />
+            <Route path="/isp-cpe"                  element={<IspCpe />} />
+            <Route path="/isp-device-management"    element={<IspDeviceManagement />} />
+            <Route path="/firewall-solutions"       element={<FirewallSolutions />} />
+            <Route path="/deep-packet-inspection"   element={<DeepPacketInspection />} />
+            <Route path="/satellite-connectivity"   element={<SatelliteConnectivity />} />
+            <Route path="/domains"                  element={<Domains />} />
+            <Route path="/blog"                     element={<Blog />} />
+            <Route path="/auth"                     element={<Auth />} />
+            <Route path="/quote"                    element={<Quote />} />
+            <Route path="/book"                     element={<Booking />} />
+            <Route path="/booking"                  element={<Booking />} />
+            <Route path="/signup"                   element={<Signup />} />
+            <Route path="/signup/:planId"           element={<Signup />} />
+            <Route path="/invite/:token"            element={<StaffInviteAccept />} />
+            <Route path="/careers"                  element={<Careers />} />
+            <Route path="/certifications"           element={<Certifications />} />
+            <Route path="/contact-us"               element={<ContactUs />} />
+            <Route path="/faqs"                     element={<FAQs />} />
+            <Route path="/about"                    element={<About />} />
+            <Route path="/terms"                    element={<Terms />} />
+            <Route path="/privacy"                  element={<PrivacyPolicy />} />
+            <Route path="/auth/verify-email"        element={<EmailVerify />} />
+            <Route path="/portfolio"                element={<Portfolio />} />
+            <Route path="/gallery"                  element={<Gallery />} />
+            <Route path="/media"                    element={<Media />} />
 
-            <Route path="/admin/staff" element={<StaffManagement />} />
-            <Route path="/admin/roles" element={<RolesManagement />} />
-            <Route path="/admin/banners" element={<BannerManagement />} />
-            <Route path="/admin/testimonials" element={<TestimonialManagement />} />
-            <Route path="/admin/faqs" element={<FaqManagement />} />
-            <Route path="/admin/media" element={<MediaLibrary />} />
-<Route path="/admin/coverage" element={<CoverageManagement />} />
-<Route path="/admin/invoices" element={<InvoiceManagement />} />
-  <Route path="/admin/users" element={<Users />} />
-  <Route path="/admin/clients" element={<Clients />} />
-  <Route path="/admin/leads" element={<LeadManagement />} />
-            
-            {/* Client Routes */}
-            <Route path="/client/subscriptions" element={<MyServices />} />
-            <Route path="/client/services" element={<MyServices />} />
-           
-<Route path="/client/tickets"  element={<MyTickets />} />
-            <Route path="*" element={<NotFound />} />
+            <Route path="/forgot-password"          element={<ForgotPassword />} />
+            <Route path="/auth/reset-password"      element={<ResetPassword />} />
+
+            {/* ── Dashboard redirect ── */}
+            <Route path="/dashboard"                element={<DashboardRedirect />} />
+
+            {/* ══════════════════════════════════════════════════════════
+                ADMIN
+            ══════════════════════════════════════════════════════════ */}
+            <Route path="/admin/dashboard"          element={<AdminDashboard />} />
+            <Route path="/admin/profile"            element={<AdminProfile />} />   {/* ← admin profile */}
+            <Route path="/admin/categories"         element={<CategoryManagement />} />
+            <Route path="/admin/products"           element={<ProductManagement />} />
+            <Route path="/admin/subscriptions"      element={<SubscriptionManagement />} />
+            <Route path="/admin/quotes"             element={<QuoteManagement />} />
+            <Route path="/admin/whatsapp-messages"  element={<WhatsAppMessages />} />
+            <Route path="/admin/tickets"            element={<TicketManagement />} />
+            <Route path="/admin/staff"              element={<StaffManagement />} />
+            <Route path="/admin/roles"              element={<RolesManagement />} />
+            <Route path="/admin/banners"            element={<BannerManagement />} />
+            <Route path="/admin/testimonials"       element={<TestimonialManagement />} />
+            <Route path="/admin/faqs"               element={<FaqManagement />} />
+            <Route path="/admin/media"              element={<MediaLibrary />} />
+            <Route path="/admin/coverage"           element={<CoverageManagement />} />
+            <Route path="/admin/invoices"           element={<InvoiceManagement />} />
+            <Route path="/admin/users"              element={<Users />} />
+            <Route path="/admin/clients"            element={<Clients />} />
+            <Route path="/admin/leads"              element={<LeadManagement />} />
+
+            {/* ══════════════════════════════════════════════════════════
+                STAFF
+            ══════════════════════════════════════════════════════════ */}
+            <Route path="/staff/dashboard"          element={<StaffDashboard />} />
+            <Route path="/staff/profile"            element={<StaffProfile />} />   {/* ← staff profile */}
+
+            {/* ══════════════════════════════════════════════════════════
+                CLIENT
+            ══════════════════════════════════════════════════════════ */}
+            <Route path="/client/dashboard"         element={<ClientDashboard />} />
+            <Route path="/client/profile"           element={<ClientProfile />} />  {/* ← client profile */}
+            <Route path="/client/subscriptions"     element={<MyServices />} />
+            <Route path="/client/services"          element={<MyServices />} />
+            <Route path="/client/tickets"           element={<MyTickets />} />
+
+            {/* ── 404 ── */}
+            <Route path="*"                         element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

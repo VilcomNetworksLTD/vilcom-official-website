@@ -126,140 +126,94 @@ const getThemeConfig = (userType: 'client' | 'staff' | 'admin') => {
   }
 };
 
-// ─── Client sidebar ───────────────────────────────────────────────────────────
+// ─── Sidebar sections (client / staff / admin) ────────────────────────────────
 
 const clientSections: SidebarSection[] = [
-  {
-    title: 'Main',
-    items: [
-      { icon: Home,          label: 'Home',            href: '/' },
-      { icon: LayoutDashboard, label: 'Dashboard',     href: '/client/dashboard' },
-    ],
-  },
-  {
-    title: 'Services',
-    items: [
-      { icon: Wifi,    label: 'My Services',  href: '/client/services' },
-      { icon: Package, label: 'Upgrade Plan', href: '/client/services#available-services' },
-    ],
-  },
-  {
-    title: 'Billing',
-    items: [
-      { icon: Receipt,   label: 'Invoices',        href: '/client/invoices' },
-      { icon: DollarSign,label: 'Payment History', href: '/client/payments' },
-    ],
-  },
-  {
-    title: 'Support',
-    items: [
-      { icon: LifeBuoy,       label: 'My Tickets', href: '/client/tickets' },
-      { icon: HeadphonesIcon, label: 'Support',    href: '/support' },
-    ],
-  },
+  { title: 'Main', items: [
+    { icon: Home, label: 'Home', href: '/' },
+{ icon: LayoutDashboard, label: 'Dashboard', href: '/client/dashboard' },
+    { icon: User, label: 'Profile', href: '/client/profile' },
+  ]},
+  { title: 'Services', items: [
+    { icon: Wifi, label: 'My Services', href: '/client/services' },
+    { icon: Package, label: 'Upgrade Plan', href: '/client/services#available-services' },
+  ]},
+  { title: 'Billing', items: [
+    { icon: Receipt, label: 'Invoices', href: '/client/invoices' },
+    { icon: DollarSign, label: 'Payment History', href: '/client/payments' },
+  ]},
+  { title: 'Support', items: [
+    { icon: LifeBuoy, label: 'My Tickets', href: '/client/tickets' },
+    { icon: HeadphonesIcon, label: 'Support', href: '/support' },
+  ]},
 ];
-
-// ─── Staff sidebar ────────────────────────────────────────────────────────────
 
 const staffSections: SidebarSection[] = [
-  {
-    title: 'Main',
-    items: [
-      { icon: Home,            label: 'Home',      href: '/' },
-      { icon: LayoutDashboard, label: 'Dashboard', href: '/staff/dashboard' },
-    ],
-  },
-  {
-    title: 'Management',
-    items: [
-      { icon: Users,    label: 'Clients',       href: '/admin/clients' },
-      { icon: Wifi,     label: 'Subscriptions', href: '/admin/subscriptions' },
-      { icon: FileText, label: 'Quotes',        href: '/admin/quotes' },
-      { icon: LifeBuoy, label: 'Tickets',       href: '/admin/tickets' },
-      { icon: Users2,   label: 'Leads',         href: '/admin/leads' },
-    ],
-  },
-  {
-    title: 'Billing',
-    items: [
-      { icon: Receipt,   label: 'Invoices', href: '/admin/invoices' },
-      { icon: DollarSign,label: 'Payments', href: '/admin/payments' },
-    ],
-  },
-  {
-    title: 'Content',
-    items: [
-      { icon: Package,   label: 'Plans',    href: '/admin/plans' },
-      { icon: Building2, label: 'Coverage', href: '/admin/coverage' },
-    ],
-  },
+  { title: 'Main', items: [
+    { icon: Home, label: 'Home', href: '/' },
+{ icon: LayoutDashboard, label: 'Dashboard', href: '/staff/dashboard' },
+    { icon: User, label: 'Profile', href: '/staff/profile' },
+  ]},
+  { title: 'Management', items: [
+    { icon: Users, label: 'Clients', href: '/admin/clients' },
+    { icon: Wifi, label: 'Subscriptions', href: '/admin/subscriptions' },
+    { icon: FileText, label: 'Quotes', href: '/admin/quotes' },
+    { icon: LifeBuoy, label: 'Tickets', href: '/admin/tickets' },
+    { icon: Users2, label: 'Leads', href: '/admin/leads' },
+  ]},
+  { title: 'Billing', items: [
+    { icon: Receipt, label: 'Invoices', href: '/admin/invoices' },
+    { icon: DollarSign, label: 'Payments', href: '/admin/payments' },
+  ]},
+  { title: 'Content', items: [
+    { icon: Package, label: 'Plans', href: '/admin/plans' },
+    { icon: Building2, label: 'Coverage', href: '/admin/coverage' },
+  ]},
 ];
 
-// ─── Admin sidebar ────────────────────────────────────────────────────────────
-
 const adminSections: SidebarSection[] = [
-  {
-    title: 'Main',
-    items: [
-      { icon: Home,            label: 'Home',      href: '/' },
-      { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
-    ],
-  },
-  {
-    title: 'Users',
-    items: [
-      { icon: Users,    label: 'All Users',          href: '/admin/users' },
-      { icon: UserCheck,label: 'Clients',            href: '/admin/clients' },
-      { icon: Shield,   label: 'Staff',              href: '/admin/staff' },
-      { icon: Layers,   label: 'Roles & Permissions',href: '/admin/roles' },
-    ],
-  },
-  {
-    title: 'Services',
-    items: [
-      { icon: Folder,      label: 'Categories',    href: '/admin/categories' },
-      { icon: ShoppingCart,label: 'Products',      href: '/admin/products' },
-      { icon: Package,     label: 'Plans & Pricing',href: '/admin/plans' },
-      { icon: Wifi,        label: 'Subscriptions', href: '/admin/subscriptions' },
-      { icon: Building2,   label: 'Coverage Areas',href: '/admin/coverage' },
-      { icon: Globe,       label: 'Domains',       href: '/admin/domains' },
-      { icon: FileText,    label: 'Quote Requests',href: '/admin/quotes' },
-      { icon: Users2,      label: 'Leads',         href: '/admin/leads' },
-    ],
-  },
-  {
-    title: 'Content',
-    items: [
-      { icon: Image,       label: 'Media Library', href: '/admin/media' },
-      { icon: Layout,      label: 'Banners',       href: '/admin/banners' },
-      { icon: MessageSquare,label:'Testimonials',  href: '/admin/testimonials' },
-      { icon: HelpCircle,  label: 'FAQs',          href: '/admin/faqs' },
-    ],
-  },
-  {
-    title: 'Billing',
-    items: [
-      { icon: Receipt,    label: 'Invoices', href: '/admin/invoices' },
-      { icon: DollarSign, label: 'Payments', href: '/admin/payments' },
-      { icon: TrendingUp, label: 'Revenue',  href: '/admin/revenue' },
-    ],
-  },
-  {
-    title: 'Support',
-    items: [
-      { icon: LifeBuoy,       label: 'Tickets', href: '/admin/tickets' },
-      { icon: HeadphonesIcon, label: 'Support', href: '/admin/support' },
-    ],
-  },
-  {
-    title: 'System',
-    items: [
-      { icon: BarChart3, label: 'Reports',         href: '/admin/reports' },
-      { icon: Database,  label: 'Backups',         href: '/admin/backups' },
-      { icon: Settings,  label: 'Settings',        href: '/admin/settings' },
-      { icon: Mail,      label: 'Email Templates', href: '/admin/emails' },
-    ],
-  },
+  { title: 'Main', items: [
+    { icon: Home, label: 'Home', href: '/' },
+{ icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
+    { icon: User, label: 'Profile', href: '/admin/profile' },
+  ]},
+  { title: 'Users', items: [
+    { icon: Users, label: 'All Users', href: '/admin/users' },
+    { icon: UserCheck, label: 'Clients', href: '/admin/clients' },
+    { icon: Shield, label: 'Staff', href: '/admin/staff' },
+    { icon: Layers, label: 'Roles & Permissions', href: '/admin/roles' },
+  ]},
+  { title: 'Services', items: [
+    { icon: Folder, label: 'Categories', href: '/admin/categories' },
+    { icon: ShoppingCart, label: 'Products', href: '/admin/products' },
+    { icon: Package, label: 'Plans & Pricing', href: '/admin/plans' },
+    { icon: Wifi, label: 'Subscriptions', href: '/admin/subscriptions' },
+    { icon: Building2, label: 'Coverage Areas', href: '/admin/coverage' },
+    { icon: Globe, label: 'Domains', href: '/admin/domains' },
+    { icon: FileText, label: 'Quote Requests', href: '/admin/quotes' },
+    { icon: Users2, label: 'Leads', href: '/admin/leads' },
+  ]},
+  { title: 'Content', items: [
+    { icon: Image, label: 'Media Library', href: '/admin/media' },
+    { icon: Layout, label: 'Banners', href: '/admin/banners' },
+    { icon: MessageSquare, label: 'Testimonials', href: '/admin/testimonials' },
+    { icon: HelpCircle, label: 'FAQs', href: '/admin/faqs' },
+  ]},
+  { title: 'Billing', items: [
+    { icon: Receipt, label: 'Invoices', href: '/admin/invoices' },
+    { icon: DollarSign, label: 'Payments', href: '/admin/payments' },
+    { icon: TrendingUp, label: 'Revenue', href: '/admin/revenue' },
+  ]},
+  { title: 'Support', items: [
+    { icon: LifeBuoy, label: 'Tickets', href: '/admin/tickets' },
+    { icon: HeadphonesIcon, label: 'Support', href: '/admin/support' },
+  ]},
+  { title: 'System', items: [
+    { icon: BarChart3, label: 'Reports', href: '/admin/reports' },
+    { icon: Database, label: 'Backups', href: '/admin/backups' },
+    { icon: Settings, label: 'Settings', href: '/admin/settings' },
+    { icon: Mail, label: 'Email Templates', href: '/admin/emails' },
+  ]},
 ];
 
 // ─── Mesh background ──────────────────────────────────────────────────────────
@@ -279,20 +233,20 @@ const MeshGradientBackground = ({ colors }: { colors: string[] }) => (
   </div>
 );
 
-// ─── Layout ───────────────────────────────────────────────────────────────────
+// ─── Main Layout ──────────────────────────────────────────────────────────────
 
 const DashboardLayout = ({ children, userType }: DashboardLayoutProps) => {
-  const location  = useLocation();
-  const navigate  = useNavigate();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [collapsed,   setCollapsed]   = useState(false);
-  const [mobileOpen,  setMobileOpen]  = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const theme = getThemeConfig(userType);
 
   const sections = userType === 'admin' ? adminSections
-                 : userType === 'staff' ? staffSections
-                 : clientSections;
+                  : userType === 'staff' ? staffSections
+                  : clientSections;
 
   const isActive = (href: string) => location.pathname === href;
 
@@ -325,27 +279,46 @@ const DashboardLayout = ({ children, userType }: DashboardLayoutProps) => {
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         ${theme.sidebarBg} text-white transition-all duration-300 flex flex-col
       `}>
-        {/* Logo */}
+        {/* Logo + Collapse Toggle */}
         <div className={`h-16 flex items-center justify-between px-4 border-b ${borderColor}`}>
-          {!collapsed && (
-            <Link to="/" className="flex items-center gap-2">
-              <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${logoGradient} flex items-center justify-center`}>
-                <Zap className="w-5 h-5 text-white" />
+          <Link 
+            to="/" 
+            className="flex items-center justify-center min-w-[40px]"
+          >
+            {collapsed ? (
+              <img
+                src="/favicon.ico"
+                alt="VILCOM"
+                className="h-8 w-8 object-contain rounded-md"
+              />
+            ) : (
+              <div className="flex items-center gap-2.5">
+                <img
+                  src="/vilcomsignature.png"
+                  alt="VILCOM Signature"
+                  className="h-8 w-auto object-contain"
+                />
+                {/* Uncomment if you want text too */}
+                {/* <span className={`font-bold text-lg ${theme.textPrimary}`}>VILCOM</span> */}
               </div>
-              <span className={`font-bold text-lg ${theme.textPrimary}`}>VILCOM</span>
-            </Link>
-          )}
-          {collapsed && (
-            <div className={`w-8 h-8 mx-auto rounded-lg bg-gradient-to-r ${logoGradient} flex items-center justify-center`}>
-              <Zap className="w-5 h-5 text-white" />
-            </div>
-          )}
-          <button onClick={() => setCollapsed(!collapsed)} className={`hidden lg:flex p-1 rounded ${theme.sidebarHover}`}>
-            {collapsed
-              ? <ChevronRight className={`w-4 h-4 ${theme.sidebarText}`} />
-              : <ChevronLeft  className={`w-4 h-4 ${theme.sidebarText}`} />}
+            )}
+          </Link>
+
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className={`hidden lg:flex p-1 rounded ${theme.sidebarHover}`}
+          >
+            {collapsed ? (
+              <ChevronRight className={`w-4 h-4 ${theme.sidebarText}`} />
+            ) : (
+              <ChevronLeft className={`w-4 h-4 ${theme.sidebarText}`} />
+            )}
           </button>
-          <button onClick={() => setMobileOpen(false)} className={`lg:hidden p-1 rounded ${theme.sidebarHover}`}>
+
+          <button
+            onClick={() => setMobileOpen(false)}
+            className={`lg:hidden p-1 rounded ${theme.sidebarHover}`}
+          >
             <ChevronLeft className={`w-4 h-4 ${theme.sidebarText}`} />
           </button>
         </div>
@@ -390,7 +363,7 @@ const DashboardLayout = ({ children, userType }: DashboardLayoutProps) => {
           ))}
         </nav>
 
-        {/* User */}
+        {/* User & Logout */}
         <div className={`border-t p-4 ${borderColor}`}>
           {!collapsed ? (
             <div className="flex items-center gap-3 mb-3">
@@ -417,7 +390,7 @@ const DashboardLayout = ({ children, userType }: DashboardLayoutProps) => {
         </div>
       </aside>
 
-      {/* Main */}
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-h-screen relative z-10">
         {/* Mobile header */}
         <header className={`${theme.headerBg} shadow-sm border-b ${userType === 'client' ? 'border-amber-500/20' : 'border-blue-500/20'} lg:hidden`}>

@@ -98,6 +98,45 @@ class UserController extends Controller
         ]);
     }
 
+
+    // ════════════════════════════════════════════════════════════════════
+    // UPDATE CURRENT (own profile via PUT /v1/auth/user)
+    // ════════════════════════════════════════════════════════════════════
+
+    /**
+     * Update the currently-authenticated user's own profile.
+     *
+     * Accessible via:  PUT /v1/auth/user
+     *
+     * Allowed fields (same restricted set as the own-profile branch in update()):
+     *   name, phone, address, city, county, country, postal_code
+     *
+     * Returns the updated UserResource so the frontend can refresh its
+     * cached user object without a second GET /v1/auth/user call.
+     */
+    public function updateCurrent(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'name'        => 'sometimes|string|max:255',
+            'phone'       => 'nullable|string|max:20',
+            'address'     => 'nullable|string|max:500',
+            'city'        => 'nullable|string|max:100',
+            'county'      => 'nullable|string|max:100',
+            'country'     => 'nullable|string|max:100',
+            'postal_code' => 'nullable|string|max:20',
+        ]);
+
+        $user->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profile updated successfully.',
+            'data'    => new UserResource($user->load('roles')),
+        ]);
+    }
+
     // ════════════════════════════════════════════════════════════════════
     // CREATE
     // ════════════════════════════════════════════════════════════════════

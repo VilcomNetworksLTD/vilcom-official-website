@@ -80,6 +80,10 @@ Route::prefix('v1')->group(function () {
             Route::get('/user', [LoginController::class, 'user'])
                 ->name('api.auth.user');
 
+            // Update current authenticated user's profile (Profile Settings)
+            Route::put('/user', [App\Http\Controllers\Api\UserController::class, 'updateCurrent'])
+                ->name('api.auth.user.update');
+
             // Logout
             Route::post('/logout', [LogoutController::class, 'logout'])
                 ->name('api.auth.logout');

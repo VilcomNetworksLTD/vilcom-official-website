@@ -157,12 +157,12 @@ const Auth = () => {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-sm font-medium text-blue-100">Password</label>
-                  <button
-                    type="button"
+<Link
+                    to="/forgot-password"
                     className="text-sm text-blue-300 hover:text-cyan-300 transition-colors"
                   >
-                    Forgot Password!
-                  </button>
+                    Forgot Password?
+                  </Link>
                 </div>
                 <div className="relative group">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-300/50 group-focus-within:text-blue-300 transition-colors" />
