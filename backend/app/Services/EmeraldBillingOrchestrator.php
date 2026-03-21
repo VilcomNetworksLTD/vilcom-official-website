@@ -4,7 +4,6 @@
 namespace App\Services;
 
 use App\Models\EmeraldProductMapping;
-use App\Models\Product;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
@@ -14,16 +13,24 @@ class EmeraldBillingOrchestrator
         protected EmeraldService $emerald
     ) {}
 
+    // ── Provisioning ──────────────────────────────────────────────────────
+
     /**
      * Full provisioning flow after signup.
-     * Called from RegisterController.
+     *
+     * 1. Looks up EmeraldProductMapping for the selected product
+     * 2. Applies any per-product overrides (pay period, billing cycle)
+     * 3. Calls Emerald account_add API
+     * 4. Stores CustomerID (MBR ID = M-Pesa account number) on user
+     *
+     * Called from: RegisterController, UserController::store
      */
     public function provisionNewSubscriber(User $user, int $productId): ProvisionResult
     {
-        // 1. Find the mapping
+        // ── 1. Find the mapping ──────────────────────────────────────────
         $mapping = EmeraldProductMapping::where('product_id', $productId)
-            ->where('is_active', true)
-            ->where('auto_provision', true)
+            ->active()
+            ->autoProvision()
             ->first();
 
         if (!$mapping) {
@@ -31,19 +38,29 @@ class EmeraldBillingOrchestrator
                 'product_id' => $productId,
                 'user_id'    => $user->id,
             ]);
-            return ProvisionResult::skipped('No Emerald mapping configured');
+            return ProvisionResult::skipped('No Emerald mapping configured for this product');
         }
 
-        // 2. Override category/cycle if mapping has specifics
-        if ($mapping->billing_cycle_id) {
-            config(['emerald.billing_cycle_id' => $mapping->billing_cycle_id]);
-        }
-        if ($mapping->pay_period_id) {
-            config(['emerald.pay_period_id' => $mapping->pay_period_id]);
-        }
+        // ── 2. Apply per-mapping overrides ───────────────────────────────
+        // Service category — required, comes from mapping
         config(['emerald.service_category_id' => $mapping->emerald_service_category_id]);
 
-        // 3. Call Emerald API
+        // Billing cycle name — mapping can override global default
+        config(['emerald.billing_cycle_name' => $mapping->getBillingCycleName()]);
+
+        // Pay period — mapping can override global default (Monthly)
+        config(['emerald.pay_period_name' => $mapping->getResolvedPayPeriodName()]);
+
+        Log::info('Emerald provisioning starting', [
+            'user_id'              => $user->id,
+            'product_id'           => $productId,
+            'service_type_id'      => $mapping->emerald_service_type_id,
+            'service_category_id'  => $mapping->emerald_service_category_id,
+            'billing_cycle'        => $mapping->getBillingCycleName(),
+            'pay_period_name'      => $mapping->getResolvedPayPeriodName(),
+        ]);
+
+        // ── 3. Call Emerald API ──────────────────────────────────────────
         try {
             $result = $this->emerald->createSubscriber(
                 $user->toArray(),
@@ -54,13 +71,13 @@ class EmeraldBillingOrchestrator
                 throw new \RuntimeException('Emerald returned no CustomerID');
             }
 
-            // 4. Store Emerald IDs on user
+            // ── 4. Store Emerald IDs ─────────────────────────────────────
             $user->update([
                 'emerald_mbr_id'     => $result['CustomerID'],
                 'emerald_account_id' => $result['AccountID'] ?? null,
             ]);
 
-            // 5. Update mapping sync time
+            // ── 5. Update sync timestamp ─────────────────────────────────
             $mapping->update(['last_synced_at' => now()]);
 
             Log::info('Emerald provisioning successful', [
@@ -68,11 +85,12 @@ class EmeraldBillingOrchestrator
                 'customer_id' => $result['CustomerID'],
                 'account_id'  => $result['AccountID'] ?? null,
                 'service_type'=> $mapping->emerald_service_type_id,
+                'mbr_is_mpesa_account' => true,
             ]);
 
             return ProvisionResult::success(
-                $result['CustomerID'],
-                $result['AccountID'] ?? null
+                (int) $result['CustomerID'],
+                isset($result['AccountID']) ? (int) $result['AccountID'] : null
             );
 
         } catch (\Exception $e) {
@@ -86,9 +104,13 @@ class EmeraldBillingOrchestrator
         }
     }
 
+    // ── Payments ──────────────────────────────────────────────────────────
+
     /**
-     * Process payment and post to Emerald.
-     * Called from MpesaController webhook.
+     * Post a confirmed M-Pesa / card payment to Emerald.
+     * Called from MpesaController webhook after payment confirmed.
+     *
+     * The MBR ID (emerald_mbr_id) IS the M-Pesa Paybill account number.
      */
     public function processPayment(
         int    $mbrId,
@@ -115,16 +137,29 @@ class EmeraldBillingOrchestrator
         }
     }
 
+    // ── Service Lifecycle ─────────────────────────────────────────────────
+
     /**
-     * Suspend a subscriber's service.
+     * Suspend a subscriber's Emerald service.
+     * Called from UserController::suspend, SubscriptionController::suspend.
      */
     public function suspendSubscriber(User $user): bool
     {
-        if (!$user->emerald_account_id) return false;
+        if (!$user->emerald_account_id) {
+            Log::info('Suspend skipped — no Emerald account', ['user_id' => $user->id]);
+            return false;
+        }
 
         try {
-            $this->emerald->suspendService($user->emerald_account_id);
+            $this->emerald->suspendService((int) $user->emerald_account_id);
+
+            Log::info('Emerald service suspended', [
+                'user_id'    => $user->id,
+                'account_id' => $user->emerald_account_id,
+            ]);
+
             return true;
+
         } catch (\Exception $e) {
             Log::error('Emerald suspend failed', [
                 'user_id'    => $user->id,
@@ -136,15 +171,26 @@ class EmeraldBillingOrchestrator
     }
 
     /**
-     * Reactivate a subscriber's service.
+     * Reactivate a subscriber's Emerald service.
+     * Called from UserController::activate, MpesaController (after payment).
      */
     public function activateSubscriber(User $user): bool
     {
-        if (!$user->emerald_account_id) return false;
+        if (!$user->emerald_account_id) {
+            Log::info('Activate skipped — no Emerald account', ['user_id' => $user->id]);
+            return false;
+        }
 
         try {
-            $this->emerald->activateService($user->emerald_account_id);
+            $this->emerald->activateService((int) $user->emerald_account_id);
+
+            Log::info('Emerald service activated', [
+                'user_id'    => $user->id,
+                'account_id' => $user->emerald_account_id,
+            ]);
+
             return true;
+
         } catch (\Exception $e) {
             Log::error('Emerald activate failed', [
                 'user_id'    => $user->id,
@@ -157,14 +203,15 @@ class EmeraldBillingOrchestrator
 }
 
 
-/**
- * Value object for provisioning results.
- * Clean, no exceptions leaking into controllers.
- */
+// ════════════════════════════════════════════════════════════════════════
+// Value Object — Provisioning Result
+// Clean result type — no exceptions leaking into controllers
+// ════════════════════════════════════════════════════════════════════════
+
 class ProvisionResult
 {
     private function __construct(
-        public readonly string  $status,   // success | failed | skipped
+        public readonly string  $status,      // success | failed | skipped
         public readonly ?int    $customerId = null,
         public readonly ?int    $accountId  = null,
         public readonly ?string $message    = null,

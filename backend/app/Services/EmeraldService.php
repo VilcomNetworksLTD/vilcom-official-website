@@ -12,12 +12,23 @@ class EmeraldService
     protected string $adminUser;
     protected string $adminPass;
     protected int    $groupId;
-    protected int    $billingCycleId;
-    protected int    $payPeriodId;
+    protected string $billingCycleName; // Use name — safer than ID
+    protected string $payPeriodName;
     protected int    $addressTypeId;
     protected int    $sendMethodId;
     protected int    $domainId;
     protected int    $serviceCategoryId;
+
+    // Pay Period IDs confirmed from Emerald
+    // Accounting → Pay Periods
+    public const PAY_PERIODS = [
+        'monthly'    => 1,
+        'quarterly'  => 2,
+        'six_months' => 3,
+        'yearly'     => 4,
+        'two_weeks'  => 5,
+        'weekly'     => 6,
+    ];
 
     public function __construct()
     {
@@ -25,13 +36,15 @@ class EmeraldService
         $this->adminUser         = config('emerald.admin_user');
         $this->adminPass         = config('emerald.admin_password');
         $this->groupId           = config('emerald.group_id');
-        $this->billingCycleId    = config('emerald.billing_cycle_id');
-        $this->payPeriodId       = config('emerald.pay_period_id');
+        $this->billingCycleName  = config('emerald.billing_cycle_name', 'Vilcom Billing Cycle');
+        $this->payPeriodName = config('emerald.pay_period_name', 'Monthly');
         $this->addressTypeId     = config('emerald.address_type_id');
         $this->sendMethodId      = config('emerald.send_method_id');
         $this->domainId          = config('emerald.domain_id');
         $this->serviceCategoryId = config('emerald.service_category_id');
     }
+
+    // ── Core API method ──────────────────────────────────────────────────
 
     protected function post(array $params): array
     {
@@ -51,10 +64,10 @@ class EmeraldService
             'response' => $result,
         ]);
 
-        // retcode -1 with CustomerID = partial success (setupcharge warning)
-        // only throw on real failures
+        // retcode -1 WITH CustomerID = partial success (setup charge warning only)
+        // Only throw on genuine failures where no CustomerID was returned
         if (isset($result['retcode'])
-            && (int)$result['retcode'] !== 0
+            && (int) $result['retcode'] !== 0
             && empty($result['CustomerID'])
         ) {
             throw new \RuntimeException(
@@ -65,8 +78,14 @@ class EmeraldService
         return $result ?? [];
     }
 
+    // ── Account Management ───────────────────────────────────────────────
+
     /**
-     * Create MBR + service (account_add)
+     * Create MBR + service in Emerald.
+     * Uses BillingCycle name (not ID) for reliability.
+     * PayPeriodID defaults to Monthly (1).
+     *
+     * Returns: ['CustomerID' => ..., 'AccountID' => ...]
      */
     public function createSubscriber(array $user, int $serviceTypeId): array
     {
@@ -83,8 +102,12 @@ class EmeraldService
             'Zip'               => $user['postal_code'] ?? '',
             'Company'           => $user['company_name'] ?? '',
             'GroupID'           => $this->groupId,
-            'BillingCycleID'    => $this->billingCycleId,
-            'PayPeriodID'       => $this->payPeriodId,
+
+            // Use name-based lookup for BillingCycle — immune to ID changes
+            'BillingCycle'      => $this->billingCycleName,
+
+            'PayPeriod'         => $this->payPeriodName,
+
             'AddressTypeID'     => $this->addressTypeId,
             'SendMethodID'      => $this->sendMethodId,
             'DomainID'          => $this->domainId,
@@ -97,12 +120,12 @@ class EmeraldService
             'Active'            => 1,
             'Recurring'         => 1,
             'PayMethod'         => 'Renewal',
-            'ExternalRef'       => (string) $user['id'],
+            'ExternalRef'       => (string) ($user['id'] ?? ''),
         ]);
     }
 
     /**
-     * Get MBR details (mbr_detail)
+     * Get full MBR details.
      */
     public function getSubscriber(int $mbrId): array
     {
@@ -112,8 +135,10 @@ class EmeraldService
         ]);
     }
 
+    // ── Payments ─────────────────────────────────────────────────────────
+
     /**
-     * Post a payment (payment_add)
+     * Post a payment to an MBR after M-Pesa / card confirmation.
      */
     public function postPayment(int $mbrId, float $amount, string $transRef): array
     {
@@ -127,8 +152,10 @@ class EmeraldService
         ]);
     }
 
+    // ── Service Lifecycle ────────────────────────────────────────────────
+
     /**
-     * Suspend a service
+     * Suspend a service (e.g. non-payment, admin action).
      */
     public function suspendService(int $accountId): array
     {
@@ -140,7 +167,7 @@ class EmeraldService
     }
 
     /**
-     * Activate a service
+     * Reactivate a previously suspended service.
      */
     public function activateService(int $accountId): array
     {
@@ -151,7 +178,7 @@ class EmeraldService
         ]);
     }
 
-    // ── Helpers ──────────────────────────────────────
+    // ── Helpers ──────────────────────────────────────────────────────────
 
     private function splitName(string $name): array
     {
@@ -162,12 +189,14 @@ class EmeraldService
     private function formatPhone(string $phone): string
     {
         $phone = preg_replace('/\D/', '', $phone);
+
         if (str_starts_with($phone, '0')) {
-            $phone = '254' . substr($phone, 1);
+            return '254' . substr($phone, 1);
         }
         if (str_starts_with($phone, '+')) {
-            $phone = ltrim($phone, '+');
+            return ltrim($phone, '+');
         }
+
         return $phone;
     }
 
@@ -180,43 +209,55 @@ class EmeraldService
 
     private function generateServicePassword(): string
     {
-        return bin2hex(random_bytes(6));
+        return bin2hex(random_bytes(6)); // 12-char hex, no special characters
     }
 
+    /**
+     * Resolve county (from signup form) → Emerald region name.
+     * Region names must match exactly as configured in Emerald.
+     */
     public function resolveRegion(string $county): string
     {
         $map = [
             // Nairobi
-            'nairobi'   => 'Nairobi_Kilimani',
-            'westlands' => 'Westlands',
-            'karen'     => 'Nairobi_Karen (Area 1)',
-            'kileleshwa'=> 'Nairobi_Kileleshwa',
-            'kilimani'  => 'Nairobi_Kilimani',
-            'ruaraka'   => 'Nairobi_Ruaraka (Area 1)',
-            'buruburu'  => 'Nairobi_Buruburu (Area 1)',
-            'south_c'   => 'Nairobi_South_C (Area 5)',
-            // Rift
-            'nakuru'    => 'Nakuru_Pipeline',
-            'eldoret'   => 'Eldoret_Elgonview',
+            'nairobi'    => 'Nairobi_Kilimani',
+            'westlands'  => 'Westlands',
+            'karen'      => 'Nairobi_Karen (Area 1)',
+            'kileleshwa' => 'Nairobi_Kileleshwa',
+            'kilimani'   => 'Nairobi_Kilimani',
+            'ruaraka'    => 'Nairobi_Ruaraka (Area 1)',
+            'buruburu'   => 'Nairobi_Buruburu (Area 1)',
+            'south_c'    => 'Nairobi_South_C (Area 5)',
+
+            // Rift Valley
+            'nakuru'     => 'Nakuru_Pipeline',
+            'eldoret'    => 'Eldoret_Elgonview',
+
             // Coast
-            'mombasa'   => 'Mombasa_Buxton (Area 1)',
+            'mombasa'    => 'Mombasa_Buxton (Area 1)',
+
             // Mt Kenya
-            'meru'      => 'Meru_Milimani (Area 2)',
-            'isiolo'    => 'Isiolo Area 1',
-            // Kajiado/Rongai
-            'rongai'    => 'Rongai_Cleanshelf (Area 1 & 3)',
-            'kajiado'   => 'Rongai_Cleanshelf (Area 1 & 3)',
+            'meru'       => 'Meru_Milimani (Area 2)',
+            'isiolo'     => 'Isiolo Area 1',
+
+            // Kajiado / Rongai
+            'rongai'     => 'Rongai_Cleanshelf (Area 1 & 3)',
+            'kajiado'    => 'Rongai_Cleanshelf (Area 1 & 3)',
+
             // Western
-            'kakamega'  => 'Kakamega_Naivas (Area 1)',
-            'bungoma'   => 'Bungoma_Town (Area 2)',
-            'kitale'    => 'Kitale_Area_1',
+            'kakamega'   => 'Kakamega_Naivas (Area 1)',
+            'bungoma'    => 'Bungoma_Town (Area 2)',
+            'kitale'     => 'Kitale_Area_1',
+
             // Kiambu
-            'kiambu'    => 'Kiambu Runda (Area 1)',
-            'ruiru'     => 'Ruiru_Corner (Area 3)',
-            'thika'     => 'Ruiru_Corner (Area 3)',
-            // Default
-            'other'     => 'Nairobi_Kilimani',
+            'kiambu'     => 'Kiambu Runda (Area 1)',
+            'ruiru'      => 'Ruiru_Corner (Area 3)',
+            'thika'      => 'Ruiru_Corner (Area 3)',
+
+            // Default fallback
+            'other'      => 'Nairobi_Kilimani',
         ];
+
         return $map[strtolower(trim($county))] ?? 'Nairobi_Kilimani';
     }
 }

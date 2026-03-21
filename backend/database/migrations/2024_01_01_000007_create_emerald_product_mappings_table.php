@@ -11,7 +11,6 @@ return new class extends Migration
         Schema::create('emerald_product_mappings', function (Blueprint $table) {
             $table->id();
 
-            // Link to your product
             $table->foreignId('product_id')
                   ->constrained()
                   ->cascadeOnDelete();
@@ -26,21 +25,25 @@ return new class extends Migration
                   ->comment('Human-readable name for debugging');
 
             // Provisioning controls
-            $table->boolean('auto_provision')->default(true)
-                  ->comment('Auto-create Emerald account on signup');
-            $table->boolean('sync_price')->default(false)
-                  ->comment('Sync price from Emerald');
+            $table->boolean('auto_provision')->default(true);
+            $table->boolean('sync_price')->default(false);
             $table->boolean('is_active')->default(true);
 
-            // Billing cycle override (null = use global default)
-            $table->unsignedInteger('billing_cycle_id')->nullable();
-            $table->unsignedInteger('pay_period_id')->nullable();
+            // Billing cycle — stored as NAME (not ID) for reliability
+            // e.g. "Vilcom Billing Cycle" — immune to ID changes
+            $table->string('billing_cycle_name')
+                  ->nullable()
+                  ->comment('Billing cycle name — overrides global config if set');
 
-            // Audit
+            // Pay period ID — 1=Monthly 2=Quarterly 3=Six Months
+            //                  4=Yearly  5=Two Weeks 6=Weekly
+            $table->unsignedInteger('pay_period_id')
+                  ->nullable()
+                  ->comment('null = use global default (Monthly=1)');
+
             $table->timestamp('last_synced_at')->nullable();
             $table->timestamps();
 
-            // Indexes
             $table->unique('product_id');
             $table->index('emerald_service_type_id');
             $table->index('is_active');
