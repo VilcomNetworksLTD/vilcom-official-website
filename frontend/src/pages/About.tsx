@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Briefcase, 
   Images, 
@@ -17,27 +17,7 @@ import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import FooterSection from "@/components/FooterSection";
 import AnimatedSection from "@/components/AnimatedSection";
-
-const mediaFeatures = [
-  {
-    id: 1,
-    title: "How Vilcom Network's staff empowerment will drive customer satisfaction",
-    source: "businessnow.co.ke",
-    date: "August 18, 2025",
-    thumbnail: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=250&fit=crop",
-    url: "https://businessnow.co.ke/how-vilcom-networks-staff-empowerment-will-drive-customer-satisfaction",
-    excerpt: "Vilcom Networks emphasizes staff training and empowerment as key drivers of exceptional customer service."
-  },
-  {
-    id: 2,
-    title: "Vilcom Networks Concludes 4-Cohort Customer Service & Experience Training for All Staff",
-    source: "nipashebiz.co.ke",
-    date: "August 18, 2025",
-    thumbnail: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=400&h=250&fit=crop",
-    url: "https://nipashebiz.co.ke/vilcom-networks-concludes-4-cohort-customer-service-experience-training",
-    excerpt: "All Vilcom Networks staff completed comprehensive customer service and experience training across 4 cohorts."
-  }
-];
+import { pressArticleService, type PressArticle } from "@/services/pressarticle";
 
 const glassCardStyle = {
   background: 'rgba(255, 255, 255, 0.08)',
@@ -54,23 +34,35 @@ const glassCardStyleEnhanced = {
 };
 
 const About = () => {
+  const [mediaFeatures, setMediaFeatures] = useState<PressArticle[]>([]);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     document.title = "About Us | Vilcom Networks Ltd";
+    pressArticleService.getAll({ is_published: true, per_page: 2 })
+      .then((res) => {
+        const dataArr = res?.data?.data || (Array.isArray(res?.data) ? res.data : []);
+        setMediaFeatures(dataArr.slice(0, 2));
+      })
+      .catch((err) => {
+        console.error("Failed to fetch press articles", err);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Dark gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(219,74%,22%)] via-[hsl(235,95%,32%)] to-[hsl(221,89%,48%)]" />
+      {/* Lighter blue gradient background per user request */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(215,70%,30%)] via-[hsl(220,75%,40%)] to-[hsl(225,80%,48%)]" />
       
-      {/* Vibrant background blobs */}
+      {/* Vibrant background blobs - Orange and Navy Blue splashes */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full bg-[hsl(25,90%,60%)] opacity-20 blur-[180px]" />
-        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-[hsl(35,85%,65%)] opacity-15 blur-[150px]" />
-        <div className="absolute top-1/3 left-[10%] w-[300px] h-[300px] rounded-full bg-[hsl(170,60%,50%)] opacity-10 blur-[120px]" />
-        <div className="absolute bottom-[20%] left-[60%] w-[250px] h-[250px] rounded-full bg-[hsl(30,100%,55%)] opacity-12 blur-[100px]" />
-        <div className="absolute top-[60%] left-[20%] w-[200px] h-[200px] rounded-full bg-[hsl(45,90%,65%)] opacity-10 blur-[80px]" />
-        <div className="absolute top-[15%] right-[30%] w-[150px] h-[150px] rounded-full bg-[hsl(160,50%,55%)] opacity-8 blur-[60px]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full bg-[hsl(25,90%,55%)] opacity-30 blur-[180px]" />
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-[hsl(220,90%,20%)] opacity-40 blur-[150px]" />
+        <div className="absolute top-1/3 left-[10%] w-[300px] h-[300px] rounded-full bg-[hsl(25,95%,60%)] opacity-20 blur-[120px]" />
+        <div className="absolute bottom-[20%] left-[60%] w-[250px] h-[250px] rounded-full bg-[hsl(220,85%,30%)] opacity-30 blur-[100px]" />
+        <div className="absolute top-[60%] left-[20%] w-[200px] h-[200px] rounded-full bg-[hsl(30,90%,65%)] opacity-25 blur-[80px]" />
+        <div className="absolute top-[15%] right-[30%] w-[150px] h-[150px] rounded-full bg-[hsl(220,70%,40%)] opacity-25 blur-[60px]" />
       </div>
 
       {/* Artistic VILCOM watermark */}
@@ -294,43 +286,49 @@ const About = () => {
             </p>
             
             <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-              {mediaFeatures.map((article) => (
-                <div 
-                  key={article.id}
-                  className="relative rounded-2xl overflow-hidden hover:scale-[1.02] transition-all duration-300 backdrop-blur-md"
-                  style={glassCardStyle}
-                >
-                  <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: 'inset 0 0 20px rgba(255,255,255,0.05)' }} />
-                  <div className="relative z-10 h-48 overflow-hidden">
-                    <img 
-                      src={article.thumbnail} 
-                      alt={article.title}
-                      className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
-                    />
-                  </div>
-                  <div className="relative z-10 p-6">
-                    <div className="flex items-center gap-2 text-sm text-white/50 mb-3">
-                      <span className="font-medium text-sky-300">{article.source}</span>
-                      <span>•</span>
-                      <span>{article.date}</span>
+              {loading ? (
+                <div className="col-span-2 text-center text-white/50 py-10">Loading media features...</div>
+              ) : mediaFeatures.length > 0 ? (
+                mediaFeatures.map((article) => (
+                  <div 
+                    key={article.id}
+                    className="relative rounded-2xl overflow-hidden hover:scale-[1.02] transition-all duration-300 backdrop-blur-md"
+                    style={glassCardStyle}
+                  >
+                    <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: 'inset 0 0 20px rgba(255,255,255,0.05)' }} />
+                    <div className="relative z-10 h-48 overflow-hidden">
+                      <img 
+                        src={article.thumbnail || '/placeholder.svg'} 
+                        alt={article.title}
+                        className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                      />
                     </div>
-                    <h3 className="font-heading text-lg font-bold text-white mb-3 line-clamp-2">
-                      {article.title}
-                    </h3>
-                    <p className="text-white/70 text-sm mb-4 line-clamp-2">
-                      {article.excerpt}
-                    </p>
-                    <a
-                      href={article.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 text-white font-semibold rounded-lg hover:bg-white/30 transition-colors text-sm"
-                    >
-                      Learn More <ExternalLink className="w-4 h-4" />
-                    </a>
+                    <div className="relative z-10 p-6">
+                      <div className="flex items-center gap-2 text-sm text-white/50 mb-3">
+                        <span className="font-medium text-sky-300">{article.source_name}</span>
+                        <span>•</span>
+                        <span>{article.published_at ? new Date(article.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : new Date(article.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
+                      <h3 className="font-heading text-lg font-bold text-white mb-3 line-clamp-2">
+                        {article.title}
+                      </h3>
+                      <p className="text-white/70 text-sm mb-4 line-clamp-2">
+                        {article.excerpt}
+                      </p>
+                      <a
+                        href={article.article_url || '#'}
+                        target={article.article_url ? "_blank" : "_self"}
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 text-white font-semibold rounded-lg hover:bg-white/30 transition-colors text-sm"
+                      >
+                        Learn More <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <div className="col-span-2 text-center text-white/50 py-10">No media features currently available.</div>
+              )}
             </div>
           </AnimatedSection>
 

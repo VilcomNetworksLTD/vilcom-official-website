@@ -1,6 +1,33 @@
 import api from "@/lib/axios";
 import type { ApiResponse } from "./api";
 
+// Job Vacancy types (admin-posted)
+export interface JobVacancy {
+  id: number;
+  title: string;
+  department: string | null;
+  location: string;
+  type: string;
+  description: string;
+  requirements: string[] | null;
+  status: 'active' | 'closed' | 'draft';
+  deadline: string | null;
+  created_by?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface JobVacancyFormData {
+  title: string;
+  department?: string;
+  location?: string;
+  type: string;
+  description: string;
+  requirements?: string[];
+  status: 'active' | 'closed' | 'draft';
+  deadline?: string;
+}
+
 // Career application types
 export interface CareerApplication {
   id: number;
@@ -241,3 +268,41 @@ export const adminCareersApi = {
 
 export default careersApi;
 
+// ============================================
+// Admin Vacancies API
+// ============================================
+
+export const adminVacanciesApi = {
+  async getAll(params?: Record<string, unknown>): Promise<{
+    data: JobVacancy[];
+    meta: { current_page: number; last_page: number; per_page: number; total: number };
+  }> {
+    const response = await api.get<ApiResponse<JobVacancy[]>>('/admin/vacancies', { params });
+    return {
+      data: response.data.data,
+      meta: response.data.meta || { current_page: 1, last_page: 1, per_page: 20, total: 0 },
+    };
+  },
+
+  async create(data: JobVacancyFormData): Promise<JobVacancy> {
+    const response = await api.post<ApiResponse<JobVacancy>>('/admin/vacancies', data);
+    return response.data.data;
+  },
+
+  async update(id: number, data: Partial<JobVacancyFormData>): Promise<JobVacancy> {
+    const response = await api.put<ApiResponse<JobVacancy>>(`/admin/vacancies/${id}`, data);
+    return response.data.data;
+  },
+
+  async delete(id: number): Promise<void> {
+    await api.delete(`/admin/vacancies/${id}`);
+  },
+};
+
+// Public vacancies API
+export const publicVacanciesApi = {
+  async getActive(): Promise<JobVacancy[]> {
+    const response = await api.get<ApiResponse<JobVacancy[]>>('/vacancies');
+    return response.data.data;
+  },
+};

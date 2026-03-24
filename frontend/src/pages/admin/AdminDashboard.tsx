@@ -30,8 +30,8 @@ import {
   Gauge,
   Zap,
   MapPin,
-  Map
-
+  Map,
+  Briefcase,
 } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -228,7 +228,7 @@ const AdminDashboard = () => {
     { icon: BarChart3, label: 'Coverage Zones', href: '/admin/coverage', color: 'from-purple-500 to-indigo-500', bgColor: 'bg-purple-500/20' },
     { icon: Database, label: 'Media Library', href: '/admin/media', color: 'from-red-500 to-orange-500', bgColor: 'bg-red-500/20' },
     { icon: Layers, label: 'Roles & Permissions', href: '/admin/roles', color: 'from-blue-600 to-indigo-600', bgColor: 'bg-blue-600/20' },
-    { icon: Settings, label: 'Categories', href: '/admin/categories', color: 'from-gray-500 to-slate-500', bgColor: 'bg-gray-500/20' },
+    { icon: Briefcase, label: 'Career Management', href: '/admin/careers', color: 'from-teal-500 to-cyan-500', bgColor: 'bg-teal-500/20' },
   ];
 
   const additionalActions = [

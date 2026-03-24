@@ -22,6 +22,21 @@ export default function WhatsAppButton() {
   const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // ─── NEW: Helper to get or generate Visitor ID ───
+  const getVisitorId = () => {
+    let vid = localStorage.getItem('vlc_vid');
+    if (!vid) {
+      vid = 'vlc_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('vlc_vid', vid);
+    }
+    return vid;
+  };
+
+  // ─── NEW: Helper to detect device type ───
+  const getDeviceType = () => {
+    return /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
+  };
+
   useEffect(() => {
     const loadOptions = async () => {
       try {
@@ -52,29 +67,29 @@ export default function WhatsAppButton() {
     return "254" + LOCAL_WHATSAPP_NUMBER.replace(/^0/, "");
   };
 
-const buildWhatsAppMessage = () => {
-  const parts = [];
+  const buildWhatsAppMessage = () => {
+    const parts = [];
 
-  if (name.trim()) parts.push(`Name: ${name.trim()}`);
-  if (phone.trim()) parts.push(`Phone: ${phone.trim()}`);
-  if (email.trim()) parts.push(`Email: ${email.trim()}`);
+    if (name.trim()) parts.push(`Name: ${name.trim()}`);
+    if (phone.trim()) parts.push(`Phone: ${phone.trim()}`);
+    if (email.trim()) parts.push(`Email: ${email.trim()}`);
 
-  // Add the selected option title + description (if any)
-  if (selectedOption) {
-    parts.push(`${selectedOption.title}\n${selectedOption.description}`);
-  }
-
-  // Only add customMessage if:
-  // - No option was selected (pure custom)
-  // - OR the user actually changed/added something beyond the default description
-  if (!selectedOption || customMessage.trim() !== selectedOption.description) {
-    if (customMessage.trim()) {
-      parts.push(customMessage.trim());
+    // Add the selected option title + description (if any)
+    if (selectedOption) {
+      parts.push(`${selectedOption.title}\n${selectedOption.description}`);
     }
-  }
 
-  return parts.filter(Boolean).join("\n\n");
-};
+    // Only add customMessage if:
+    // - No option was selected (pure custom)
+    // - OR the user actually changed/added something beyond the default description
+    if (!selectedOption || customMessage.trim() !== selectedOption.description) {
+      if (customMessage.trim()) {
+        parts.push(customMessage.trim());
+      }
+    }
+
+    return parts.filter(Boolean).join("\n\n");
+  };
 
   const handleSendMessage = async () => {
     if (!customMessage.trim()) return;
@@ -85,7 +100,7 @@ const buildWhatsAppMessage = () => {
     const fullMessage = buildWhatsAppMessage();
 
     try {
-      // Log to backend
+      // Log to backend (Dual Storage: WhatsApp + Leads)
       await whatsappService.logMessage({
         message: fullMessage, // log the full context version
         message_type: selectedOption?.id === 'other' ? 'custom' : 'predefined',
@@ -93,6 +108,10 @@ const buildWhatsAppMessage = () => {
         email: email || undefined,
         phone: phone || undefined,
         page_url: window.location.href,
+        
+        // ─── UPDATED: Send Lead Tracking Data ───
+        vlc_vid: getVisitorId(),
+        device_type: getDeviceType(),
       });
 
       // Open WhatsApp with pre-filled message

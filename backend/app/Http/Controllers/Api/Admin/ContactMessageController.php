@@ -103,8 +103,9 @@ class ContactMessageController extends Controller
             ], 404);
         }
 
+        // VALIDATION FIX: Changed status to 'sometimes' to allow updating notes/assignment alone
         $validator = Validator::make($request->all(), [
-            'status' => 'required|in:pending,contacted,resolved,spam',
+            'status' => 'sometimes|in:pending,contacted,resolved,spam',
             'admin_notes' => 'nullable|string',
             'assigned_staff_id' => 'nullable|exists:users,id',
         ]);
@@ -117,26 +118,33 @@ class ContactMessageController extends Controller
             ], 422);
         }
 
-        $updateData = [
-            'status' => $request->input('status'),
-            'admin_notes' => $request->input('admin_notes'),
-        ];
+        $updateData = [];
 
-        // Handle assigned staff
+        // Only update status if provided
+        if ($request->has('status')) {
+            $updateData['status'] = $request->input('status');
+
+            // Auto-update timestamps based on status change
+            if ($request->input('status') === 'contacted' && $message->status !== 'contacted') {
+                $updateData['contacted_at'] = now();
+            }
+            if ($request->input('status') === 'resolved' && $message->status !== 'resolved') {
+                $updateData['resolved_at'] = now();
+            }
+        }
+
+        if ($request->has('admin_notes')) {
+            $updateData['admin_notes'] = $request->input('admin_notes');
+        }
+
         if ($request->has('assigned_staff_id')) {
             $updateData['assigned_staff_id'] = $request->input('assigned_staff_id');
         }
 
-        // Auto-update timestamps based on status
-        if ($request->input('status') === 'contacted' && $message->status !== 'contacted') {
-            $updateData['contacted_at'] = now();
+        // Perform update only if there is data to change
+        if (!empty($updateData)) {
+            $message->update($updateData);
         }
-
-        if ($request->input('status') === 'resolved' && $message->status !== 'resolved') {
-            $updateData['resolved_at'] = now();
-        }
-
-        $message->update($updateData);
 
         return response()->json([
             'success' => true,
@@ -159,6 +167,7 @@ class ContactMessageController extends Controller
             ], 404);
         }
 
+        // Ensure the model has this method (see Step 2 below)
         $message->markAsContacted();
 
         return response()->json([
@@ -182,6 +191,7 @@ class ContactMessageController extends Controller
             ], 404);
         }
 
+        // Ensure the model has this method (see Step 2 below)
         $message->markAsResolved();
 
         return response()->json([
@@ -281,6 +291,7 @@ class ContactMessageController extends Controller
      */
     public function staff(): JsonResponse
     {
+        // Assuming Spatie Permission package is used
         $staff = \App\Models\User::whereHas('roles', function ($query) {
             $query->whereIn('name', ['admin', 'staff', 'support']);
         })
@@ -294,4 +305,3 @@ class ContactMessageController extends Controller
         ]);
     }
 }
-

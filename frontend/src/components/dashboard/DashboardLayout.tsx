@@ -35,6 +35,7 @@ import {
   ShoppingCart,
   LifeBuoy,
   Receipt,
+  Briefcase,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -152,6 +153,7 @@ const staffSections: SidebarSection[] = [
   { title: 'Main', items: [
     { icon: Home, label: 'Home', href: '/' },
 { icon: LayoutDashboard, label: 'Dashboard', href: '/staff/dashboard' },
+{ icon: Mail, label: 'Contact Messages', href: '/staff/contact-messages' },
     { icon: User, label: 'Profile', href: '/staff/profile' },
   ]},
   { title: 'Management', items: [
@@ -160,6 +162,8 @@ const staffSections: SidebarSection[] = [
     { icon: FileText, label: 'Quotes', href: '/admin/quotes' },
     { icon: LifeBuoy, label: 'Tickets', href: '/admin/tickets' },
     { icon: Users2, label: 'Leads', href: '/admin/leads' },
+    { icon: Briefcase, label: 'Careers', href: '/admin/careers' },
+    { icon: Shield, label: 'Emerald Approvals', href: '/admin/emerald-approvals' },
   ]},
   { title: 'Billing', items: [
     { icon: Receipt, label: 'Invoices', href: '/admin/invoices' },
@@ -182,6 +186,8 @@ const adminSections: SidebarSection[] = [
     { icon: UserCheck, label: 'Clients', href: '/admin/clients' },
     { icon: Shield, label: 'Staff', href: '/admin/staff' },
     { icon: Layers, label: 'Roles & Permissions', href: '/admin/roles' },
+    { icon: Briefcase, label: 'Career Management', href: '/admin/careers' },
+    { icon: Shield, label: 'Emerald Approvals', href: '/admin/emerald-approvals' },
   ]},
   { title: 'Services', items: [
     { icon: Folder, label: 'Categories', href: '/admin/categories' },
@@ -196,6 +202,9 @@ const adminSections: SidebarSection[] = [
   { title: 'Content', items: [
     { icon: Image, label: 'Media Library', href: '/admin/media' },
     { icon: Layout, label: 'Banners', href: '/admin/banners' },
+    { icon: FileText, label: 'Press Articles', href: '/admin/press-articles' },
+    { icon: Image, label: 'Gallery', href: '/admin/gallery-manager' },
+    { icon: Folder, label: 'Portfolio', href: '/admin/portfolio-manager' },
     { icon: MessageSquare, label: 'Testimonials', href: '/admin/testimonials' },
     { icon: HelpCircle, label: 'FAQs', href: '/admin/faqs' },
   ]},
@@ -206,6 +215,18 @@ const adminSections: SidebarSection[] = [
   ]},
   { title: 'Support', items: [
     { icon: LifeBuoy, label: 'Tickets', href: '/admin/tickets' },
+    {
+  icon: Mail,
+  label: 'Contact Messages',
+  href: '/admin/contact-messages',
+},
+
+   {
+  icon: Mail,
+  label: 'WhatsApp Messages',
+  href: '/admin/whatsapp-messages',
+},
+
     { icon: HeadphonesIcon, label: 'Support', href: '/admin/support' },
   ]},
   { title: 'System', items: [

@@ -21,6 +21,14 @@ use App\Http\Controllers\Api\Admin\ClientController;
 use App\Http\Controllers\Api\Admin\QuoteRequestController as AdminQuoteRequestController;
 use App\Http\Controllers\Api\CareerApplicationController;
 use App\Http\Controllers\Api\Admin\CareerApplicationController as AdminCareerApplicationController;
+use App\Http\Controllers\Api\Admin\JobVacancyController;
+use App\Http\Controllers\Api\PressArticleController;
+use App\Http\Controllers\Api\GalleryController;
+use App\Http\Controllers\Api\Admin\PressArticleController as AdminPressArticleController;
+use App\Http\Controllers\Api\Admin\GalleryController as AdminGalleryController;
+use App\Http\Controllers\Api\PortfolioController;
+use App\Http\Controllers\Api\Admin\PortfolioController as AdminPortfolioController;
+use App\Http\Controllers\Api\Admin\EmeraldApprovalController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -34,6 +42,50 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::prefix('v1')->group(function () {
+
+
+
+    // ============================================
+// GALLERY — Public (no auth)
+// ============================================
+Route::prefix('gallery')->group(function () {
+    Route::get('/',           [GalleryController::class, 'index'])
+        ->name('api.gallery.index');
+
+    Route::get('/categories', [GalleryController::class, 'categories'])
+        ->name('api.gallery.categories');
+});
+
+
+
+// ============================================
+// PORTFOLIO — Public (no auth)
+// ============================================
+Route::prefix('portfolio')->group(function () {
+    Route::get('/',           [PortfolioController::class, 'index'])
+        ->name('api.portfolio.index');
+
+    Route::get('/categories', [PortfolioController::class, 'categories'])
+        ->name('api.portfolio.categories');
+});
+
+
+
+// ============================================
+// PRESS ARTICLES — Public (no auth)
+// ============================================
+Route::prefix('press-articles')->group(function () {
+    Route::get('/',           [PressArticleController::class, 'index'])
+        ->name('api.press-articles.index');
+
+    Route::get('/featured',   [PressArticleController::class, 'featured'])
+        ->name('api.press-articles.featured');
+
+    // NOTE: register /categories BEFORE /{pressArticle} so it isn't swallowed
+    // as a dynamic segment (same pattern you already use for /products/featured etc.)
+    Route::get('/categories', [PressArticleController::class, 'categories'])
+        ->name('api.press-articles.categories');
+});
 
     // ============================================
     // AUTHENTICATION ROUTES (Public)
@@ -146,6 +198,9 @@ Route::prefix('v1')->group(function () {
                 ->middleware('permission:categories.edit');
         });
     });
+
+
+
 
     // ============================================
     // PRODUCT ROUTES
@@ -588,6 +643,26 @@ Route::prefix('v1')->group(function () {
     });
 
     // ============================================
+    // EMERALD APPROVALS ROUTES (Admin/Staff Only)
+    // ============================================
+    Route::prefix('admin/emerald-approvals')->middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+        Route::get('/', [EmeraldApprovalController::class, 'index'])
+            ->name('api.admin.emerald-approvals.index');
+        
+        Route::get('/statistics', [EmeraldApprovalController::class, 'statistics'])
+            ->name('api.admin.emerald-approvals.statistics');
+
+        Route::get('/{user}', [EmeraldApprovalController::class, 'show'])
+            ->name('api.admin.emerald-approvals.show');
+
+        Route::post('/{user}/approve', [EmeraldApprovalController::class, 'approve'])
+            ->name('api.admin.emerald-approvals.approve');
+
+        Route::post('/{user}/reject', [EmeraldApprovalController::class, 'reject'])
+            ->name('api.admin.emerald-approvals.reject');
+    });
+
+    // ============================================
     // STAFF INVITATION ROUTES (Admin Only)
     // ============================================
     Route::prefix('admin/staff-invitations')->middleware(['auth:sanctum', 'role:admin'])->group(function () {
@@ -655,46 +730,49 @@ Route::prefix('v1')->group(function () {
             ->middleware('permission:users.view.all');
     });
 
-    // ============================================
-    // COVERAGE CHECK (Public)
-    // ============================================
-    Route::prefix('coverage')->group(function () {
-        Route::post('/check', [App\Http\Controllers\Api\CoverageCheckerController::class, 'check'])
-            ->name('api.coverage.check');
+// ✅ CORRECT STRUCTURE
+// ============================================
+// COVERAGE CHECK (Public)
+// ============================================
+Route::prefix('coverage')->group(function () {
+    Route::post('/check', [App\Http\Controllers\Api\CoverageCheckerController::class, 'check'])
+        ->name('api.coverage.check');
 
-        Route::get('/areas', [App\Http\Controllers\Api\CoverageCheckerController::class, 'publicAreas'])
-            ->name('api.coverage.areas');
+    Route::get('/areas', [App\Http\Controllers\Api\CoverageCheckerController::class, 'publicAreas'])
+        ->name('api.coverage.areas');
 
-        Route::get('/geojson', [App\Http\Controllers\Api\CoverageCheckerController::class, 'geojson'])
-            ->name('api.coverage.geojson');
+    Route::get('/geojson', [App\Http\Controllers\Api\CoverageCheckerController::class, 'geojson'])
+        ->name('api.coverage.geojson');
 
-        Route::post('/interest', [App\Http\Controllers\Api\CoverageCheckerController::class, 'registerInterest'])
-            ->name('api.coverage.interest');
+    Route::post('/interest', [App\Http\Controllers\Api\CoverageCheckerController::class, 'registerInterest'])
+        ->name('api.coverage.interest');
 
-        Route::get('/zones', [App\Http\Controllers\Api\CoverageCheckerController::class, 'publicZones'])
-            ->name('api.coverage.zones');
+    Route::get('/zones', [App\Http\Controllers\Api\CoverageCheckerController::class, 'publicZones'])
+        ->name('api.coverage.zones');
+});
 
-        // Admin/Staff Coverage Management
-        Route::middleware(['auth:sanctum', 'role:admin|staff'])->prefix('admin/coverage')->group(function () {
-            Route::apiResource('zones', App\Http\Controllers\Api\Admin\CoverageZoneController::class);
+// ============================================
+// ADMIN COVERAGE ROUTES (Moved OUT of public group)
+// ============================================
+Route::prefix('admin/coverage')->middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+    Route::apiResource('zones', App\Http\Controllers\Api\Admin\CoverageZoneController::class);
 
-            Route::get('zones/{zone}/products', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'zoneProducts']);
-            Route::post('zones/{zone}/products', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'attachProduct']);
-            Route::put('zones/{zone}/products/{product}', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'updateZoneProduct']);
-            Route::delete('zones/{zone}/products/{product}', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'detachProduct']);
+    Route::get('zones/{zone}/products', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'zoneProducts']);
+    Route::post('zones/{zone}/products', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'attachProduct']);
+    Route::put('zones/{zone}/products/{product}', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'updateZoneProduct']);
+    Route::delete('zones/{zone}/products/{product}', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'detachProduct']);
 
-            Route::get('zones/{zone}/packages', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'zonePackages']);
-            Route::post('zones/{zone}/packages', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'storePackage']);
-            Route::put('zones/{zone}/packages/{package}', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'updatePackage']);
-            Route::delete('zones/{zone}/packages/{package}', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'destroyPackage']);
+    Route::get('zones/{zone}/packages', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'zonePackages']);
+    Route::post('zones/{zone}/packages', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'storePackage']);
+    Route::put('zones/{zone}/packages/{package}', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'updatePackage']);
+    Route::delete('zones/{zone}/packages/{package}', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'destroyPackage']);
 
-            Route::get('interest-signups', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'interestSignups']);
-            Route::put('interest-signups/{signup}/status', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'updateSignupStatus']);
+    Route::get('interest-signups', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'interestSignups']);
+    Route::put('interest-signups/{signup}/status', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'updateSignupStatus']);
 
-            Route::get('analytics', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'analytics']);
-            Route::get('check-logs', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'checkLogs']);
-        });
-    });
+    Route::get('analytics', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'analytics']);
+    Route::get('check-logs', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'checkLogs']);
+});
 
     // ============================================
     // MEDIA / FILE MANAGEMENT (Admin Only)
@@ -956,6 +1034,33 @@ Route::prefix('v1')->group(function () {
             ->name('api.admin.careers.bulk-update');
     });
 
+    // ADMIN JOB VACANCIES MANAGEMENT ROUTES
+    Route::prefix('admin/vacancies')->middleware(['auth:sanctum', 'role:admin|staff|hr'])->group(function () {
+        Route::get('/', [JobVacancyController::class, 'index'])
+            ->name('api.admin.vacancies.index');
+
+        Route::post('/', [JobVacancyController::class, 'store'])
+            ->name('api.admin.vacancies.store');
+
+        Route::get('/{id}', [JobVacancyController::class, 'show'])
+            ->name('api.admin.vacancies.show');
+
+        Route::put('/{id}', [JobVacancyController::class, 'update'])
+            ->name('api.admin.vacancies.update');
+
+        Route::delete('/{id}', [JobVacancyController::class, 'destroy'])
+            ->name('api.admin.vacancies.destroy')
+            ->middleware('role:admin');
+    });
+
+    // PUBLIC JOB VACANCIES (active only)
+    Route::get('/vacancies', function () {
+        $vacancies = \App\Models\JobVacancy::where('status', 'active')
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'title', 'department', 'location', 'type', 'description', 'requirements', 'deadline']);
+        return response()->json(['success' => true, 'data' => $vacancies]);
+    })->name('api.vacancies.public');
+
     // ============================================
     // BOOKING ROUTES (Public & Authenticated)
     // ============================================
@@ -977,8 +1082,8 @@ Route::prefix('v1')->group(function () {
     Route::get('/staff/consultants', [StaffController::class, 'consultants'])
         ->name('staff.consultants');
 
-    // ============================================
-    // WHATSAPP MESSAGE ROUTES (Public & Admin)
+        // ============================================
+    // WHATSAPP MESSAGE ROUTES (Public)
     // ============================================
     Route::prefix('whatsapp')->group(function () {
         Route::get('/options', [App\Http\Controllers\Api\WhatsappMessageController::class, 'options'])
@@ -986,69 +1091,76 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/messages', [App\Http\Controllers\Api\WhatsappMessageController::class, 'store'])
             ->name('api.whatsapp.messages.store');
-
-        Route::middleware(['auth:sanctum', 'role:admin|staff'])->prefix('admin/whatsapp')->group(function () {
-            Route::get('/messages', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'index'])
-                ->name('api.admin.whatsapp.messages.index');
-
-            Route::get('/messages/statistics', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'statistics'])
-                ->name('api.admin.whatsapp.messages.statistics');
-
-            Route::get('/messages/{id}', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'show'])
-                ->name('api.admin.whatsapp.messages.show');
-
-            Route::put('/messages/{id}', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'update'])
-                ->name('api.admin.whatsapp.messages.update');
-
-            Route::post('/messages/{id}/contacted', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'markContacted'])
-                ->name('api.admin.whatsapp.messages.contacted');
-
-            Route::post('/messages/{id}/converted', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'markConverted'])
-                ->name('api.admin.whatsapp.messages.converted');
-
-            Route::delete('/messages/{id}', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'destroy'])
-                ->name('api.admin.whatsapp.messages.destroy')
-                ->middleware('role:admin');
-        });
     });
 
     // ============================================
-    // CONTACT MESSAGE ROUTES (Public & Admin)
+    // ADMIN WHATSAPP MESSAGE ROUTES (Separated)
     // ============================================
-    Route::prefix('contact')->group(function () {
-        Route::post('/messages', [App\Http\Controllers\Api\ContactMessageController::class, 'store'])
-            ->name('api.contact.messages.store');
+    Route::prefix('admin/whatsapp')->middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+        Route::get('/messages', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'index'])
+            ->name('api.admin.whatsapp.messages.index');
 
-        Route::get('/departments', [App\Http\Controllers\Api\ContactMessageController::class, 'departments'])
-            ->name('api.contact.departments');
+        Route::get('/messages/statistics', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'statistics'])
+            ->name('api.admin.whatsapp.messages.statistics');
 
-        Route::middleware(['auth:sanctum', 'role:admin|staff'])->prefix('admin/contact')->group(function () {
-            Route::get('/messages', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'index'])
-                ->name('api.admin.contact.messages.index');
+        Route::get('/messages/{id}', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'show'])
+            ->name('api.admin.whatsapp.messages.show');
 
-            Route::get('/messages/statistics', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'statistics'])
-                ->name('api.admin.contact.messages.statistics');
+        Route::put('/messages/{id}', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'update'])
+            ->name('api.admin.whatsapp.messages.update');
 
-            Route::get('/messages/staff', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'staff'])
-                ->name('api.admin.contact.messages.staff');
+        Route::post('/messages/{id}/contacted', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'markContacted'])
+            ->name('api.admin.whatsapp.messages.contacted');
 
-            Route::get('/messages/{id}', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'show'])
-                ->name('api.admin.contact.messages.show');
+        Route::post('/messages/{id}/converted', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'markConverted'])
+            ->name('api.admin.whatsapp.messages.converted');
 
-            Route::put('/messages/{id}', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'update'])
-                ->name('api.admin.contact.messages.update');
-
-            Route::post('/messages/{id}/contacted', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'markContacted'])
-                ->name('api.admin.contact.messages.contacted');
-
-            Route::post('/messages/{id}/resolved', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'markResolved'])
-                ->name('api.admin.contact.messages.resolved');
-
-            Route::delete('/messages/{id}', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'destroy'])
-                ->name('api.admin.contact.messages.destroy')
-                ->middleware('role:admin');
-        });
+        Route::delete('/messages/{id}', [App\Http\Controllers\Api\Admin\WhatsappMessageController::class, 'destroy'])
+            ->name('api.admin.whatsapp.messages.destroy')
+            ->middleware('role:admin');
     });
+
+ // ✅ CORRECT STRUCTURE
+// ============================================
+// CONTACT MESSAGE ROUTES (Public)
+// ============================================
+Route::prefix('contact')->group(function () {
+    Route::post('/messages', [App\Http\Controllers\Api\ContactMessageController::class, 'store'])
+        ->name('api.contact.messages.store');
+
+    Route::get('/departments', [App\Http\Controllers\Api\ContactMessageController::class, 'departments'])
+        ->name('api.contact.departments');
+});
+
+// ============================================
+// ADMIN CONTACT ROUTES (Moved OUT of public group)
+// ============================================
+Route::prefix('admin/contact')->middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+    Route::get('/messages', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'index'])
+        ->name('api.admin.contact.messages.index');
+
+    Route::get('/messages/statistics', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'statistics'])
+        ->name('api.admin.contact.messages.statistics');
+
+    Route::get('/messages/staff', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'staff'])
+        ->name('api.admin.contact.messages.staff');
+
+    Route::get('/messages/{id}', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'show'])
+        ->name('api.admin.contact.messages.show');
+
+    Route::put('/messages/{id}', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'update'])
+        ->name('api.admin.contact.messages.update');
+
+    Route::post('/messages/{id}/contacted', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'markContacted'])
+        ->name('api.admin.contact.messages.contacted');
+
+    Route::post('/messages/{id}/resolved', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'markResolved'])
+        ->name('api.admin.contact.messages.resolved');
+
+    Route::delete('/messages/{id}', [App\Http\Controllers\Api\Admin\ContactMessageController::class, 'destroy'])
+        ->name('api.admin.contact.messages.destroy')
+        ->middleware('role:admin');
+});
 
     // ============================================
     // STAFF AVAILABILITY ROUTES
@@ -1227,6 +1339,101 @@ Route::prefix('v1')->group(function () {
             'payments',
         ])->name('api.client.payments');
 
+    });
+
+
+
+
+
+// ============================================
+// PRESS ARTICLES — Admin
+// ============================================
+Route::prefix('admin/press-articles')
+    ->middleware(['auth:sanctum', 'role:admin|staff'])
+    ->group(function () {
+        Route::get('/',    [AdminPressArticleController::class, 'index'])
+            ->name('api.admin.press-articles.index');
+
+        Route::post('/',   [AdminPressArticleController::class, 'store'])
+            ->name('api.admin.press-articles.store');
+
+        Route::get('/{pressArticle}',    [AdminPressArticleController::class, 'show'])
+            ->name('api.admin.press-articles.show');
+
+        Route::put('/{pressArticle}',    [AdminPressArticleController::class, 'update'])
+            ->name('api.admin.press-articles.update');
+
+        Route::delete('/{pressArticle}', [AdminPressArticleController::class, 'destroy'])
+            ->name('api.admin.press-articles.destroy');
+
+        Route::post('/{pressArticle}/toggle-publish',  [AdminPressArticleController::class, 'togglePublish'])
+            ->name('api.admin.press-articles.toggle-publish');
+
+        Route::post('/{pressArticle}/toggle-featured', [AdminPressArticleController::class, 'toggleFeatured'])
+            ->name('api.admin.press-articles.toggle-featured');
+    });
+
+
+
+
+
+// ============================================
+// GALLERY — Admin
+// ============================================
+Route::prefix('admin/gallery')
+    ->middleware(['auth:sanctum', 'role:admin|staff'])
+    ->group(function () {
+        Route::get('/',    [AdminGalleryController::class, 'index'])
+            ->name('api.admin.gallery.index');
+
+        Route::post('/',   [AdminGalleryController::class, 'store'])
+            ->name('api.admin.gallery.store');
+
+        // NOTE: /reorder must be registered before /{galleryItem}
+        Route::post('/reorder', [AdminGalleryController::class, 'reorder'])
+            ->name('api.admin.gallery.reorder');
+
+        Route::get('/{galleryItem}',    [AdminGalleryController::class, 'show'])
+            ->name('api.admin.gallery.show');
+
+        Route::put('/{galleryItem}',    [AdminGalleryController::class, 'update'])
+            ->name('api.admin.gallery.update');
+
+        Route::delete('/{galleryItem}', [AdminGalleryController::class, 'destroy'])
+            ->name('api.admin.gallery.destroy');
+
+        Route::post('/{galleryItem}/toggle-publish', [AdminGalleryController::class, 'togglePublish'])
+            ->name('api.admin.gallery.toggle-publish');
+    });
+
+
+
+// ============================================
+// PORTFOLIO — Admin
+// ============================================
+Route::prefix('admin/portfolio')
+    ->middleware(['auth:sanctum', 'role:admin|staff'])
+    ->group(function () {
+        Route::get('/',    [AdminPortfolioController::class, 'index'])
+            ->name('api.admin.portfolio.index');
+
+        Route::post('/',   [AdminPortfolioController::class, 'store'])
+            ->name('api.admin.portfolio.store');
+
+        Route::post('/reorder', [AdminPortfolioController::class, 'reorder'])
+            ->name('api.admin.portfolio.reorder');
+
+        Route::get('/{portfolio}',    [AdminPortfolioController::class, 'show'])
+            ->name('api.admin.portfolio.show');
+
+        Route::put('/{portfolio}',    [AdminPortfolioController::class, 'update'])
+            ->name('api.admin.portfolio.update');
+
+        Route::delete('/{portfolio}', [AdminPortfolioController::class, 'destroy'])
+            ->name('api.admin.portfolio.destroy');
+
+        Route::post('/{portfolio}/toggle-publish', [AdminPortfolioController::class, 'togglePublish'])
+            ->name('api.admin.portfolio.toggle-publish');
     });
 
 }); // END Route::prefix('v1')

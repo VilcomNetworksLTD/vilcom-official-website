@@ -81,29 +81,21 @@ class RegisterController extends Controller
                 'roles_assigned' => ['client'],
             ]);
 
-            // ── 3. Provision Emerald MBR (non-blocking) ──────────────────
-            // Only provision if a product was selected at signup
+            // ── 3. Queue Emerald MBR for Admin Approval ──────────────────
+            // When a product is selected at signup, we do NOT auto-provision.
+            // Instead we flag the account as pending admin/staff review.
+            // An admin or staff member must approve before the Emerald
+            // account_add API is called and the MBR ID is assigned.
             if ($request->filled('selected_product_id')) {
-                $result = $this->orchestrator->provisionNewSubscriber(
-                    $user,
-                    (int) $request->selected_product_id
-                );
+                $user->update([
+                    'emerald_pending_product_id' => (int) $request->selected_product_id,
+                    'emerald_approval_status'    => 'pending',
+                ]);
 
-                if ($result->isSuccess()) {
-                    Log::info('Emerald MBR provisioned at signup', [
-                        'user_id'     => $user->id,
-                        'customer_id' => $result->customerId,
-                        'account_id'  => $result->accountId,
-                    ]);
-                } elseif ($result->isFailed()) {
-                    // Non-fatal — user can still complete registration
-                    // Admin can manually provision later from dashboard
-                    Log::warning('Emerald provisioning failed at signup (non-fatal)', [
-                        'user_id' => $user->id,
-                        'reason'  => $result->message,
-                    ]);
-                }
-                // skipped = no mapping configured — that's fine too
+                Log::info('Emerald provisioning queued for admin approval', [
+                    'user_id'    => $user->id,
+                    'product_id' => $request->selected_product_id,
+                ]);
             }
 
             // ── 4. Activity Log ──────────────────────────────────────────

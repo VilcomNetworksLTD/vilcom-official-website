@@ -83,6 +83,13 @@ class User extends Authenticatable
         'phone_verified_at',
         'emerald_mbr_id',
         'emerald_account_id',
+
+        // Emerald approval gate
+        'emerald_pending_product_id',
+        'emerald_approval_status',
+        'emerald_approval_reviewed_by',
+        'emerald_approval_reviewed_at',
+        'emerald_approval_notes',
     ];
 
     /**
@@ -118,6 +125,7 @@ class User extends Authenticatable
             'commission_rate' => 'decimal:2',
             'is_team_leader' => 'boolean',
             'password_reset_expires_at' => 'datetime',
+            'emerald_approval_reviewed_at' => 'datetime',
         ];
     }
 
@@ -185,7 +193,7 @@ class User extends Authenticatable
     }
 
 
-    
+
     /**
      * Get the user's login history
      */
@@ -200,6 +208,22 @@ class User extends Authenticatable
     public function activities()
     {
         return $this->hasMany(UserActivity::class);
+    }
+
+    /**
+     * The product the client selected at signup, pending Emerald provisioning approval
+     */
+    public function pendingProduct()
+    {
+        return $this->belongsTo(Product::class, 'emerald_pending_product_id');
+    }
+
+    /**
+     * The staff/admin who reviewed the Emerald approval request
+     */
+    public function emeraldApprovalReviewer()
+    {
+        return $this->belongsTo(User::class, 'emerald_approval_reviewed_by');
     }
 
     /**
@@ -225,6 +249,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(HostingAccount::class);
     }
+
+    /**
+ * Get all leads assigned to this user (Staff/Admin)
+ */
+public function leads()
+{
+    return $this->hasMany(Lead::class, 'assigned_staff_id');
+}
 
     /**
      * Get the user's domains
@@ -324,6 +356,14 @@ class User extends Authenticatable
     public function scopeBusinesses($query)
     {
         return $query->where('customer_type', 'business');
+    }
+
+    /**
+     * Scope to get users pending Emerald account approval
+     */
+    public function scopePendingEmeraldApproval($query)
+    {
+        return $query->where('emerald_approval_status', 'pending');
     }
 
     /**

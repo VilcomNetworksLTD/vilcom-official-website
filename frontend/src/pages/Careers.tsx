@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import FooterSection from "@/components/FooterSection";
-import { careersApi } from "@/services/careers";
+import { careersApi, publicVacanciesApi, type JobVacancy } from "@/services/careers";
 import { useAuth } from "@/contexts/AuthContext";
 
 // Type for job from backend
 interface JobPosition {
+  id?: number;
   title: string;
   department: string;
   location: string;
@@ -420,23 +421,39 @@ export default function Careers() {
       try {
         setLoading(true);
         setError(null);
-        const jobTitles = await careersApi.getJobPositions();
-        const jobs: JobPosition[] = jobTitles.map(title => {
-          const details = jobDetailsMap[title];
-          if (details) return details;
-          return {
-            title,
-            department: "General",
-            location: "Nairobi, Kenya",
-            type: "Full-time",
-            description: `We are looking for a talented ${title} to join our team.`,
-            requirements: ["Relevant qualifications", "Problem-solving skills", "Team player"],
-          };
-        });
-        setJobOpenings(jobs);
+        // First try to fetch admin-posted vacancies from the DB
+        const liveVacancies = await publicVacanciesApi.getActive();
+        if (liveVacancies && liveVacancies.length > 0) {
+          const jobs: JobPosition[] = liveVacancies.map((v: JobVacancy) => ({
+            id: v.id,
+            title: v.title,
+            department: v.department ?? 'General',
+            location: v.location,
+            type: v.type,
+            description: v.description,
+            requirements: v.requirements ?? [],
+          }));
+          setJobOpenings(jobs);
+        } else {
+          // Fallback: legacy string-based API
+          const jobTitles = await careersApi.getJobPositions();
+          const jobs: JobPosition[] = jobTitles.map(title => {
+            const details = jobDetailsMap[title];
+            if (details) return details;
+            return {
+              title,
+              department: 'General',
+              location: 'Nairobi, Kenya',
+              type: 'Full-time',
+              description: `We are looking for a talented ${title} to join our team.`,
+              requirements: ['Relevant qualifications', 'Problem-solving skills', 'Team player'],
+            };
+          });
+          setJobOpenings(jobs.length > 0 ? jobs : mockJobOpenings);
+        }
       } catch (err) {
-        console.error("Failed to fetch job positions:", err);
-        setError("Unable to load job openings. Showing demo positions.");
+        console.error('Failed to fetch job positions:', err);
+        setError('Unable to load live positions. Showing demo positions.');
         setJobOpenings(mockJobOpenings);
       } finally {
         setLoading(false);

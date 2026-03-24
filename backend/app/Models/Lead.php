@@ -482,7 +482,34 @@ class Lead extends Model
      */
     public static function generateVisitorId(): string
     {
-        return Str::uuid()->toString();
+        return (string) Str::uuid();
+    }
+
+    /**
+     * Generate or ensure unique visitor ID with DB check
+     */
+    public static function ensureUniqueVisitorId(?string $vid = null): string
+    {
+        if ($vid) {
+            if (static::where('vlc_vid', $vid)->exists()) {
+                $vid = null;
+            }
+        }
+
+        if (!$vid) {
+            $maxAttempts = 10;
+            $attempts = 0;
+            do {
+                $vid = static::generateVisitorId();
+                $attempts++;
+            } while (static::where('vlc_vid', $vid)->exists() && $attempts < $maxAttempts);
+
+            if (static::where('vlc_vid', $vid)->exists()) {
+                throw new \Exception('Failed to generate unique visitor ID after ' . $maxAttempts . ' attempts');
+            }
+        }
+
+        return $vid;
     }
 }
 

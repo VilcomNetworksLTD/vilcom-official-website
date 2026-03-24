@@ -1,17 +1,15 @@
 import { useState, useEffect } from 'react';
-import { 
-  Plus, 
-  Trash2, 
-  Edit, 
+import {
+  Plus,
+  Trash2,
+  Edit,
   Search,
-  Check,
-  X as XIcon,
   Star,
   Quote,
   User,
   CheckCircle,
-  AlertCircle,
-  XCircle
+  XCircle,
+  X as XIcon,
 } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { testimonialService, Testimonial, TestimonialStats } from '@/services/testimonials';
@@ -25,7 +23,6 @@ const TestimonialManagement = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
-  // Form state
   const [formData, setFormData] = useState({
     name: '',
     company: '',
@@ -41,28 +38,47 @@ const TestimonialManagement = () => {
     loadStats();
   }, [searchQuery, statusFilter]);
 
-  const loadTestimonials = async () => {
-    setLoading(true);
-    try {
-      const response = await testimonialService.getAll({
-        search: searchQuery || undefined,
-        status: statusFilter || undefined,
-      });
-      // Handle both direct array and { data: [] } response formats
-      const testimonialsData = response.data || response;
-      setTestimonials(Array.isArray(testimonialsData) ? testimonialsData : []);
-    } catch (error) {
-      console.error('Failed to load testimonials:', error);
-      setTestimonials([]);
-    } finally {
-      setLoading(false);
+const loadTestimonials = async () => {
+  setLoading(true);
+  try {
+    const response = await testimonialService.getAll({
+      search: searchQuery || undefined,
+      status: statusFilter || undefined,
+    });
+
+    // Laravel paginate() wraps results as: { success, data: { data: [...], total, ... } }
+    // Handle all possible shapes safely
+    let testimonialsData: Testimonial[] = [];
+
+    if (Array.isArray(response?.data?.data)) {
+      // Paginated: response.data.data = the array
+      testimonialsData = response.data.data;
+    } else if (Array.isArray(response?.data)) {
+      // Non-paginated: response.data = the array
+      testimonialsData = response.data;
+    } else if (Array.isArray(response)) {
+      // Raw array
+      testimonialsData = response;
     }
-  };
+
+    setTestimonials(testimonialsData);
+  } catch (error) {
+    console.error('Failed to load testimonials:', error);
+    setTestimonials([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const loadStats = async () => {
     try {
       const response = await testimonialService.getStats();
-      setStats(response.data);
+      const data = response.data;
+      // ✅ Coerce average_rating to number — MySQL AVG() returns a string
+      setStats({
+        ...data,
+        average_rating: Number(data.average_rating ?? 0),
+      });
     } catch (error) {
       console.error('Failed to load stats:', error);
     }
@@ -70,15 +86,16 @@ const TestimonialManagement = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const form = new FormData();
     form.append('name', formData.name);
     form.append('company', formData.company || '');
     form.append('content', formData.content);
     form.append('rating', String(formData.rating));
-    form.append('is_approved', String(formData.is_approved));
-    form.append('is_featured', String(formData.is_featured));
-    
+    // ✅ Laravel boolean validation accepts "1"/"0", not "true"/"false"
+    form.append('is_approved', formData.is_approved ? '1' : '0');
+    form.append('is_featured', formData.is_featured ? '1' : '0');
+
     if (formData.avatar) {
       form.append('avatar', formData.avatar);
     }
@@ -100,7 +117,6 @@ const TestimonialManagement = () => {
 
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this testimonial?')) return;
-    
     try {
       await testimonialService.delete(id);
       loadTestimonials();
@@ -166,18 +182,16 @@ const TestimonialManagement = () => {
     });
   };
 
-  const renderStars = (rating: number) => {
-    return (
-      <div className="flex gap-0.5">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`w-4 h-4 ${star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-slate-600'}`}
-          />
-        ))}
-      </div>
-    );
-  };
+  const renderStars = (rating: number) => (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          className={`w-4 h-4 ${star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-slate-600'}`}
+        />
+      ))}
+    </div>
+  );
 
   return (
     <DashboardLayout userType="admin">
@@ -195,33 +209,26 @@ const TestimonialManagement = () => {
         </button>
       </div>
 
-      {/* Stats - Glassmorphism */}
+      {/* Stats */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
-            <p className="text-sm text-slate-400">Total</p>
-            <p className="text-2xl font-bold text-white">{stats.total}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
-            <p className="text-sm text-slate-400">Approved</p>
-            <p className="text-2xl font-bold text-green-400">{stats.approved}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
-            <p className="text-sm text-slate-400">Pending</p>
-            <p className="text-2xl font-bold text-orange-400">{stats.pending}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
-            <p className="text-sm text-slate-400">Featured</p>
-            <p className="text-2xl font-bold text-purple-400">{stats.featured}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
-            <p className="text-sm text-slate-400">Avg Rating</p>
-            <p className="text-2xl font-bold text-yellow-400">{stats.average_rating.toFixed(1)}</p>
-          </div>
+          {[
+            { label: 'Total',      value: stats.total,                          color: 'text-white'      },
+            { label: 'Approved',   value: stats.approved,                       color: 'text-green-400'  },
+            { label: 'Pending',    value: stats.pending,                        color: 'text-orange-400' },
+            { label: 'Featured',   value: stats.featured,                       color: 'text-purple-400' },
+            // ✅ average_rating is already a number after loadStats coercion
+            { label: 'Avg Rating', value: stats.average_rating.toFixed(1),      color: 'text-yellow-400' },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+              <p className="text-sm text-slate-400">{label}</p>
+              <p className={`text-2xl font-bold ${color}`}>{value}</p>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Filters - Glassmorphism */}
+      {/* Filters */}
       <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 mb-6">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="relative flex-1">
@@ -246,11 +253,11 @@ const TestimonialManagement = () => {
         </div>
       </div>
 
-      {/* Testimonials list - Glassmorphism */}
+      {/* Testimonials List */}
       <div className="space-y-4">
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
           </div>
         ) : testimonials.length === 0 ? (
           <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-12 text-center">
@@ -260,7 +267,10 @@ const TestimonialManagement = () => {
           </div>
         ) : (
           testimonials.map((testimonial) => (
-            <div key={testimonial.id} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6 hover:bg-white/15 hover:border-white/30 transition-all">
+            <div
+              key={testimonial.id}
+              className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6 hover:bg-white/15 hover:border-white/30 transition-all"
+            >
               <div className="flex gap-4">
                 {/* Avatar */}
                 <div className="w-16 h-16 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden border border-blue-500/20">
@@ -270,7 +280,7 @@ const TestimonialManagement = () => {
                     <User className="w-8 h-8 text-blue-400" />
                   )}
                 </div>
-                
+
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between">
@@ -278,11 +288,13 @@ const TestimonialManagement = () => {
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-white">{testimonial.name}</h3>
                         {testimonial.is_featured && (
-                          <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 text-xs rounded-full border border-purple-500/30">Featured</span>
+                          <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 text-xs rounded-full border border-purple-500/30">
+                            Featured
+                          </span>
                         )}
                         <span className={`px-2 py-0.5 text-xs rounded-full ${
-                          testimonial.is_approved 
-                            ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                          testimonial.is_approved
+                            ? 'bg-green-500/20 text-green-300 border border-green-500/30'
                             : 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
                         }`}>
                           {testimonial.is_approved ? 'Approved' : 'Pending'}
@@ -292,13 +304,11 @@ const TestimonialManagement = () => {
                         <p className="text-sm text-slate-400">{testimonial.company}</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-1">
-                      {renderStars(testimonial.rating)}
-                    </div>
+                    {renderStars(testimonial.rating)}
                   </div>
-                  
+
                   <p className="mt-3 text-slate-300 line-clamp-3">{testimonial.content}</p>
-                  
+
                   {/* Actions */}
                   <div className="mt-4 flex items-center gap-2 flex-wrap">
                     {!testimonial.is_approved && (
@@ -306,8 +316,7 @@ const TestimonialManagement = () => {
                         onClick={() => handleApprove(testimonial.id)}
                         className="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-500/20 text-green-300 border border-green-500/30 rounded-lg hover:bg-green-500/30 transition-all"
                       >
-                        <CheckCircle className="w-4 h-4" />
-                        Approve
+                        <CheckCircle className="w-4 h-4" /> Approve
                       </button>
                     )}
                     {testimonial.is_approved && (
@@ -315,15 +324,14 @@ const TestimonialManagement = () => {
                         onClick={() => handleReject(testimonial.id)}
                         className="flex items-center gap-1 px-3 py-1.5 text-sm bg-slate-500/20 text-slate-300 border border-slate-500/30 rounded-lg hover:bg-slate-500/30 transition-all"
                       >
-                        <XCircle className="w-4 h-4" />
-                        Reject
+                        <XCircle className="w-4 h-4" /> Reject
                       </button>
                     )}
                     <button
                       onClick={() => handleToggleFeatured(testimonial.id)}
                       className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border transition-all ${
-                        testimonial.is_featured 
-                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/30' 
+                        testimonial.is_featured
+                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/30'
                           : 'bg-slate-500/20 text-slate-300 border-slate-500/30 hover:bg-slate-500/30'
                       }`}
                     >
@@ -334,15 +342,13 @@ const TestimonialManagement = () => {
                       onClick={() => openEditModal(testimonial)}
                       className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 transition-all"
                     >
-                      <Edit className="w-4 h-4" />
-                      Edit
+                      <Edit className="w-4 h-4" /> Edit
                     </button>
                     <button
                       onClick={() => handleDelete(testimonial.id)}
                       className="flex items-center gap-1 px-3 py-1.5 text-sm bg-red-500/20 text-red-300 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-all"
                     >
-                      <Trash2 className="w-4 h-4" />
-                      Delete
+                      <Trash2 className="w-4 h-4" /> Delete
                     </button>
                   </div>
                 </div>
@@ -352,7 +358,7 @@ const TestimonialManagement = () => {
         )}
       </div>
 
-      {/* Modal - Glassmorphism */}
+      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-slate-900/90 backdrop-blur-xl border border-white/20 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -367,6 +373,7 @@ const TestimonialManagement = () => {
                 <XIcon className="w-5 h-5" />
               </button>
             </div>
+
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -391,14 +398,12 @@ const TestimonialManagement = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
-                  Avatar {editingTestimonial ? '' : '*'}
-                </label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Avatar</label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => setFormData({ ...formData, avatar: e.target.files?.[0] || null })}
-                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white file:mr-4 file:py-1 file:px-4 file:rounded-lg file:border-0 file:bg-blue-500/20 file:text-blue-300 file:border file:border-blue-500/30"
+                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white file:mr-4 file:py-1 file:px-4 file:rounded-lg file:border-0 file:bg-blue-500/20 file:text-blue-300"
                 />
               </div>
 
@@ -474,4 +479,3 @@ const TestimonialManagement = () => {
 };
 
 export default TestimonialManagement;
-

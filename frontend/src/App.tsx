@@ -63,19 +63,24 @@ import RolesManagement from "./pages/admin/RolesManagement";
 import QuoteManagement from "./pages/admin/QuoteManagement";
 import WhatsAppMessages from "./pages/admin/WhatsAppMessages";
 import MySubscriptions from "./pages/clients/MySubscriptions";
+import AdminPortfolio from "./pages/admin/AdminPortfolio";
 import MyServices from "./pages/clients/MyServices";
 import CoverageManagement from "./pages/admin/CoverageManagement";
 import Users from "./pages/admin/Users";
 import Clients from "./pages/admin/Clients";
+import ContactMessages from "./pages/admin/ContactMessages";
 import LeadManagement from "./pages/admin/LeadManagement";
+// ── NEW: CMS admin pages ──────────────────────────────────────────────────────
+import AdminPressArticles from "./pages/admin/PressArticles";
+import AdminGallery from "./pages/admin/AdminGallery";
+import AdminCareerManagement from "./pages/admin/AdminCareerManagement";
+import EmeraldApprovals from "./pages/admin/EmeraldApprovals";
 
 // ── Role-specific profile pages ───────────────────────────────────────────────
 import AdminProfile  from "./pages/admin/AdminProfile";
 import StaffProfile  from "./pages/staff/StaffProfile";
 import ClientProfile from "./pages/clients/ClientProfile";
 
-
- 
 // Password reset flow (public pages)
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword  from "./pages/auth/ResetPassword";
@@ -157,7 +162,7 @@ const App = () => (
                 ADMIN
             ══════════════════════════════════════════════════════════ */}
             <Route path="/admin/dashboard"          element={<AdminDashboard />} />
-            <Route path="/admin/profile"            element={<AdminProfile />} />   {/* ← admin profile */}
+            <Route path="/admin/profile"            element={<AdminProfile />} />
             <Route path="/admin/categories"         element={<CategoryManagement />} />
             <Route path="/admin/products"           element={<ProductManagement />} />
             <Route path="/admin/subscriptions"      element={<SubscriptionManagement />} />
@@ -170,23 +175,31 @@ const App = () => (
             <Route path="/admin/testimonials"       element={<TestimonialManagement />} />
             <Route path="/admin/faqs"               element={<FaqManagement />} />
             <Route path="/admin/media"              element={<MediaLibrary />} />
+            <Route path="/admin/portfolio-manager" element={<AdminPortfolio />} />
             <Route path="/admin/coverage"           element={<CoverageManagement />} />
             <Route path="/admin/invoices"           element={<InvoiceManagement />} />
             <Route path="/admin/users"              element={<Users />} />
             <Route path="/admin/clients"            element={<Clients />} />
             <Route path="/admin/leads"              element={<LeadManagement />} />
+            {/* ── NEW CMS routes ── */}
+            <Route path="/admin/press-articles"     element={<AdminPressArticles />} />
+            <Route path="/admin/gallery-manager"    element={<AdminGallery />} />
+            <Route path="/admin/contact-messages"   element={<ContactMessages />} />
+            <Route path="/admin/careers"            element={<AdminCareerManagement />} />
+            <Route path="/admin/emerald-approvals"  element={<EmeraldApprovals />} />
 
             {/* ══════════════════════════════════════════════════════════
                 STAFF
             ══════════════════════════════════════════════════════════ */}
             <Route path="/staff/dashboard"          element={<StaffDashboard />} />
-            <Route path="/staff/profile"            element={<StaffProfile />} />   {/* ← staff profile */}
+            <Route path="/staff/profile"            element={<StaffProfile />} />
+            <Route path="/staff/contact-messages" element={<ContactMessages />} />
 
             {/* ══════════════════════════════════════════════════════════
                 CLIENT
             ══════════════════════════════════════════════════════════ */}
             <Route path="/client/dashboard"         element={<ClientDashboard />} />
-            <Route path="/client/profile"           element={<ClientProfile />} />  {/* ← client profile */}
+            <Route path="/client/profile"           element={<ClientProfile />} />
             <Route path="/client/subscriptions"     element={<MyServices />} />
             <Route path="/client/services"          element={<MyServices />} />
             <Route path="/client/tickets"           element={<MyTickets />} />

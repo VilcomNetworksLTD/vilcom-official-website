@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { 
   Briefcase, 
@@ -6,68 +7,14 @@ import {
   Users, 
   MapPin, 
   ArrowRight,
-  CheckCircle,
+  Loader2,
   Globe
 } from "lucide-react";
+import { portfolioService, type PortfolioProject } from "@/services/portfolio";
 import Navbar from "@/components/Navbar";
 import FooterSection from "@/components/FooterSection";
 
-const portfolioProjects = [
-  {
-    id: 1,
-    title: "Nairobi Metropolitan Fiber Deployment",
-    category: "Fiber Installation",
-    location: "Nairobi County",
-    description: "Complete fiber-to-the-home (FTTH) deployment covering over 50,000 residential units in Nairobi's metropolitan area.",
-    image: "https://images.unsplash.com/photo-1557750255-c76072a7aad1?w=600&h=400&fit=crop",
-    stats: { value: "50,000+", label: "Homes Connected" }
-  },
-  {
-    id: 2,
-    title: "Mombasa Port Business Park Connectivity",
-    category: "Business Installation",
-    location: "Mombasa County",
-    description: "High-speed fiber connectivity solutions for the Mombasa Port Business Park, supporting logistics and maritime operations.",
-    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&h=400&fit=crop",
-    stats: { value: "200+", label: "Businesses Connected" }
-  },
-  {
-    id: 3,
-    title: "Kisumu City Center WiFi Network",
-    category: "Hotspot Network",
-    location: "Kisumu County",
-    description: "Public WiFi hotspot deployment across Kisumu city center, providing free internet access to residents and visitors.",
-    image: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=600&h=400&fit=crop",
-    stats: { value: "150+", label: "Hotspots Deployed" }
-  },
-  {
-    id: 4,
-    title: "Nakuru Industrial Zone Fiber Backbone",
-    category: "Fiber Installation",
-    location: "Nakuru County",
-    description: "Industrial-grade fiber backbone infrastructure serving manufacturing and processing facilities in Nakuru's industrial zone.",
-    image: "https://images.unsplash.com/photo-1565514020175-850b8c3b6d42?w=600&h=400&fit=crop",
-    stats: { value: "45km", label: "Fiber Cable Laid" }
-  },
-  {
-    id: 5,
-    title: "Eldoret Technology Park Connectivity",
-    category: "Business Installation",
-    location: "Uasin Gishu County",
-    description: "Enterprise connectivity solutions for Eldoret's emerging technology park, supporting startups and tech companies.",
-    image: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop",
-    stats: { value: "1Gbps", label: "Bandwidth Capacity" }
-  },
-  {
-    id: 6,
-    title: "Rural Counties Connectivity Initiative",
-    category: "Fiber Installation",
-    location: "Kakamega, Kisii, Migori",
-    description: "Extending fiber connectivity to underserved rural counties, bridging the digital divide in Western Kenya.",
-    image: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=600&h=400&fit=crop",
-    stats: { value: "12", label: "Counties Covered" }
-  }
-];
+
 
 const stats = [
   { value: "47", label: "Counties Covered", icon: MapPin },
@@ -77,6 +24,22 @@ const stats = [
 ];
 
 const Portfolio = () => {
+  const [projects, setProjects] = useState<PortfolioProject[]>([]);
+  const [loading, setLoading]   = useState(true);
+
+  useEffect(() => {
+    portfolioService.getAll()
+      .then((data) => {
+        setProjects(data);
+      })
+      .catch((err) => {
+        console.error("Failed to load portfolio", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
   return (
     <div className="min-h-screen gradient-bg relative overflow-hidden">
       {/* Gradient background */}
@@ -127,40 +90,61 @@ const Portfolio = () => {
             </h2>
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {portfolioProjects.map((project) => (
+              {loading ? (
+                <div className="col-span-full flex flex-col items-center justify-center py-20">
+                  <Loader2 className="w-10 h-10 text-sky-500 animate-spin mb-4" />
+                  <p className="text-slate-600 font-medium animate-pulse">Loading amazing projects...</p>
+                </div>
+              ) : projects.length === 0 ? (
+                <div className="col-span-full text-center py-20 text-slate-500">
+                  <Building2 className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+                  <p className="text-xl font-medium text-slate-700">Detailed case studies coming soon!</p>
+                  <p className="text-slate-500">We are currently curating our finest projects.</p>
+                </div>
+              ) : projects.map((project) => (
                 <div 
                   key={project.id}
                   className="glass-sky rounded-2xl overflow-hidden hover:scale-[1.02] transition-all duration-300 group"
                 >
-                  <div className="h-48 overflow-hidden relative">
+                  <div className="h-48 overflow-hidden relative bg-slate-200">
                     <img 
-                      src={project.image} 
+                      src={project.media?.url || "https://images.unsplash.com/photo-1557750255-c76072a7aad1?w=600&h=400&fit=crop"} 
                       alt={project.title}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
-                    <div className="absolute top-4 left-4">
-                      <span className="px-3 py-1 bg-sky-600 text-white text-xs font-semibold rounded-full">
-                        {project.category}
-                      </span>
-                    </div>
+                    {project.category && (
+                      <div className="absolute top-4 left-4">
+                        <span className="px-3 py-1 bg-sky-600 shadow-md text-white text-xs font-semibold rounded-full">
+                          {project.category}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="p-6">
-                    <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
-                      <MapPin className="w-4 h-4" />
-                      <span>{project.location}</span>
-                    </div>
-                    <h3 className="font-heading text-xl font-bold text-slate-800 mb-3">
+                    {project.location && (
+                      <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
+                        <MapPin className="w-4 h-4" />
+                        <span>{project.location}</span>
+                      </div>
+                    )}
+                    <h3 className="font-heading text-xl font-bold text-slate-800 mb-3 line-clamp-2">
                       {project.title}
                     </h3>
-                    <p className="text-slate-600 text-sm mb-4">
+                    <p className="text-slate-600 text-sm mb-4 line-clamp-3">
                       {project.description}
                     </p>
-                    <div className="flex items-center justify-between pt-4 border-t border-slate-200">
-                      <div>
-                        <span className="text-sky-600 font-bold text-lg">{project.stats.value}</span>
-                        <p className="text-slate-500 text-xs">{project.stats.label}</p>
-                      </div>
-                      <button className="text-sky-600 font-semibold text-sm hover:text-sky-700 flex items-center gap-1">
+                    
+                    <div className="flex items-center justify-between pt-4 border-t border-slate-200/60 mt-auto">
+                      {project.stats_value && project.stats_label ? (
+                        <div>
+                          <span className="text-sky-600 font-bold text-lg">{project.stats_value}</span>
+                          <p className="text-slate-500 text-xs">{project.stats_label}</p>
+                        </div>
+                      ) : (
+                        <div></div>
+                      )}
+                      
+                      <button className="text-sky-600 font-semibold text-sm hover:text-sky-700 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                         Details <ArrowRight className="w-4 h-4" />
                       </button>
                     </div>

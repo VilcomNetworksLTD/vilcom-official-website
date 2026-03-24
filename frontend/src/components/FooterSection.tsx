@@ -86,11 +86,11 @@ const FooterSection = () => {
             <div>
               <h4 className="font-heading font-bold text-slate-800 mb-5 text-lg">Company</h4>
               <div className="space-y-3">
-                {["About Us", "Careers", "Blog", "Media"].map((link) => (
-                  <Link key={link} to="/blog" className="block text-base text-slate-600 hover:text-primary transition-colors">
-                    {link}
-                  </Link>
-                ))}
+                <Link to="/about" className="block text-base text-slate-600 hover:text-primary transition-colors">About Us</Link>
+                <Link to="/faqs" className="block text-base text-slate-600 hover:text-primary transition-colors">FAQs</Link>
+                <Link to="/careers" className="block text-base text-slate-600 hover:text-primary transition-colors">Careers</Link>
+                <Link to="/blog" className="block text-base text-slate-600 hover:text-primary transition-colors">Blog</Link>
+                <Link to="/media" className="block text-base text-slate-600 hover:text-primary transition-colors">Media Features</Link>
               </div>
             </div>
 

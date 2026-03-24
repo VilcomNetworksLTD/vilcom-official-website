@@ -1,79 +1,72 @@
 import { useState, useEffect } from "react";
 import { Star, ChevronLeft, ChevronRight, Quote } from "lucide-react";
-
-const testimonials = [
-  {
-    name: "Amina W.",
-    role: "Home User, Kilimani",
-    quote: "Switched to Vilcom Network and my streaming has never been smoother. The 100Mbps plan is a game-changer!",
-    rating: 5,
-    avatarGradient: "bg-gradient-to-br from-[hsl(340,80%,55%)] to-[hsl(320,70%,45%)]",
-  },
-  {
-    name: "Brian K.",
-    role: "Business Owner, Westlands",
-    quote: "99.9% uptime isn't just marketing—it's real. Our office hasn't had a single outage in 6 months.",
-    rating: 5,
-    avatarGradient: "bg-gradient-to-br from-[hsl(30,100%,50%)] to-[hsl(45,100%,45%)]",
-  },
-  {
-    name: "Grace M.",
-    role: "Student, Kasarani",
-    quote: "Affordable, fast, and the customer support team is incredibly responsive. Best ISP in Nairobi!",
-    rating: 5,
-    avatarGradient: "gradient-royal",
-  },
-  {
-    name: "David O.",
-    role: "Developer, Karen",
-    quote: "The static IP and priority support make remote work seamless. Highly recommend the Family plan.",
-    rating: 5,
-    avatarGradient: "bg-gradient-to-br from-[hsl(170,70%,40%)] to-[hsl(200,80%,40%)]",
-  },
-  {
-    name: "Sarah J.",
-    role: "Restaurant Owner, CBD",
-    quote: "Our restaurant's online ordering system runs flawlessly thanks to Vilcom's reliable connection.",
-    rating: 5,
-    avatarGradient: "bg-gradient-to-br from-[hsl(260,70%,50%)] to-[hsl(280,60%,40%)]",
-  },
-  {
-    name: "Michael T.",
-    role: "IT Manager, Gigiri",
-    quote: "Enterprise connectivity at its best. The dedicated support team is always ready to help.",
-    rating: 5,
-    avatarGradient: "bg-gradient-to-br from-[hsl(190,80%,45%)] to-[hsl(210,70%,35%)]",
-  },
-];
+import { testimonialService, type Testimonial } from "@/services/testimonials";
 
 const TestimonialsSection = () => {
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const visibleTestimonials = 3;
+  const visibleTestimonials = testimonials.length > 0 ? Math.min(3, testimonials.length) : 0;
+
+  useEffect(() => {
+    testimonialService.getPublic()
+      .then((res) => {
+        // Safe mapping depending on response format
+        const dataArr = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+        // Fallback for missing avatars
+        const fetchedTestimonials = dataArr.map((t: any, index: number) => {
+          const gradients = [
+            "bg-gradient-to-br from-[hsl(340,80%,55%)] to-[hsl(320,70%,45%)]",
+            "bg-gradient-to-br from-[hsl(30,100%,50%)] to-[hsl(45,100%,45%)]",
+            "gradient-royal",
+            "bg-gradient-to-br from-[hsl(170,70%,40%)] to-[hsl(200,80%,40%)]",
+            "bg-gradient-to-br from-[hsl(260,70%,50%)] to-[hsl(280,60%,40%)]",
+            "bg-gradient-to-br from-[hsl(190,80%,45%)] to-[hsl(210,70%,35%)]",
+          ];
+          return {
+            ...t,
+            avatarGradient: gradients[index % gradients.length],
+          };
+        });
+        setTestimonials(fetchedTestimonials);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
 
   const nextSlide = () => {
-    if (isAnimating) return;
+    if (isAnimating || testimonials.length === 0) return;
     setIsAnimating(true);
     setCurrentIndex((prev) => (prev + 1) % testimonials.length);
     setTimeout(() => setIsAnimating(false), 500);
   };
 
   const prevSlide = () => {
-    if (isAnimating) return;
+    if (isAnimating || testimonials.length === 0) return;
     setIsAnimating(true);
     setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
     setTimeout(() => setIsAnimating(false), 500);
   };
 
   useEffect(() => {
+    if (testimonials.length <= 1) return;
     const interval = setInterval(() => {
       nextSlide();
     }, 5000);
     return () => clearInterval(interval);
-  }, [isAnimating]);
+  }, [isAnimating, testimonials.length]);
 
   const getVisibleItems = () => {
+    if (testimonials.length === 0) return [];
+    if (testimonials.length === 1) return [{ ...testimonials[0], position: 0 }];
+    if (testimonials.length === 2) {
+      return [
+        { ...testimonials[currentIndex], position: 0 },
+        { ...testimonials[(currentIndex + 1) % testimonials.length], position: 1 },
+      ];
+    }
     const items = [];
     for (let i = 0; i < visibleTestimonials; i++) {
       const index = (currentIndex + i) % testimonials.length;
@@ -81,6 +74,10 @@ const TestimonialsSection = () => {
     }
     return items;
   };
+
+  if (loading || testimonials.length === 0) {
+    return null; // Or return a loading state / empty state if preferred
+  }
 
   return (
     <section className="py-24 relative overflow-hidden">
@@ -152,7 +149,7 @@ const TestimonialsSection = () => {
 
                       {/* Quote */}
                       <p className={`text-sm md:text-base leading-relaxed mb-6 ${isCenter ? 'text-blue-200/90' : 'text-blue-200/60'}`}>
-                        "{item.quote}"
+                        "{item.content}"
                       </p>
 
                       {/* Author */}
@@ -162,7 +159,7 @@ const TestimonialsSection = () => {
                         </div>
                         <div>
                           <div className="font-heading font-bold text-white">{item.name}</div>
-                          <div className="text-xs text-blue-200/60">{item.role}</div>
+                          <div className="text-xs text-blue-200/60">{item.company || 'Customer'}</div>
                         </div>
                       </div>
                     </div>
