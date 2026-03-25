@@ -165,7 +165,7 @@ const MediaLibrary = () => {
       {/* Toolbar - Glassmorphism */}
       <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 mb-6">
         <div className="flex flex-col lg:flex-row gap-4 justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-4">
             {/* Folder selector */}
             <select
               value={currentFolder}
@@ -194,12 +194,12 @@ const MediaLibrary = () => {
                 placeholder="Search files..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder-slate-400 w-64"
+                className="pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder-slate-400 w-full sm:w-64"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             {/* View mode */}
             <div className="flex border border-white/20 rounded-lg overflow-hidden">
               <button

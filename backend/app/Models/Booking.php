@@ -23,6 +23,8 @@ class Booking extends Model
         'cancelled_at', 'cancellation_reason',
         'rescheduled_from', 'original_date', 'original_time',
         'reminder_sent', 'reminder_sent_at',
+        'id_type', 'id_number',
+        'vms_reference', 'vms_check_in_code', 'vms_qr_code_url', 'vms_synced_at',
     ];
 
     protected $casts = [

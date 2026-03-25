@@ -124,7 +124,7 @@ const bookingService = {
   },
 
   /**
-   * Create a new booking
+   * Create a new booking (saves to our DB AND syncs to VMS simultaneously)
    */
   async createBooking(data: {
     first_name: string;
@@ -139,6 +139,12 @@ const bookingService = {
     booking_time: string;
     meeting_type: 'in_person' | 'virtual' | 'phone';
     notes?: string;
+    /** Required for VMS visitor pass */
+    id_type: 'national_id' | 'passport' | 'drivers_license' | 'other';
+    /** Required for VMS visitor pass */
+    id_number: string;
+    visit_type?: string;
+    purpose?: string;
   }) {
     const response = await axios.post('/bookings', data);
     return response.data;

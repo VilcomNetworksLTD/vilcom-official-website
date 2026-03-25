@@ -245,7 +245,7 @@ export default function WhatsAppButton() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="p-3 rounded-xl bg-white/5 border border-white/10">
                   <label className="text-white/50 text-xs font-semibold flex items-center gap-1 mb-1">
                     <User className="w-3 h-3" /> Name (Optional)
@@ -301,7 +301,7 @@ export default function WhatsAppButton() {
         {/* Action Buttons */}
         {showCustomInput && (
           <div className="relative p-6 pt-4 border-t border-white/10">
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={handleClose}
                 className="flex-1 px-6 py-3 rounded-full text-base font-bold text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all"

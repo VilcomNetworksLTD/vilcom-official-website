@@ -687,7 +687,7 @@ const CoverageManagement = () => {
             )}
 
             {/* Always cards below xl, table at xl+ */}
-            <div className="xl:hidden space-y-2">
+            <div className="xl:hidden grid grid-cols-1 md:grid-cols-2 gap-3">
               {zones.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-slate-600">
                   <MapPin className="w-10 h-10 mb-3 opacity-30" />
@@ -897,7 +897,7 @@ const CoverageManagement = () => {
             </div>
 
             {/* Cards on mobile/tablet */}
-            <div className="xl:hidden space-y-2">
+            <div className="xl:hidden grid grid-cols-1 md:grid-cols-2 gap-3">
               {filteredSignups.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-slate-600">
                   <Users className="w-10 h-10 mb-3 opacity-30" />

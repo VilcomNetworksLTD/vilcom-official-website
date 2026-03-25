@@ -219,6 +219,10 @@ class RegisterController extends Controller
         );
 
         if ($result->isSuccess()) {
+            if ($user->status !== 'active') {
+                $user->update(['status' => 'active']);
+            }
+            
             return response()->json([
                 'success'     => true,
                 'message'     => 'Emerald account provisioned successfully.',

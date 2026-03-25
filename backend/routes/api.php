@@ -1065,6 +1065,7 @@ Route::prefix('admin/coverage')->middleware(['auth:sanctum', 'role:admin|staff']
     // BOOKING ROUTES (Public & Authenticated)
     // ============================================
     Route::prefix('bookings')->group(function () {
+        // ── Public (no auth required) ─────────────────────────────────────
         Route::get('/services', [BookingController::class, 'bookableServices'])
             ->name('bookings.services');
 
@@ -1076,6 +1077,24 @@ Route::prefix('admin/coverage')->middleware(['auth:sanctum', 'role:admin|staff']
 
         Route::post('/', [BookingController::class, 'store'])
             ->name('bookings.store');
+
+        // ── Authenticated (requires login) ────────────────────────────────
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::get('/', [BookingController::class, 'index'])
+                ->name('bookings.index');
+
+            Route::get('/meta/statistics', [BookingController::class, 'statistics'])
+                ->name('bookings.statistics');
+
+            Route::get('/{booking}', [BookingController::class, 'show'])
+                ->name('bookings.show');
+
+            Route::patch('/{booking}/status', [BookingController::class, 'updateStatus'])
+                ->name('bookings.status');
+
+            Route::post('/{booking}/cancel', [BookingController::class, 'cancel'])
+                ->name('bookings.cancel');
+        });
     });
 
     // Public staff list for the "choose a consultant" dropdown

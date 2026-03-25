@@ -482,86 +482,91 @@ const AdminPressArticles = () => {
         </select>
       </div>
 
-      {/* Table */}
+      {/* Grid of articles */}
       {loading ? (
         <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 text-blue-400 animate-spin" /></div>
       ) : (
-        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-white/10">
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Article</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium hidden sm:table-cell">Type</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium hidden md:table-cell">Source</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium hidden lg:table-cell">Category</th>
-                <th className="text-center px-4 py-3 text-slate-400 font-medium">Status</th>
-                <th className="text-right px-4 py-3 text-slate-400 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {articles.map((a) => (
-                <tr key={a.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      {a.thumbnail && <img src={a.thumbnail} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />}
-                      <div className="min-w-0">
-                        <p className="text-white font-medium truncate max-w-[200px]">{a.title}</p>
-                        {a.is_featured && <span className="text-xs text-amber-400">★ Featured</span>}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {articles.map((a) => (
+             <div key={a.id} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-5 hover:bg-white/15 hover:border-white/30 transition-all flex flex-col">
+                <div className="flex items-start gap-4 mb-3">
+                   {a.thumbnail ? (
+                     <img src={a.thumbnail} alt="" className="w-16 h-16 rounded-lg object-cover flex-shrink-0 bg-slate-800" />
+                   ) : (
+                     <div className="w-16 h-16 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
+                       <span className="text-2xl">{a.type === 'press' ? '📰' : '✍️'}</span>
+                     </div>
+                   )}
+                   <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                           a.type === 'press' ? 'bg-blue-500/20 text-blue-300' : 'bg-purple-500/20 text-purple-300'
+                         }`}>
+                           {a.type === 'press' ? 'Press' : 'Blog'}
+                         </span>
+                         {a.category && (
+                           <span className="px-2 py-0.5 bg-white/10 text-slate-300 rounded-full text-[10px] font-bold uppercase tracking-wider truncate border border-white/10">
+                             {a.category}
+                           </span>
+                         )}
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 hidden sm:table-cell">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      a.type === 'press' ? 'bg-blue-500/20 text-blue-300' : 'bg-purple-500/20 text-purple-300'
-                    }`}>
-                      {a.type === 'press' ? 'Press' : 'Blog'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-slate-300 hidden md:table-cell">{a.source_name}</td>
-                  <td className="px-4 py-3 hidden lg:table-cell">
-                    <span className="px-2 py-0.5 bg-white/10 text-slate-300 rounded-full text-xs">{a.category}</span>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      a.is_published ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-500/20 text-slate-400'
-                    }`}>
-                      {a.is_published ? 'Published' : 'Draft'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      {a.article_url && (
-                        <a href={a.article_url} target="_blank" rel="noopener noreferrer"
-                          className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all">
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
-                      )}
-                      <button onClick={() => handleToggleFeatured(a.id)}
-                        className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-amber-500/20 rounded-lg transition-all"
-                        title={a.is_featured ? 'Unfeature' : 'Feature'}>
-                        {a.is_featured ? <StarOff className="w-4 h-4" /> : <Star className="w-4 h-4" />}
-                      </button>
-                      <button onClick={() => handleTogglePublish(a.id)}
-                        className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/20 rounded-lg transition-all"
-                        title={a.is_published ? 'Unpublish' : 'Publish'}>
-                        {a.is_published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                      <button onClick={() => setEdit(a)}
-                        className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all">
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => handleDelete(a.id)}
-                        className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      <h3 className="text-white font-semibold text-sm line-clamp-2" title={a.title}>{a.title}</h3>
+                   </div>
+                </div>
+
+                <div className="flex-1 text-sm text-slate-400 mb-4 line-clamp-3">
+                   {a.excerpt || 'No excerpt provided.'}
+                </div>
+
+                <div className="flex items-center justify-between gap-2 mb-4 text-[11px] font-medium uppercase tracking-wide">
+                   <div className="flex items-center gap-1.5 truncate">
+                      <span className="text-slate-500">Source:</span> 
+                      <span className="text-slate-300 truncate">{a.source_name}</span>
+                   </div>
+                   <div className="flex items-center gap-3">
+                      {a.is_featured && <span className="text-amber-400 flex items-center gap-1"><Star className="w-3 h-3 fill-amber-400" /> Featured</span>}
+                      <span className={`flex items-center gap-1 ${a.is_published ? 'text-emerald-400' : 'text-slate-500'}`}>
+                        {a.is_published ? 'Published' : 'Draft'}
+                      </span>
+                   </div>
+                </div>
+
+                <div className="pt-4 border-t border-white/10 flex items-center gap-2 flex-wrap">
+                   {a.article_url && (
+                     <a href={a.article_url} target="_blank" rel="noopener noreferrer"
+                       className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs bg-white/5 text-slate-300 border border-white/10 rounded-lg hover:bg-white/10 transition-all flex-1"
+                     >
+                       <ExternalLink className="w-3.5 h-3.5" /> Link
+                     </a>
+                   )}
+                   <div className="flex-1" />
+                   <button onClick={() => handleToggleFeatured(a.id)}
+                     className={`p-1.5 rounded-lg border transition-all ${
+                       a.is_featured ? 'bg-amber-500/20 text-amber-400 border-amber-500/30 hover:bg-amber-500/30' : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
+                     }`}
+                     title={a.is_featured ? 'Unfeature' : 'Feature'}>
+                     <Star className={`w-4 h-4 ${a.is_featured ? 'fill-amber-400' : ''}`} />
+                   </button>
+                   <button onClick={() => handleTogglePublish(a.id)}
+                     className={`p-1.5 rounded-lg border transition-all ${
+                       a.is_published ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/30' : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
+                     }`}
+                     title={a.is_published ? 'Unpublish' : 'Publish'}>
+                     {a.is_published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                   </button>
+                   <button onClick={() => setEdit(a)}
+                     className="p-1.5 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 transition-all">
+                     <Edit className="w-4 h-4" />
+                   </button>
+                   <button onClick={() => handleDelete(a.id)}
+                     className="p-1.5 bg-red-500/20 text-red-300 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-all">
+                     <Trash2 className="w-4 h-4" />
+                   </button>
+                </div>
+             </div>
+          ))}
           {articles.length === 0 && (
-            <div className="text-center py-16 text-slate-400">
+            <div className="col-span-full text-center py-16 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-slate-400">
               No articles found. Click "New article" to get started.
             </div>
           )}

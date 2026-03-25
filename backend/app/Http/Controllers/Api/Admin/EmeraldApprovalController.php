@@ -116,6 +116,7 @@ class EmeraldApprovalController extends Controller
                 'emerald_approval_reviewed_by' => $request->user()->id,
                 'emerald_approval_reviewed_at' => now(),
                 'emerald_approval_notes'       => $request->input('notes'),
+                'status'                       => 'active',
             ]);
 
             return response()->json([

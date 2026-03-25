@@ -8,7 +8,7 @@ import {
   Loader2, RefreshCw, Users, Search, X, MoreHorizontal, Eye,
   UserCheck, TrendingUp, Zap, ChevronLeft, ChevronRight,
   MessageCircle, Star, Globe, Smartphone, Monitor, Tablet,
-  CheckCircle2, XCircle, ArrowRightCircle,
+  CheckCircle2, XCircle, ArrowRightCircle, Trash2,
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -100,24 +100,30 @@ const DeviceIcon = ({ type }: { type: string }) => {
   return <Monitor className="w-3.5 h-3.5 text-slate-500" />;
 };
 
-// ─── Lead Card (Mobile - Styled EXACTLY like Quote Management Card) ─────────
+// ─── Lead Card ───────────────────────────────────────────────────────────────
 const LeadCard = ({ lead, onView, onQuickStatus, onDelete }: {
   lead: Lead;
   onView: () => void;
   onQuickStatus: (id: number, status: string) => void;
   onDelete: (id: number) => void;
 }) => (
-  <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
+  <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-5 hover:bg-white/15 hover:border-white/30 transition-all flex flex-col space-y-4 relative group">
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0 flex-1">
-        <p className="font-mono text-blue-400 text-sm font-semibold">#{lead.id}</p>
-        <p className="text-white font-semibold text-sm mt-1 truncate">{lead.name ?? <span className="text-slate-600 italic">Unknown</span>}</p>
-        <p className="text-slate-500 text-xs truncate">{lead.email ?? '—'}</p>
-        {lead.company_name && <p className="text-slate-600 text-xs truncate">{lead.company_name}</p>}
+        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+          <p className="font-mono text-blue-400 text-sm font-semibold">#{lead.id}</p>
+          <span className="text-[10px] font-medium text-slate-400 capitalize px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 flex-shrink-0">
+            {SOURCE_LABELS[lead.source] ?? lead.source}
+          </span>
+          {lead.is_business && <span className="text-[10px] font-medium text-cyan-400 capitalize px-2 py-0.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex-shrink-0">Business</span>}
+        </div>
+        <p className="text-white font-semibold text-sm truncate">{lead.name ?? <span className="text-slate-600 italic">Unknown</span>}</p>
+        <p className="text-slate-400 text-xs truncate mt-0.5">{lead.email ?? '—'}</p>
+        {lead.company_name && <p className="text-slate-500 text-xs truncate mt-0.5">{lead.company_name}</p>}
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="w-8 h-8 rounded-lg text-slate-500 hover:text-slate-300 flex-shrink-0">
+          <Button variant="ghost" size="icon" className="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 flex-shrink-0">
             <MoreHorizontal className="w-4 h-4" />
           </Button>
         </DropdownMenuTrigger>
@@ -153,27 +159,25 @@ const LeadCard = ({ lead, onView, onQuickStatus, onDelete }: {
           <DropdownMenuSeparator className="bg-white/10" />
           <DropdownMenuItem className="gap-2 text-red-400 hover:text-red-300 cursor-pointer focus:bg-red-500/10"
             onClick={() => onDelete(lead.id)}>
-            <XCircle className="w-3.5 h-3.5" /> Delete
+            <Trash2 className="w-3.5 h-3.5" /> Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
+    
     <div className="flex items-center gap-2 flex-wrap">
       <StatusBadge status={lead.status} />
       <ScoreBadge score={lead.score} />
-      <span className="text-[10px] font-medium text-slate-400 capitalize px-2 py-0.5 rounded-lg bg-white/5 border border-white/10">
-        {SOURCE_LABELS[lead.source] ?? lead.source}
-      </span>
-      {lead.is_business && <span className="text-[10px] font-medium text-cyan-400 capitalize px-2 py-0.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20">Business</span>}
     </div>
-    <div className="flex items-center justify-between pt-1 border-t border-white/10">
-      <div className="flex items-center gap-1">
+
+    <div className="flex items-center justify-between pt-3 border-t border-white/10 mt-auto">
+      <div className="flex items-center gap-1.5">
          <DeviceIcon type={lead.device_type} />
-         <span className="text-xs text-slate-500 truncate max-w-[150px]">
+         <span className="text-xs text-slate-400 truncate max-w-[120px]">
            {lead.assignedStaff?.name ?? <span className="text-slate-600 italic">Unassigned</span>}
          </span>
       </div>
-      <span className="text-slate-500 text-xs">{fmtDate(lead.created_at)}</span>
+      <span className="text-slate-500 text-[10px]">{fmtDate(lead.created_at)}</span>
     </div>
   </div>
 );
@@ -411,26 +415,27 @@ export default function LeadManagement() {
 
   return (
     <DashboardLayout userType="admin">
-      <div className="w-full px-2 sm:px-4 py-4 sm:py-8 max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
-              <span className="text-xs font-semibold text-slate-500 tracking-widest uppercase hidden sm:inline">Sales</span>
-            </div>
-            <h1 className="text-xl sm:text-3xl font-bold text-white tracking-tight">Lead Management</h1>
-            <p className="text-slate-400 mt-0.5 sm:mt-1 text-xs sm:text-sm hidden sm:block">Track and manage your sales pipeline</p>
-          </div>
-          <Button variant="ghost" size="icon" onClick={refresh}
-            className="text-slate-400 hover:text-white hover:bg-white/5 rounded-xl" title="Refresh">
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-          </Button>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Users className="w-6 h-6 text-blue-400" />
+            Lead Management
+          </h1>
+          <p className="text-slate-400 mt-1">Track and manage your sales pipeline</p>
         </div>
+        <button
+          onClick={refresh}
+          className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-slate-300 hover:bg-white/20 transition-all text-sm"
+        >
+          <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
+      </div>
 
-        {/* Stats - Grid matches Quote Management */}
-        {stats && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
+      {/* Stats - Grid matches Quote Management */}
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             <StatCard label="Total"     value={stats.overview.total}     icon={Users}          accent="#3b82f6" />
             <StatCard label="New"       value={stats.overview.new}       icon={Star}           accent="#3b82f6" />
             <StatCard label="Contacted" value={stats.overview.contacted} icon={MessageCircle}  accent="#f59e0b" />
@@ -441,8 +446,8 @@ export default function LeadManagement() {
           </div>
         )}
 
-        {/* Filters */}
-        <div className="space-y-3">
+      {/* Filters */}
+      <div className="space-y-3 mb-6">
           {/* Search */}
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="relative w-full sm:flex-1 min-w-[220px]">
@@ -465,7 +470,7 @@ export default function LeadManagement() {
             <select
               value={filters.source}
               onChange={e => setFilters(f => ({ ...f, source: e.target.value }))}
-              className="w-full sm:flex-shrink-0 px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-slate-300 focus:outline-none focus:border-blue-500/50 transition">
+              className="w-full sm:w-48 shrink-0 px-3 py-2.5 bg-slate-800 border border-white/20 rounded-xl text-sm text-white focus:outline-none transition">
               <option value="">All Sources</option>
               {Object.entries(SOURCE_LABELS).map(([v, l]) => (
                 <option key={v} value={v}>{l}</option>
@@ -495,132 +500,21 @@ export default function LeadManagement() {
           </div>
         </div>
 
-        {/* Desktop Table - Scrollable */}
-        <div className="hidden md:block rounded-xl border border-white/10 overflow-hidden overflow-x-auto">
-           {/* Header row */}
-           <div className="grid grid-cols-[1.2fr_1.8fr_1fr_1fr_1fr_0.8fr_0.8fr_auto] gap-3 px-4 sm:px-5 py-3 bg-white/[0.02] border-b border-white/10 min-w-[900px]">
-            {['Lead ID','Contact','Source','Status','Score','Assigned','Date',''].map((h, i) => (
-              <div key={i} className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</div>
-            ))}
-          </div>
-
-          {/* Body */}
-          <div className="divide-y divide-white/[0.04]">
-            {loading ? (
-              <div className="flex items-center justify-center py-16 gap-3 text-slate-500">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span className="text-sm">Loading leads…</span>
-              </div>
-            ) : leads.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-slate-600">
-                <Users className="w-10 h-10 mb-3 opacity-30" />
-                <p className="font-medium">No leads found</p>
-                <p className="text-sm mt-1">
-                  {filters.search || filters.status || filters.source
-                    ? 'Try adjusting your search or filters'
-                    : 'Leads will appear as visitors interact with your site'}
-                </p>
-              </div>
-            ) : leads.map(lead => (
-              <div key={lead.id}
-                className="grid grid-cols-[1.2fr_1.8fr_1fr_1fr_1fr_0.8fr_0.8fr_auto] gap-3 px-4 sm:px-5 py-4 items-center hover:bg-white/[0.02] transition-colors group min-w-[900px]">
-
-                {/* Lead ID */}
-                <div>
-                  <p className="font-mono text-blue-400 text-sm font-semibold">#{lead.id}</p>
-                  <p className="text-white font-semibold text-sm truncate mt-0.5">{lead.name ?? <span className="text-slate-600 italic">Unknown</span>}</p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <DeviceIcon type={lead.device_type} />
-                    {lead.is_business && <span className="text-xs text-cyan-500">Biz</span>}
-                  </div>
-                </div>
-
-                {/* Contact */}
-                <div className="min-w-0">
-                  <p className="text-white font-semibold text-sm truncate">{lead.email ?? '—'}</p>
-                  <p className="text-slate-500 text-xs truncate">{lead.phone ?? ''}</p>
-                </div>
-
-                {/* Source */}
-                <span className="text-xs font-medium text-slate-400 capitalize px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 w-fit truncate">
-                  {SOURCE_LABELS[lead.source] ?? lead.source}
-                </span>
-
-                {/* Status */}
-                <StatusBadge status={lead.status} />
-
-                {/* Score */}
-                <ScoreBadge score={lead.score} />
-
-                {/* Assigned */}
-                <span className="text-slate-400 text-sm truncate">
-                  {lead.assignedStaff?.name ?? <span className="text-slate-600 italic text-xs">Unassigned</span>}
-                </span>
-
-                {/* Date */}
-                <span className="text-slate-500 text-xs">{fmtDate(lead.created_at)}</span>
-
-                {/* Actions */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon"
-                      className="w-8 h-8 rounded-lg text-slate-600 hover:text-slate-300 hover:bg-white/8 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-[#0f1629] border-white/10 text-white w-44">
-                    <DropdownMenuItem className="gap-2 text-slate-300 hover:text-white cursor-pointer focus:bg-white/8 focus:text-white"
-                      onClick={() => setDetailId(lead.id)}>
-                      <Eye className="w-3.5 h-3.5" /> View Details
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-white/10" />
-                    {lead.status === 'new' && (
-                      <DropdownMenuItem className="gap-2 text-amber-400 hover:text-amber-300 cursor-pointer focus:bg-amber-500/10 focus:text-amber-300"
-                        onClick={() => quickStatus(lead.id, 'contacted')}>
-                        <MessageCircle className="w-3.5 h-3.5" /> Mark Contacted
-                      </DropdownMenuItem>
-                    )}
-                    {lead.status === 'contacted' && (
-                      <DropdownMenuItem className="gap-2 text-violet-400 hover:text-violet-300 cursor-pointer focus:bg-violet-500/10 focus:text-violet-300"
-                        onClick={() => quickStatus(lead.id, 'qualified')}>
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Mark Qualified
-                      </DropdownMenuItem>
-                    )}
-                    {!['converted','lost','spam'].includes(lead.status) && (
-                      <DropdownMenuItem className="gap-2 text-emerald-400 hover:text-emerald-300 cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-300"
-                        onClick={() => quickStatus(lead.id, 'converted')}>
-                        <ArrowRightCircle className="w-3.5 h-3.5" /> Convert
-                      </DropdownMenuItem>
-                    )}
-                    {lead.status !== 'spam' && (
-                      <DropdownMenuItem className="gap-2 text-slate-400 hover:text-slate-300 cursor-pointer focus:bg-white/8"
-                        onClick={() => quickStatus(lead.id, 'lost')}>
-                        <XCircle className="w-3.5 h-3.5" /> Mark Lost
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuSeparator className="bg-white/10" />
-                    <DropdownMenuItem className="gap-2 text-red-400 hover:text-red-300 cursor-pointer focus:bg-red-500/10"
-                      onClick={() => deleteLead(lead.id)}>
-                      <XCircle className="w-3.5 h-3.5" /> Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Mobile Cards */}
-        <div className="md:hidden space-y-2">
+      {/* ── CARD LIST (replaces the table — works on all screen sizes) ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full min-w-0">
           {loading ? (
-            <div className="flex items-center justify-center py-12 gap-3 text-slate-500">
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <span className="text-sm">Loading leads…</span>
+            <div className="col-span-full flex items-center justify-center py-24">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500" />
             </div>
           ) : leads.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-slate-600">
-              <Users className="w-10 h-10 mb-3 opacity-30" />
-              <p className="font-medium">No leads found</p>
+            <div className="col-span-full bg-white/10 backdrop-blur-md border border-white/20 rounded-xl py-20 text-center">
+              <Users className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+              <p className="text-white font-medium mb-1">No leads found</p>
+              <p className="text-slate-400 text-sm mt-1">
+                {filters.search || filters.status || filters.source
+                  ? 'Try adjusting your search or filters'
+                  : 'Leads will appear as visitors interact with your site'}
+              </p>
             </div>
           ) : leads.map(lead => (
             <LeadCard key={lead.id} lead={lead}
@@ -630,33 +524,31 @@ export default function LeadManagement() {
           ))}
         </div>
 
-        {/* Pagination */}
-        {pagination.last_page > 1 && (
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-slate-500">
-              Showing {((pagination.current_page - 1) * 20) + 1}–{Math.min(pagination.current_page * 20, pagination.total)} of {pagination.total}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon"
-                disabled={pagination.current_page === 1}
-                onClick={() => setPagination(p => ({ ...p, current_page: p.current_page - 1 }))}
-                className="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 disabled:opacity-30">
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <span className="text-xs text-slate-500 px-2">
-                {pagination.current_page} / {pagination.last_page}
-              </span>
-              <Button variant="ghost" size="icon"
-                disabled={pagination.current_page === pagination.last_page}
-                onClick={() => setPagination(p => ({ ...p, current_page: p.current_page + 1 }))}
-                className="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 disabled:opacity-30">
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
+      {/* Pagination */}
+      {pagination.last_page > 1 && (
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl">
+          <p className="text-sm text-slate-400">
+            Showing {((pagination.current_page - 1) * 20) + 1}–{Math.min(pagination.current_page * 20, pagination.total)} of {pagination.total}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon"
+              disabled={pagination.current_page === 1}
+              onClick={() => setPagination(p => ({ ...p, current_page: p.current_page - 1 }))}
+              className="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 disabled:opacity-30">
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <span className="text-sm text-slate-400 px-2">
+              {pagination.current_page} / {pagination.last_page}
+            </span>
+            <Button variant="ghost" size="icon"
+              disabled={pagination.current_page === pagination.last_page}
+              onClick={() => setPagination(p => ({ ...p, current_page: p.current_page + 1 }))}
+              className="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 disabled:opacity-30">
+              <ChevronRight className="w-4 h-4" />
+            </Button>
           </div>
-        )}
-
-      </div>
+        </div>
+      )}
 
       {/* Modals */}
       {detailId && (

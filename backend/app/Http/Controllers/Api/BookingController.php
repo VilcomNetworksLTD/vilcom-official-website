@@ -16,25 +16,160 @@ use App\Notifications\BookingReceivedNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class BookingController extends Controller
 {
+    // ─────────────────────────────────────────────────────────────────────────
+    // VMS INTEGRATION CONFIG
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * VMS public booking endpoint.
+     * Set VMS_BASE_URL and VMS_ORG_SLUG in .env to override defaults.
+     *   VMS_BASE_URL=https://vms.vilcom.co.ke/api/organizations
+     *   VMS_ORG_SLUG=vilcom-networks-limited
+     */
+    private function vmsBookingUrl(): string
+    {
+        $base = rtrim(config('services.vms.base_url', 'https://vms.vilcom.co.ke/api/organizations'), '/');
+        $slug = config('services.vms.org_slug', 'vilcom-networks-limited');
+        return "{$base}/{$slug}/bookings";
+    }
+
+    /**
+     * Map meeting_type → VMS location label.
+     */
+    private function meetingTypeToVmsLocation(string $meetingType): string
+    {
+        return match ($meetingType) {
+            'in_person' => 'Main Reception',
+            'virtual'   => 'Virtual / Online',
+            'phone'     => 'Phone Call',
+            default     => 'Main Reception',
+        };
+    }
+
+    /**
+     * Map our id_type values to the VMS enum values.
+     * VMS accepts: "passport" | "national_id" | "drivers_license" | "other"
+     */
+    private function normaliseIdType(string $idType): string
+    {
+        return match ($idType) {
+            'national_id'     => 'national_id',
+            'passport'        => 'passport',
+            'drivers_license' => 'drivers_license',
+            default           => 'other',
+        };
+    }
+
+    /**
+     * Push a confirmed booking to the VMS visitor management system.
+     *
+     * Returns the VMS response array on success, or null on failure.
+     * Failures are logged but never bubble up — VMS is non-critical.
+     *
+     * VMS field mapping:
+     *   visitor_name  ← first_name + ' ' + last_name
+     *   visitor_email ← email
+     *   visitor_phone ← phone
+     *   visit_date    ← booking_date  (YYYY-MM-DD)
+     *   visit_time    ← booking_time  (HH:mm)
+     *   visit_type    ← product name from snapshot
+     *   purpose       ← notes ?? purpose_label from snapshot ?? visit_type
+     *   id_type       ← normalised id_type
+     *   id_number     ← id_number
+     *   host_name     ← assigned staff name ?? 'Vilcom Team'
+     *   location      ← meeting_type → location label
+     *   additional_notes ← company_name context (optional)
+     */
+    private function syncToVms(Booking $booking, string $idType, string $idNumber, ?string $explicitVisitType = null, ?string $explicitPurpose = null, ?string $explicitLocation = null): ?array
+    {
+        $snapshot  = $booking->product_snapshot ?? [];
+
+        // ── VMS visit_type: Use explicit first, fallback to product name
+        $visitType = $explicitVisitType ?? $snapshot['name'] ?? 'Consultation';
+
+        // ── VMS purpose: Use explicit first, fallback to notes, then purpose_label
+        $purpose = $explicitPurpose ?? $booking->notes ?? $snapshot['purpose_label'] ?? $visitType;
+
+        // ── Host: assigned staff or generic fallback
+        $hostName = optional($booking->assignedStaff)->name ?? 'Vilcom Reception';
+
+        // ── Additional notes: company context for business visitors
+        $additionalNotes = null;
+        if ($booking->customer_type === 'business' && $booking->company_name) {
+            $additionalNotes = "Company: {$booking->company_name}";
+        }
+
+        // ── Build VMS payload — all required fields per VMS API spec
+        $payload = array_filter([
+            'visitor_name'     => trim("{$booking->first_name} {$booking->last_name}"),
+            'visitor_email'    => $booking->email,
+            'visitor_phone'    => $booking->phone,
+            'visit_date'       => $booking->booking_date->format('Y-m-d'),
+            'visit_time'       => $booking->booking_time,
+            'visit_type'       => $visitType,
+            'purpose'          => $purpose,
+            'id_type'          => $this->normaliseIdType($idType),
+            'id_number'        => $idNumber,
+            'host_name'        => $hostName,
+            'location'         => $explicitLocation ?? $this->meetingTypeToVmsLocation($booking->meeting_type),
+            'additional_notes' => $additionalNotes,
+        ], fn($v) => $v !== null && $v !== '');
+
+        try {
+            $response = Http::timeout(15)
+                ->acceptJson()
+                ->withHeaders(['Content-Type' => 'application/json'])
+                ->post($this->vmsBookingUrl(), $payload);
+
+            if ($response->successful() && $response->json('success')) {
+                $vmsBooking = $response->json('data.booking', []);
+
+                // ── Persist VMS response back to our booking record ──
+                $booking->update([
+                    'vms_reference'     => $vmsBooking['reference']     ?? null,
+                    'vms_check_in_code' => $vmsBooking['check_in_code'] ?? null,
+                    'vms_qr_code_url'   => $vmsBooking['qr_code_url']   ?? null,
+                    'vms_synced_at'     => now(),
+                ]);
+
+                Log::info('VMS booking synced and stored', [
+                    'booking_ref' => $booking->reference,
+                    'vms_ref'     => $vmsBooking['reference'] ?? null,
+                    'host'        => $hostName,
+                    'location'    => $payload['location'],
+                ]);
+
+                return $response->json('data');
+            }
+
+            Log::warning('VMS booking sync returned non-success', [
+                'booking_ref' => $booking->reference,
+                'status'      => $response->status(),
+                'body'        => $response->body(),
+                'payload'     => $payload,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('VMS booking sync failed', [
+                'booking_ref' => $booking->reference,
+                'error'       => $e->getMessage(),
+            ]);
+        }
+
+        return null;
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // PUBLIC: Products available for booking
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
      * GET /api/v1/bookings/services
-     *
-     * Returns bookable products from your existing products table.
-     * Grouped by category for UI, plus a flat list for simple <select>.
-     *
-     * Supports filters:
-     *   ?type=internet_plan
-     *   ?plan_category=home|business|enterprise
-     *   ?category=internet           (category slug)
-     *   ?quote_based_only=true
      */
     public function bookableServices(Request $request): JsonResponse
     {
@@ -63,7 +198,6 @@ class BookingController extends Controller
 
         $products = $query->get();
 
-        // Grouped by category — for a sectioned dropdown/accordion in the UI
         $grouped = $products
             ->groupBy(fn($p) => $p->category->name ?? 'Other')
             ->map(fn($items, $categoryName) => [
@@ -75,14 +209,11 @@ class BookingController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $grouped,                                                    // Grouped
-            'flat'    => $products->map(fn($p) => $this->formatBookableProduct($p)), // Flat list
+            'data'    => $grouped,
+            'flat'    => $products->map(fn($p) => $this->formatBookableProduct($p)),
         ]);
     }
 
-    /**
-     * Normalize a Product into a consistent booking-form shape.
-     */
     private function formatBookableProduct(Product $product): array
     {
         return [
@@ -90,10 +221,7 @@ class BookingController extends Controller
             'name'           => $product->name,
             'slug'           => $product->slug,
             'type'           => $product->type,
-
-            // Human-readable meeting purpose label shown in the booking form
             'purpose_label'  => $this->derivePurposeLabel($product),
-
             'category'       => $product->category?->name,
             'category_slug'  => $product->category?->slug,
             'plan_category'  => $product->plan_category,
@@ -103,23 +231,14 @@ class BookingController extends Controller
             'badge'          => $product->badge,
             'icon'           => $product->icon,
             'image'          => $product->image,
-
-            // Pricing shown to the client for context
             'price_monthly'  => $product->price_monthly,
             'price_one_time' => $product->price_one_time,
             'setup_fee'      => $product->setup_fee,
-
-            // Type-specific details so staff can prepare for the meeting
             'details'        => $this->getTypeSpecificDetails($product),
-
-            // Dynamically derived consultation length
             'consultation_duration_minutes' => $this->deriveConsultationDuration($product),
         ];
     }
 
-    /**
-     * Human-readable "meeting purpose" based on product type.
-     */
     private function derivePurposeLabel(Product $product): string
     {
         $name = $product->name;
@@ -135,9 +254,6 @@ class BookingController extends Controller
         };
     }
 
-    /**
-     * Derive a sensible consultation duration from product attributes.
-     */
     private function deriveConsultationDuration(Product $product): int
     {
         return match(true) {
@@ -152,9 +268,6 @@ class BookingController extends Controller
         };
     }
 
-    /**
-     * Type-specific product details surfaced to the staff in the admin panel.
-     */
     private function getTypeSpecificDetails(Product $product): array
     {
         return match($product->type) {
@@ -177,8 +290,8 @@ class BookingController extends Controller
                 'delivery_days'   => $product->delivery_days,
             ],
             'bulk_sms' => [
-                'sms_credits'     => $product->sms_credits,
-                'cost_per_sms'    => $product->cost_per_sms,
+                'sms_credits'  => $product->sms_credits,
+                'cost_per_sms' => $product->cost_per_sms,
             ],
             default => [],
         };
@@ -190,7 +303,6 @@ class BookingController extends Controller
 
     /**
      * GET /api/v1/bookings/available-slots
-     * ?date=2026-03-15&product_id=3&staff_id=5 (staff optional)
      */
     public function availableSlots(Request $request): JsonResponse
     {
@@ -262,9 +374,20 @@ class BookingController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // PUBLIC: Create booking
+    // PUBLIC: Create booking  ← INTEGRATION POINT
     // ─────────────────────────────────────────────────────────────────────────
 
+    /**
+     * POST /api/v1/bookings
+     *
+     * 1. Validates & saves the booking in your Laravel DB.
+     * 2. Fires BookingCreated event + sends emails.
+     * 3. Calls VMS API to register the visitor and obtain a check-in code / QR.
+     * 4. Returns both the internal reference and the VMS visitor pass data
+     *    so the React frontend can display the check-in code immediately.
+     *
+     * VMS sync is best-effort — a VMS failure never blocks the booking.
+     */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -276,11 +399,31 @@ class BookingController extends Controller
             'customer_type' => 'required|in:individual,business',
             'product_id'    => 'required|exists:products,id',
             'assigned_to'   => 'nullable|exists:users,id',
-            'booking_date'  => 'required|date|after:today',
+            // Same-day bookings are allowed as long as time is at least 30 min away
+            'booking_date'  => 'required|date|after_or_equal:today',
             'booking_time'  => 'required|date_format:H:i',
             'meeting_type'  => 'required|in:in_person,virtual,phone',
             'notes'         => 'nullable|string|max:1000',
+            // ID fields — required for VMS visitor pass
+            'id_type'       => ['required', Rule::in(['national_id', 'passport', 'drivers_license', 'other'])],
+            'id_number'     => 'required|string|max:50',
+            // Explicit VMS matching fields
+            'visit_type'    => 'nullable|string|max:100',
+            'purpose'       => 'nullable|string|max:255',
+            'location'      => 'nullable|string|max:255',
         ]);
+
+        // ── 30-minute buffer check: reject bookings within the next 30 minutes ──
+        $bookingDateTime = \Carbon\Carbon::parse(
+            $validated['booking_date'] . ' ' . $validated['booking_time'],
+            config('app.timezone', 'Africa/Nairobi')
+        );
+        if ($bookingDateTime->isBefore(now()->addMinutes(30))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bookings must be at least 30 minutes in the future.',
+            ], 422);
+        }
 
         $product = Product::active()->findOrFail($validated['product_id']);
 
@@ -294,7 +437,7 @@ class BookingController extends Controller
         if ($conflict) {
             return response()->json([
                 'success' => false,
-                'message' => 'This slot was just taken. Please choose another.',
+                'message' => 'This slot was just taken. Please choose another time.',
             ], 422);
         }
 
@@ -304,8 +447,6 @@ class BookingController extends Controller
 
         $validated['duration_minutes'] = $this->deriveConsultationDuration($product);
         $validated['reference']        = Booking::generateReference();
-
-        // Snapshot the product so booking history stays accurate even if product changes later
         $validated['product_snapshot'] = [
             'id'            => $product->id,
             'name'          => $product->name,
@@ -317,24 +458,27 @@ class BookingController extends Controller
             'details'       => $this->getTypeSpecificDetails($product),
         ];
 
+        // Pluck ID fields before creating the Booking (not stored on the model)
+        $idType   = $validated['id_type'];
+        $idNumber = $validated['id_number'];
+       // unset($validated['id_type'], $validated['id_number']);
+
+        $vmsData = null;
+
         DB::beginTransaction();
         try {
             $booking = Booking::create($validated);
             $booking->load(['product', 'assignedStaff']);
 
-            // Broadcast event for real-time updates
             broadcast(new BookingCreated($booking));
 
-            // Send email notification to client
             \Mail::to($booking->email)
-                 ->queue(new \App\Mail\BookingConfirmationMail($booking));
+                 ->send(new \App\Mail\BookingConfirmationMail($booking));
 
-            // Notify admins
             User::role('admin')->each(
                 fn($admin) => $admin->notify(new BookingReceivedNotification($booking))
             );
 
-            // Notify assigned staff
             if ($booking->assignedStaff) {
                 $booking->assignedStaff->notify(new BookingReceivedNotification($booking));
             }
@@ -349,11 +493,34 @@ class BookingController extends Controller
             ], 500);
         }
 
+        // ── VMS sync (outside the DB transaction — non-critical) ──────────
+        $vmsData = $this->syncToVms(
+            $booking, 
+            $idType, 
+            $idNumber, 
+            $request->input('visit_type'),
+            $request->input('purpose'),
+            $request->input('location')
+        );
+
+        // Build visitor pass summary for the frontend
+        $vmsPayload = null;
+        if ($vmsData) {
+            $vmsPayload = [
+                'reference'     => $vmsData['booking']['reference']     ?? null,
+                'check_in_code' => $vmsData['booking']['check_in_code'] ?? null,
+                'qr_code_url'   => $vmsData['booking']['qr_code_url']   ?? null,
+                'status'        => $vmsData['booking']['status']         ?? null,
+            ];
+        }
+
         return response()->json([
             'success'   => true,
             'message'   => 'Booking submitted! Check your email for confirmation.',
             'data'      => new BookingResource($booking),
             'reference' => $booking->reference,
+            // vms key is null when VMS sync failed — frontend handles gracefully
+            'vms'       => $vmsPayload,
         ], 201);
     }
 
@@ -491,7 +658,6 @@ class BookingController extends Controller
                 $booking->load(['product', 'assignedStaff']);
                 broadcast(new BookingStatusUpdated($booking, $booking->status));
 
-                // Send notification to client for status changes
                 if (in_array($validated['status'], ['confirmed', 'cancelled'])) {
                     $booking->notify(new BookingConfirmedNotification($booking));
                 }
@@ -576,4 +742,3 @@ class BookingController extends Controller
         return $slots;
     }
 }
-

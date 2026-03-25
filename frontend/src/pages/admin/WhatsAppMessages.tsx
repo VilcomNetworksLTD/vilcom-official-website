@@ -18,6 +18,7 @@ import {
   Monitor,
   Ban,
   ArrowUpRight,
+  TrendingUp,
 } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import whatsappService, { WhatsAppMessage } from '@/services/whatsapp';
@@ -88,12 +89,17 @@ const TypeBadge = ({ type }: { type: WhatsAppMessage['message_type'] }) => {
 // ─── Stat Card ─────────────────────────────────────────────────────────────────
 
 const StatCard = ({
-  label, value, color, sub,
-}: { label: string; value: string | number; color: string; sub?: string }) => (
+  label, value, color, sub, icon: Icon
+}: { label: string; value: string | number; color: string; sub?: string; icon: any }) => (
   <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 hover:bg-white/15 transition-all">
-    <p className={`text-2xl font-bold ${color}`}>{value}</p>
-    <p className="text-xs text-slate-400 mt-0.5">{label}</p>
-    {sub && <p className="text-xs text-slate-600 mt-0.5">{sub}</p>}
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-slate-400 text-xs mb-1">{label}</p>
+        <p className="text-2xl font-bold text-white">{value}</p>
+        {sub && <p className="text-xs text-slate-500 mt-1">{sub}</p>}
+      </div>
+      <Icon className={`w-8 h-8 ${color} opacity-70`} />
+    </div>
   </div>
 );
 
@@ -116,9 +122,9 @@ const DetailDrawer = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="flex-1 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="w-full max-w-lg bg-slate-900/95 backdrop-blur-xl border-l border-white/20 flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="w-full max-w-2xl bg-slate-900/95 backdrop-blur-xl border border-white/20 rounded-xl flex flex-col overflow-hidden max-h-[90vh] shadow-2xl relative">
         <div className="px-6 py-4 border-b border-white/10 flex items-start justify-between gap-4">
           <div>
             <p className="text-xs text-slate-500 mb-1">WhatsApp Lead #{msg.id}</p>
@@ -133,62 +139,62 @@ const DetailDrawer = ({
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
-          <div className="bg-white/5 rounded-xl border border-white/10 p-4 space-y-3">
+          <div className="bg-white/5 rounded-xl border border-white/10 p-3 sm:p-4 space-y-3">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Contact</p>
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center flex-shrink-0">
                 <WaIcon className="w-4 h-4 text-white" />
               </div>
               <div>
-                <p className="text-white font-medium">{msg.name || 'Anonymous'}</p>
+                <p className="text-white font-medium text-sm">{msg.name || 'Anonymous'}</p>
                 {msg.user && <p className="text-xs text-blue-400">Registered user #{msg.user.id}</p>}
               </div>
             </div>
             <div className="space-y-2 text-sm">
               {msg.phone && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-slate-300">
-                    <Phone className="w-4 h-4 text-slate-500" />
-                    {msg.phone}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-slate-300 text-xs sm:text-sm">
+                    <Phone className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                    <span className="break-all">{msg.phone}</span>
                   </div>
                   <a
                     href={waUrl(msg.phone)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-1 bg-green-500/20 border border-green-500/30 text-green-400 rounded-lg text-xs hover:bg-green-500/30 transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1 bg-green-500/20 border border-green-500/30 text-green-400 rounded-lg text-xs hover:bg-green-500/30 transition-all flex-shrink-0"
                   >
-                    <WaIcon className="w-3.5 h-3.5" />
-                    Open Chat
+                    <WaIcon className="w-3 h-3" />
+                    <span className="hidden sm:inline">Chat</span>
                   </a>
                 </div>
               )}
               {msg.email && (
-                <a href={`mailto:${msg.email}`} className="flex items-center gap-2 text-slate-300 hover:text-blue-400 transition-colors">
-                  <AtSign className="w-4 h-4 text-slate-500" />
+                <a href={`mailto:${msg.email}`} className="flex items-center gap-2 text-slate-300 hover:text-blue-400 transition-colors text-xs sm:text-sm break-all">
+                  <AtSign className="w-4 h-4 text-slate-500 flex-shrink-0" />
                   {msg.email}
                 </a>
               )}
-              <div className="flex items-center gap-2 text-slate-400">
-                <Calendar className="w-4 h-4 text-slate-500" />
-                {fmtDateTime(msg.created_at)}
+              <div className="flex items-center gap-2 text-slate-400 text-xs sm:text-sm">
+                <Calendar className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                <span className="break-all">{fmtDateTime(msg.created_at)}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-white/5 rounded-xl border border-white/10 p-4">
+          <div className="bg-white/5 rounded-xl border border-white/10 p-3 sm:p-4">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Message Sent</p>
             <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
-              <p className="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+              <p className="text-slate-200 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.message}</p>
             </div>
           </div>
 
-          <div className="bg-white/5 rounded-xl border border-white/10 p-4 space-y-3">
+          <div className="bg-white/5 rounded-xl border border-white/10 p-3 sm:p-4 space-y-3">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Technical Info</p>
             {msg.page_url && (
               <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2 text-sm text-slate-400">
+                <div className="flex items-center gap-2 text-slate-400 text-xs sm:text-sm">
                   <Globe className="w-4 h-4 flex-shrink-0 text-slate-500" />
-                  <span className="break-all text-xs">{tryPathname(msg.page_url)}</span>
+                  <span className="break-all">{tryPathname(msg.page_url)}</span>
                 </div>
                 <a href={msg.page_url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 text-blue-400 hover:text-blue-300">
                   <ExternalLink className="w-3.5 h-3.5" />
@@ -196,27 +202,27 @@ const DetailDrawer = ({
               </div>
             )}
             {msg.ip_address && (
-              <div className="flex items-center gap-2 text-sm text-slate-400">
-                <Monitor className="w-4 h-4 text-slate-500" />
-                <span className="font-mono text-xs">{msg.ip_address}</span>
+              <div className="flex items-center gap-2 text-slate-400 text-xs sm:text-sm">
+                <Monitor className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                <span className="font-mono break-all">{msg.ip_address}</span>
               </div>
             )}
             {msg.source && (
-              <div className="flex items-center gap-2 text-sm text-slate-400">
-                <ArrowUpRight className="w-4 h-4 text-slate-500" />
+              <div className="flex items-center gap-2 text-slate-400 text-xs sm:text-sm">
+                <ArrowUpRight className="w-4 h-4 text-slate-500 flex-shrink-0" />
                 Source: <span className="text-slate-300">{msg.source}</span>
               </div>
             )}
           </div>
         </div>
 
-        <div className="px-6 py-4 border-t border-white/10 space-y-2">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-white/10 space-y-2 sm:space-y-2.5 flex flex-col">
           {msg.phone && (
             <a
               href={waUrl(msg.phone)}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-green-500/20 border border-green-500/30 text-green-300 rounded-lg hover:bg-green-500/30 transition-all text-sm font-medium"
+              className="w-full flex items-center justify-center gap-2 py-2 sm:py-2.5 bg-green-500/20 border border-green-500/30 text-green-300 rounded-lg hover:bg-green-500/30 transition-all text-xs sm:text-sm font-medium"
             >
               <WaIcon className="w-4 h-4" />
               Reply on WhatsApp
@@ -226,7 +232,7 @@ const DetailDrawer = ({
             <button
               onClick={() => act(() => whatsappService.markContacted(msg.id))}
               disabled={acting}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-500/20 border border-blue-500/30 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-all text-sm font-medium disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-2 sm:py-2.5 bg-blue-500/20 border border-blue-500/30 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-all text-xs sm:text-sm font-medium disabled:opacity-50"
             >
               <PhoneCall className="w-4 h-4" />
               Mark as Contacted
@@ -236,7 +242,7 @@ const DetailDrawer = ({
             <button
               onClick={() => act(() => whatsappService.markConverted(msg.id))}
               disabled={acting}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-green-500/20 border border-green-500/30 text-green-300 rounded-lg hover:bg-green-500/30 transition-all text-sm font-medium disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-2 sm:py-2.5 bg-green-500/20 border border-green-500/30 text-green-300 rounded-lg hover:bg-green-500/30 transition-all text-xs sm:text-sm font-medium disabled:opacity-50"
             >
               <CheckCircle2 className="w-4 h-4" />
               Mark as Converted
@@ -246,7 +252,7 @@ const DetailDrawer = ({
             <button
               onClick={() => act(() => whatsappService.updateMessage(msg.id, { status: 'failed' }))}
               disabled={acting}
-              className="w-full flex items-center justify-center gap-2 py-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg hover:bg-red-500/20 transition-all text-sm disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg hover:bg-red-500/20 transition-all text-xs sm:text-sm disabled:opacity-50"
             >
               <Ban className="w-4 h-4" />
               Mark as Failed
@@ -324,8 +330,7 @@ const WhatsAppMessages = () => {
 
   return (
     <DashboardLayout userType={isAdmin ? 'admin' : 'staff'}>
-      {/* Header */}
-      <div className="mb-8 flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <WaIcon className="w-6 h-6 text-green-400" />
@@ -335,189 +340,181 @@ const WhatsAppMessages = () => {
         </div>
         <button
           onClick={() => { load(); loadStats(); }}
-          className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-slate-300 hover:bg-white/20 transition-all text-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-slate-300 hover:bg-white/20 transition-all text-sm w-full sm:w-auto justify-center"
         >
-          <RefreshCw className="w-4 h-4" />
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
         </button>
       </div>
 
       {/* Stats */}
       {stats?.overview && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-8">
-          <StatCard label="Total"      value={stats.overview.total}                      color="text-white" />
-          <StatCard label="Pending"    value={stats.overview.pending}                    color="text-amber-400" />
-          <StatCard label="Contacted"  value={stats.overview.contacted}                  color="text-blue-400" />
-          <StatCard label="Converted"  value={stats.overview.converted}                  color="text-green-400" />
-          <StatCard label="Failed"     value={stats.overview.failed}                     color="text-red-400" />
-          <StatCard label="This Month" value={stats.overview.this_month}                 color="text-purple-400" />
-          <StatCard label="Conversion" value={`${stats.overview.conversion_rate}%`}      color="text-cyan-400" sub="converted / total" />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+          <StatCard label="Total"      value={stats.overview.total}                      color="text-white" icon={MessageCircle} />
+          <StatCard label="Pending"    value={stats.overview.pending}                    color="text-amber-400" icon={Clock} />
+          <StatCard label="Contacted"  value={stats.overview.contacted}                  color="text-blue-400" icon={PhoneCall} />
+          <StatCard label="Converted"  value={stats.overview.converted}                  color="text-green-400" icon={CheckCircle2} />
+          <StatCard label="Failed"     value={stats.overview.failed}                     color="text-red-400" icon={Ban} />
+          <StatCard label="This Month" value={stats.overview.this_month}                 color="text-purple-400" icon={Calendar} />
+          <StatCard label="Conversion" value={`${stats.overview.conversion_rate}%`}      color="text-cyan-400" icon={TrendingUp} sub="converted / total" />
         </div>
       )}
 
-      {/* Filters */}
-      <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 mb-6 space-y-4">
-        {/* Status tabs — scrollable on small screens */}
-        <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
+      <div className="space-y-4 mb-6">
+        {/* Toolbar */}
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="relative w-full sm:flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search name, phone, email..."
+              value={filters.search}
+              onChange={(e) => { setFilters(f => ({ ...f, search: e.target.value })); setPage(1); }}
+              className="w-full pl-10 pr-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-slate-400 focus:border-blue-400 outline-none text-sm transition-all"
+            />
+          </div>
+          <select
+            value={filters.message_type}
+            onChange={(e) => { setFilters(f => ({ ...f, message_type: e.target.value })); setPage(1); }}
+            className="w-full sm:w-48 px-4 py-2 rounded-lg bg-slate-800 border border-white/20 text-white text-sm outline-none sm:flex-shrink-0 transition-all"
+          >
+            <option value="">All Types</option>
+            <option value="predefined">Predefined</option>
+            <option value="custom">Custom</option>
+          </select>
+          {(filters.status || filters.message_type || filters.search) && (
+            <button
+               onClick={() => { setFilters({ status: '', message_type: '', search: '' }); setPage(1); }}
+               className="w-full sm:w-auto flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-300 text-sm hover:bg-blue-500/30 transition-colors sm:flex-shrink-0"
+             >
+               <X className="w-3 h-3" /> Clear
+             </button>
+          )}
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 overflow-x-auto pb-1 bg-white/5 rounded-xl p-1 w-full sm:w-fit scrollbar-hide">
           {tabs.map((t) => (
             <button
               key={t.value}
               onClick={() => { setFilters(f => ({ ...f, status: t.value })); setPage(1); }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
                 filters.status === t.value
-                  ? 'bg-green-500/20 text-green-300 border border-green-500/30'
-                  : 'text-slate-400 hover:bg-white/10 hover:text-white'
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`}
             >
               {t.label}
-              <span className={`text-xs px-1.5 py-0.5 rounded-full ${filters.status === t.value ? 'bg-green-500/30' : 'bg-white/10'}`}>
+              <span className={`text-xs px-1.5 py-0.5 rounded-full ${filters.status === t.value ? 'bg-white/20' : 'bg-white/10'}`}>
                 {t.count}
               </span>
             </button>
           ))}
         </div>
-
-        {/* Search + type filter */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search name, email, phone, message…"
-              value={filters.search}
-              onChange={(e) => { setFilters(f => ({ ...f, search: e.target.value })); setPage(1); }}
-              className="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50"
-            />
-          </div>
-          <div className="relative">
-            <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-            <select
-              value={filters.message_type}
-              onChange={(e) => { setFilters(f => ({ ...f, message_type: e.target.value })); setPage(1); }}
-              className="pl-9 pr-8 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 appearance-none w-full sm:w-auto"
-            >
-              <option value="" className="bg-slate-900">All Types</option>
-              <option value="predefined" className="bg-slate-900">Predefined</option>
-              <option value="custom" className="bg-slate-900">Custom</option>
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-          </div>
-          {(filters.status || filters.message_type || filters.search) && (
-            <button
-              onClick={() => { setFilters({ status: '', message_type: '', search: '' }); setPage(1); }}
-              className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 text-sm transition-all"
-            >
-              Clear
-            </button>
-          )}
-        </div>
       </div>
 
       {/* ── CARD LIST (replaces the table — works on all screen sizes) ── */}
-      <div className="space-y-3 w-full min-w-0">
-        {loading ? (
-          <div className="flex items-center justify-center py-24">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-500" />
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl py-20 text-center">
-            <WaIcon className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-            <p className="text-slate-400 font-medium">No WhatsApp leads found</p>
-            <p className="text-slate-600 text-sm mt-1">Leads appear when visitors click the WhatsApp button</p>
-          </div>
-        ) : (
-          messages.map((msg) => (
+      {loading ? (
+        <div className="flex items-center justify-center py-24">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-500" />
+        </div>
+      ) : messages.length === 0 ? (
+        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl py-20 text-center">
+          <WaIcon className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+          <p className="text-slate-400 font-medium">No WhatsApp leads found</p>
+          <p className="text-slate-600 text-sm mt-1">Leads appear when visitors click the WhatsApp button</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
+          {messages.map((msg) => (
             <div
               key={msg.id}
-              className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 hover:bg-white/15 hover:border-white/30 transition-all overflow-hidden relative"
+              className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-3 sm:p-5 hover:bg-white/15 hover:border-white/30 transition-all flex flex-col relative"
             >
-              {/* Top row: avatar + name + badges + date */}
-              <div className="flex items-start gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center flex-shrink-0">
-                  <WaIcon className="w-4 h-4 text-white" />
+              {/* Top row: avatar + name + contact + date */}
+              <div className="flex sm:flex-row flex-col gap-2 sm:gap-3 mb-2 sm:mb-3 overflow-hidden">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center flex-shrink-0 hidden sm:flex">
+                  <WaIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 min-w-0">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-white truncate">{msg.name || 'Anonymous'}</p>
-                      {msg.phone ? (
-                        <a
-                          href={waUrl(msg.phone)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-xs text-green-400 hover:text-green-300 transition-colors truncate"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Phone className="w-3 h-3 flex-shrink-0" />
-                          <span className="truncate">{msg.phone}</span>
-                        </a>
-                      ) : (
-                        <p className="text-xs text-slate-500 truncate">{msg.email ?? 'No contact'}</p>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-500 whitespace-nowrap flex-shrink-0">{fmtDate(msg.created_at)}</p>
-                  </div>
-
-                  {/* Message preview */}
-                  <p className="text-sm text-slate-300 mt-2 line-clamp-2 break-words">{msg.message}</p>
-
-                  {/* Badges + page origin */}
-                  <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    <StatusBadge status={msg.status} />
-                    <TypeBadge type={msg.message_type} />
-                    {msg.page_url && (
-                      <span className="text-xs text-slate-600 font-mono truncate max-w-[120px]">
-                        {tryPathname(msg.page_url)}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Actions — flex-wrap so they stack on small screens */}
-                  <div className="flex items-center gap-2 mt-3 flex-wrap">
-                    <button
-                      onClick={() => setSelected(msg)}
-                      className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 transition-all"
+                  <p className="text-xs sm:text-sm font-semibold text-white truncate" title={msg.name || 'Anonymous'}>{msg.name || 'Anonymous'}</p>
+                  {msg.phone ? (
+                    <a
+                      href={waUrl(msg.phone)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-[11px] text-green-400 hover:text-green-300 transition-colors truncate"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <Eye className="w-4 h-4" /> View
-                    </button>
-                    {msg.phone && (
-                      <a
-                        href={waUrl(msg.phone)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-500/20 text-green-300 border border-green-500/30 rounded-lg hover:bg-green-500/30 transition-all"
-                      >
-                        <WaIcon className="w-4 h-4" /> WhatsApp
-                      </a>
-                    )}
-                    {isAdmin && (
-                      <button
-                        onClick={() => handleDelete(msg.id)}
-                        className="flex items-center gap-1 px-3 py-1.5 text-sm bg-red-500/20 text-red-300 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-all"
-                      >
-                        <Trash2 className="w-4 h-4" /> Delete
-                      </button>
-                    )}
-                  </div>
+                      <Phone className="w-2.5 h-2.5 flex-shrink-0" />
+                      <span className="truncate">{msg.phone}</span>
+                    </a>
+                  ) : (
+                    <p className="text-[11px] text-slate-500 truncate">{msg.email ?? 'No contact'}</p>
+                  )}
                 </div>
+                <p className="text-[10px] text-slate-500 whitespace-nowrap flex-shrink-0">{fmtDate(msg.created_at)}</p>
+              </div>
+
+              {/* Message preview */}
+              <div className="bg-green-500/5 rounded-lg border border-green-500/10 p-3 mb-4 flex-1">
+                <p className="text-xs sm:text-xs text-slate-300 line-clamp-3 break-words leading-relaxed">{msg.message}</p>
+              </div>
+
+              {/* Badges + page origin */}
+              <div className="flex flex-wrap items-center gap-1.5 mt-auto mb-3">
+                <StatusBadge status={msg.status} />
+                <TypeBadge type={msg.message_type} />
+              </div>
+              {msg.page_url && (
+                <p className="text-[10px] text-slate-500 font-mono truncate mb-2" title={tryPathname(msg.page_url)}>
+                  {tryPathname(msg.page_url)}
+                </p>
+              )}
+
+              {/* Actions */}
+              <div className="pt-3 border-t border-white/10 grid grid-cols-2 gap-2 mt-auto">
+                <button
+                  onClick={() => setSelected(msg)}
+                  className="flex items-center justify-center gap-1 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 transition-all"
+                >
+                  <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5 hidden sm:block" /> View
+                </button>
+                {msg.phone && (
+                  <button
+                    onClick={() => window.open(waUrl(msg.phone), '_blank')}
+                    className="flex items-center justify-center gap-1 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs bg-green-500/20 text-green-300 border border-green-500/30 rounded-lg hover:bg-green-500/30 transition-all"
+                  >
+                    <WaIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 hidden sm:block" /> Chat
+                  </button>
+                )}
+                {isAdmin && (
+                  <button
+                    onClick={() => handleDelete(msg.id)}
+                    className="px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs bg-red-500/20 text-red-300 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-all col-span-2 sm:col-span-1"
+                    title="Delete"
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Pagination */}
       {pagination.last_page > 1 && (
-        <div className="mt-4 flex items-center justify-between">
-          <p className="text-xs text-slate-500">
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 p-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl">
+          <p className="text-xs sm:text-sm text-slate-400">
             Showing {((pagination.current_page - 1) * 15) + 1}–{Math.min(pagination.current_page * 15, pagination.total)} of {pagination.total}
           </p>
-          <div className="flex gap-1">
+          <div className="flex flex-wrap items-center justify-center gap-0.5 sm:gap-1">
             <button
               onClick={() => setPage(Math.max(1, pagination.current_page - 1))}
               disabled={pagination.current_page === 1}
-              className="px-3 py-1.5 rounded-lg text-sm text-slate-400 hover:bg-white/10 disabled:opacity-30 transition-all"
+              className="px-2 sm:px-3 py-1.5 rounded text-xs sm:text-sm text-slate-400 hover:bg-white/10 disabled:opacity-30 transition-all font-medium border border-transparent hover:border-white/10"
             >Prev</button>
             {Array.from({ length: Math.min(5, pagination.last_page) }, (_, i) => {
               const p = pagination.current_page <= 3
@@ -529,10 +526,10 @@ const WhatsAppMessages = () => {
                 <button
                   key={p}
                   onClick={() => setPage(p)}
-                  className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${
+                  className={`min-w-[28px] sm:min-w-[32px] h-8 px-1 sm:px-2 rounded text-xs sm:text-sm font-medium transition-all ${
                     p === pagination.current_page
                       ? 'bg-green-500/30 text-green-300 border border-green-500/40'
-                      : 'text-slate-400 hover:bg-white/10'
+                      : 'text-slate-400 hover:bg-white/10 border border-transparent hover:border-white/10'
                   }`}
                 >{p}</button>
               );
@@ -540,7 +537,7 @@ const WhatsAppMessages = () => {
             <button
               onClick={() => setPage(Math.min(pagination.last_page, pagination.current_page + 1))}
               disabled={pagination.current_page === pagination.last_page}
-              className="px-3 py-1.5 rounded-lg text-sm text-slate-400 hover:bg-white/10 disabled:opacity-30 transition-all"
+              className="px-2 sm:px-3 py-1.5 rounded text-xs sm:text-sm text-slate-400 hover:bg-white/10 disabled:opacity-30 transition-all font-medium border border-transparent hover:border-white/10"
             >Next</button>
           </div>
         </div>

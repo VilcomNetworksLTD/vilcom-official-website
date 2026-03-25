@@ -42,6 +42,8 @@ export const whatsappService = {
     email?: string;
     phone?: string;
     page_url?: string;
+    vlc_vid?: string;
+    device_type?: string;
   }): Promise<{ data: { success: boolean; data: WhatsAppMessage } }> {
     return axios.post("/whatsapp/messages", data);
   },

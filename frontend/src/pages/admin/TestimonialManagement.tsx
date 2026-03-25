@@ -254,13 +254,13 @@ const loadTestimonials = async () => {
       </div>
 
       {/* Testimonials List */}
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
+          <div className="col-span-full flex items-center justify-center py-24">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500" />
           </div>
         ) : testimonials.length === 0 ? (
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-12 text-center">
+          <div className="col-span-full bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-12 text-center">
             <Quote className="w-12 h-12 text-slate-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-white mb-1">No testimonials found</h3>
             <p className="text-slate-400">Add your first testimonial to get started</p>
@@ -269,89 +269,94 @@ const loadTestimonials = async () => {
           testimonials.map((testimonial) => (
             <div
               key={testimonial.id}
-              className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6 hover:bg-white/15 hover:border-white/30 transition-all"
+              className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-5 hover:bg-white/15 hover:border-white/30 transition-all flex flex-col"
             >
               <div className="flex gap-4">
                 {/* Avatar */}
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden border border-blue-500/20">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden border border-blue-500/20">
                   {testimonial.avatar ? (
                     <img src={testimonial.avatar} alt={testimonial.name} className="w-full h-full object-cover" />
                   ) : (
-                    <User className="w-8 h-8 text-blue-400" />
+                    <User className="w-6 h-6 text-blue-400" />
                   )}
                 </div>
 
-                {/* Content */}
+                {/* Header Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-white">{testimonial.name}</h3>
-                        {testimonial.is_featured && (
-                          <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 text-xs rounded-full border border-purple-500/30">
-                            Featured
-                          </span>
-                        )}
-                        <span className={`px-2 py-0.5 text-xs rounded-full ${
-                          testimonial.is_approved
-                            ? 'bg-green-500/20 text-green-300 border border-green-500/30'
-                            : 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
-                        }`}>
-                          {testimonial.is_approved ? 'Approved' : 'Pending'}
-                        </span>
-                      </div>
-                      {testimonial.company && (
-                        <p className="text-sm text-slate-400">{testimonial.company}</p>
-                      )}
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between gap-2">
+                       <h3 className="font-semibold text-white truncate">{testimonial.name}</h3>
+                       {renderStars(testimonial.rating)}
                     </div>
-                    {renderStars(testimonial.rating)}
-                  </div>
-
-                  <p className="mt-3 text-slate-300 line-clamp-3">{testimonial.content}</p>
-
-                  {/* Actions */}
-                  <div className="mt-4 flex items-center gap-2 flex-wrap">
-                    {!testimonial.is_approved && (
-                      <button
-                        onClick={() => handleApprove(testimonial.id)}
-                        className="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-500/20 text-green-300 border border-green-500/30 rounded-lg hover:bg-green-500/30 transition-all"
-                      >
-                        <CheckCircle className="w-4 h-4" /> Approve
-                      </button>
+                    {testimonial.company && (
+                      <p className="text-sm text-slate-400 truncate">{testimonial.company}</p>
                     )}
-                    {testimonial.is_approved && (
-                      <button
-                        onClick={() => handleReject(testimonial.id)}
-                        className="flex items-center gap-1 px-3 py-1.5 text-sm bg-slate-500/20 text-slate-300 border border-slate-500/30 rounded-lg hover:bg-slate-500/30 transition-all"
-                      >
-                        <XCircle className="w-4 h-4" /> Reject
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleToggleFeatured(testimonial.id)}
-                      className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border transition-all ${
-                        testimonial.is_featured
-                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/30'
-                          : 'bg-slate-500/20 text-slate-300 border-slate-500/30 hover:bg-slate-500/30'
-                      }`}
-                    >
-                      <Star className="w-4 h-4" />
-                      {testimonial.is_featured ? 'Unfeature' : 'Feature'}
-                    </button>
-                    <button
-                      onClick={() => openEditModal(testimonial)}
-                      className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 transition-all"
-                    >
-                      <Edit className="w-4 h-4" /> Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(testimonial.id)}
-                      className="flex items-center gap-1 px-3 py-1.5 text-sm bg-red-500/20 text-red-300 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-all"
-                    >
-                      <Trash2 className="w-4 h-4" /> Delete
-                    </button>
                   </div>
                 </div>
+              </div>
+
+              {/* Status Badges */}
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
+                  {testimonial.is_featured && (
+                    <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 text-xs rounded-full border border-purple-500/30">
+                      Featured
+                    </span>
+                  )}
+                  <span className={`px-2 py-0.5 text-xs rounded-full ${
+                    testimonial.is_approved
+                      ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                      : 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+                  }`}>
+                    {testimonial.is_approved ? 'Approved' : 'Pending'}
+                  </span>
+              </div>
+
+              {/* Content */}
+              <p className="mt-4 text-slate-300 text-sm flex-1 leading-relaxed">"{testimonial.content}"</p>
+
+              {/* Actions */}
+              <div className="mt-5 pt-4 border-t border-white/10 flex flex-wrap items-center gap-2">
+                {!testimonial.is_approved ? (
+                  <button
+                    onClick={() => handleApprove(testimonial.id)}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm bg-green-500/20 text-green-300 border border-green-500/30 rounded-lg hover:bg-green-500/30 transition-all"
+                  >
+                    <CheckCircle className="w-4 h-4" /> Approve
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleReject(testimonial.id)}
+                    className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm bg-slate-500/20 text-slate-300 border border-slate-500/30 rounded-lg hover:bg-slate-500/30 transition-all"
+                  >
+                   <XCircle className="w-4 h-4" /> Reject
+                  </button>
+                )}
+                
+                <button
+                  onClick={() => handleToggleFeatured(testimonial.id)}
+                  className={`p-2 rounded-lg border transition-all ${
+                    testimonial.is_featured
+                      ? 'bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/30'
+                      : 'bg-slate-500/20 text-slate-400 border-slate-500/30 hover:bg-slate-500/30'
+                  }`}
+                  title={testimonial.is_featured ? 'Unfeature' : 'Feature'}
+                >
+                  <Star className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => openEditModal(testimonial)}
+                  className="p-2 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 transition-all"
+                  title="Edit"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleDelete(testimonial.id)}
+                  className="p-2 bg-red-500/20 text-red-300 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-all"
+                  title="Delete"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
           ))

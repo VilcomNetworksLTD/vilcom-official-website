@@ -24,6 +24,14 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+ 'vms' => [
+
+     'base_url' => env('VMS_BASE_URL', 'https://vms.vilcom.co.ke/api/organizations'),
+
+     'org_slug' => env('VMS_ORG_SLUG', 'vilcom-networks-limited'),
+
+ ],
+
     'resend' => [
         'key' => env('RESEND_KEY'),
     ],

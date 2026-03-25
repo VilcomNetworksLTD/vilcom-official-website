@@ -1,16 +1,19 @@
-# Fix Newsletter Signup 500 Error (vlc_vid unique constraint violation)
+# Responsive Admin Pages Task
+Make WhatsAppMessages and ContactMessages pages fully responsive emulating AdminCareerManagement.
 
-## Status: [IN PROGRESS] 
+## Plan Steps:
+- [x] 1. Create this TODO.md ✅
+- [x] 2. Update WhatsAppMessages.tsx:
+  - Stats grid responsive breakpoints (add sm/md) ✅
+  - Header responsive padding (px-2 sm:px-6 py-4 sm:py-8) ✅
+  - Ensure filters flex-wrap gap-3 ✅
+  - Pagination flex-col sm:flex-row gap-4 ✅
+- [x] 3. Update ContactMessages.tsx:
+  - Stats grid (cols-1 sm:2 md:3 lg:5) ✅
+  - Card grid to cols-1 md:2 lg:3 ✅
+  - Header responsive padding ✅
+- [ ] 4. Test on mobile/tablet/desktop (browser dev tools)
+- [ ] 5. Mark complete and attempt_completion
 
-### Steps:
-1. [x] Add `ensureUniqueVisitorId()` static method to `backend/app/Models/Lead.php`
-2. [x] Update `backend/app/Http/Controllers/Api/LeadController.php` newsletter() method:
-   - Use `Lead::ensureUniqueVisitorId($data['vlc_vid'])` 
-   - Wrap `Lead::create()` in try-catch for DB errors
-   - Log detailed error if fails
-3. [ ] Test: Trigger newsletter signup from frontend
-4. [ ] Verify logs: `cd backend && tail -f storage/logs/laravel.log`
-5. [ ] Clear caches: `cd backend && php artisan cache:clear config:clear route:clear view:clear`
-6. [ ] [COMPLETE] Remove TODO.md or mark done
+**Progress:** Starting implementation...
 
-**Root cause:** Race condition on Str::uuid() when vlc_vid null → duplicate unique vlc_vid → SQL integrity error → 500 crash.
