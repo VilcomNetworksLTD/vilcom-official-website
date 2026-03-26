@@ -189,6 +189,15 @@ class RoleAndPermissionSeeder extends Seeder
         ]);
         $this->command->info('✓ CONTENT_MANAGER role created');
 
+        // HR ROLE
+        $this->command->info('Creating HR role...');
+        $hrRole = Role::firstOrCreate(['name' => 'hr', 'guard_name' => 'web']);
+        $hrRole->givePermissionTo([
+            'users.view.own', 'users.edit.own',
+            'dashboard.staff',
+        ]);
+        $this->command->info('✓ HR role created');
+
         // SUMMARY
         $this->command->info('');
         $this->command->info('============================================');
@@ -197,7 +206,7 @@ class RoleAndPermissionSeeder extends Seeder
         $this->command->info('Total Permissions: ' . Permission::count());
         $this->command->info('Total Roles: ' . Role::count());
         $this->command->info('');
-        $this->command->info('Roles: client, staff, admin, sales, technical_support, web_developer, content_manager');
+        $this->command->info('Roles: client, staff, admin, sales, technical_support, web_developer, content_manager, hr');
         $this->command->info('============================================');
     }
 }

@@ -6,12 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\Activitylog\LogOptions;
+
 
 class Subscription extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory;
 
     /**
      * The table associated with the model.
@@ -73,21 +72,7 @@ class Subscription extends Model
         ];
     }
 
-    /**
-     * Activity log configuration
-     */
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logOnly([
-                'status',
-                'price',
-                'billing_cycle',
-                'next_billing_date',
-            ])
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
-    }
+
 
     // ============================================
     // RELATIONSHIPS

@@ -389,7 +389,9 @@ export default function QuoteManagement() {
       if (filters.service_type) params.service_type = filters.service_type;
       if (filters.search)       params.search       = filters.search;
 
+      console.log('[QuoteManagement] Loading quotes with params:', params);
       const result = await adminQuotesApi.getAll(params);
+      console.log('[QuoteManagement] Quotes loaded successfully:', result.data?.length ?? 0, 'quotes');
       setQuotes(result.data ?? []);
       setPagination(p => ({
         ...p,
@@ -397,8 +399,13 @@ export default function QuoteManagement() {
         last_page:    result.meta?.last_page    ?? 1,
         total:        result.meta?.total        ?? 0,
       }));
-    } catch (e) {
-      console.error('Failed to load quotes:', e);
+    } catch (e: any) {
+      console.error('[QuoteManagement] Failed to load quotes:', {
+        status: e.response?.status,
+        message: e.response?.data?.message,
+        errors: e.response?.data?.errors,
+        fullError: e
+      });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -407,16 +414,34 @@ export default function QuoteManagement() {
 
   const loadStatistics = async () => {
     try {
+      console.log('[QuoteManagement] Loading statistics...');
       const stats = await adminQuotesApi.getStatistics();
+      console.log('[QuoteManagement] Statistics loaded:', stats);
       setStatistics(stats);
-    } catch (e) {
-      console.error('Failed to load statistics:', e);
+    } catch (e: any) {
+      console.error('[QuoteManagement] Failed to load statistics:', {
+        status: e.response?.status,
+        message: e.response?.data?.message,
+        errors: e.response?.data?.errors,
+        fullError: e
+      });
     }
   };
 
   const refresh = () => { loadQuotes(true); loadStatistics(); };
 
-  useEffect(() => { loadQuotes(); loadStatistics(); }, [filters, pagination.current_page]);
+  // Initial load on component mount
+  useEffect(() => {
+    console.log('[QuoteManagement] Component mounted, loading initial data...');
+    loadQuotes();
+    loadStatistics();
+  }, []);
+
+  // Reload when filters or pagination changes
+  useEffect(() => {
+    console.log('[QuoteManagement] Filters or pagination changed, reloading...', { filters, current_page: pagination.current_page });
+    loadQuotes();
+  }, [filters.status, filters.service_type, filters.search, pagination.current_page]);
 
   const handleMarkReview = async (id: number) => {
     try { await adminQuotesApi.markUnderReview(id); refresh(); }

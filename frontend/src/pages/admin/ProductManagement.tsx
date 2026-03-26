@@ -79,7 +79,7 @@ const ProductManagement = () => {
         speed_mbps: formData.speed_mbps || null,
       };
       if (editingProduct) {
-        await api.put(`/products/${editingProduct.slug}`, payload);
+await api.put(`/products/${editingProduct.id}`, payload);
       } else {
         await api.post('/products', payload);
       }
@@ -101,7 +101,7 @@ const ProductManagement = () => {
   const handleToggleStatus = async (product: Product) => {
     try {
       const api = (await import('@/lib/axios')).default;
-      await api.patch(`/products/${product.slug}`, { is_active: !product.is_active });
+await api.patch(`/products/${product.id}`, { is_active: !product.is_active });
       loadProducts();
     } catch {}
   };
@@ -109,7 +109,7 @@ const ProductManagement = () => {
   const handleToggleFeatured = async (product: Product) => {
     try {
       const api = (await import('@/lib/axios')).default;
-      await api.patch(`/products/${product.slug}`, { is_featured: !product.is_featured });
+await api.patch(`/products/${product.id}`, { is_featured: !product.is_featured });
       loadProducts();
     } catch {}
   };
@@ -117,7 +117,7 @@ const ProductManagement = () => {
   const handleToggleQuoteBased = async (product: Product) => {
     try {
       const api = (await import('@/lib/axios')).default;
-      await api.patch(`/products/${product.slug}`, { is_quote_based: !product.is_quote_based });
+await api.patch(`/products/${product.id}`, { is_quote_based: !product.is_quote_based });
       loadProducts();
     } catch {}
   };

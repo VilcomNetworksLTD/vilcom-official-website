@@ -151,7 +151,7 @@ class UserController extends Controller
         $currentUser = $request->user();
 
         $allowedRoles = match (true) {
-            $currentUser->hasRole('admin')           => ['client', 'staff', 'sales', 'technical_support', 'web_developer', 'content_manager'],
+            $currentUser->hasRole('admin')           => ['client', 'staff', 'sales', 'technical_support', 'web_developer', 'content_manager', 'hr'],
             $currentUser->hasAnyRole(['staff','sales']) => ['client'],
             default                                  => [],
         };

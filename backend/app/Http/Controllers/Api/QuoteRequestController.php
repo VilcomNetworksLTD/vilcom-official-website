@@ -7,7 +7,9 @@ use App\Models\QuoteRequest;
 use App\Models\Product;
 use App\Models\User;
 use App\Notifications\NewQuoteRequestNotification;
+use App\Http\Requests\QuoteRequest\StoreQuoteRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -17,39 +19,16 @@ class QuoteRequestController extends Controller
     /**
      * Submit a new quote request (Public API)
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreQuoteRequest $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'service_type' => 'required|string|in:' . implode(',', array_keys(QuoteRequest::SERVICE_TYPES)),
-            'contact_name' => 'required|string|max:255',
-            'contact_email' => 'required|email|max:255',
-            'contact_phone' => 'nullable|string|max:20',
-            'company_name' => 'nullable|string|max:255',
-            'product_id' => 'nullable|exists:products,id',
-            'general_info' => 'nullable|array',
-            'technical_requirements' => 'nullable|array',
-            'budget_range' => 'nullable|string',
-            'timeline' => 'nullable|string',
-            'preferred_start_date' => 'nullable|date',
-            'urgency' => 'nullable|in:low,medium,high,critical',
-            'additional_notes' => 'nullable|string',
-            'source' => 'nullable|string',
-            'referral_source' => 'nullable|string',
-        ]);
+        // Log incoming request for debugging
+        Log::channel('quotes')->info('Quote request received', $request->all());
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
+        $data = $request->validated();
 
-        $data = $validator->validated();
-        
         // Generate unique quote number
         $data['quote_number'] = QuoteRequest::generateQuoteNumber();
-        
+
         // Map product type to service type if product is provided
         if (!empty($data['product_id'])) {
             $product = Product::find($data['product_id']);
@@ -57,7 +36,7 @@ class QuoteRequestController extends Controller
                 $data['service_type'] = $this->mapProductTypeToServiceType($product->type);
             }
         }
-        
+
         // Map service type based on product
         if (empty($data['service_type'])) {
             $data['service_type'] = 'other';
@@ -71,6 +50,7 @@ class QuoteRequestController extends Controller
         // Set default urgency
         $data['urgency'] = $data['urgency'] ?? 'medium';
         $data['source'] = $data['source'] ?? 'web';
+        $data['status'] = $data['status'] ?? 'pending';
 
         // Create quote request
         $quoteRequest = QuoteRequest::create($data);
@@ -85,7 +65,7 @@ class QuoteRequestController extends Controller
                 'quote_number' => $quoteRequest->quote_number,
                 'id' => $quoteRequest->id,
                 'service_type' => $quoteRequest->service_type,
-                'status' => $quoteRequest->status,
+                'status' => $quoteRequest->status ?? 'pending',
                 'submitted_at' => $quoteRequest->created_at->toISOString(),
             ],
         ], 201);
@@ -112,7 +92,7 @@ class QuoteRequestController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        
+
         $query = QuoteRequest::where('user_id', $user->id)
             ->with(['product:id,name,slug'])
             ->orderBy('created_at', 'desc');
@@ -147,7 +127,7 @@ class QuoteRequestController extends Controller
     public function show(Request $request, string $quoteNumber): JsonResponse
     {
         $user = $request->user();
-        
+
         $quote = QuoteRequest::where('quote_number', $quoteNumber)
             ->with(['product:id,name,slug', 'assignedStaff:id,name,email'])
             ->first();
@@ -179,7 +159,7 @@ class QuoteRequestController extends Controller
     public function respond(Request $request, string $quoteNumber): JsonResponse
     {
         $user = $request->user();
-        
+
         $quote = QuoteRequest::where('quote_number', $quoteNumber)->first();
 
         if (!$quote) {
@@ -222,7 +202,7 @@ class QuoteRequestController extends Controller
 
         if ($response === 'accepted') {
             $quote->accept($notes);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Quote accepted! Our team will contact you shortly to proceed with the service.',
@@ -234,7 +214,7 @@ class QuoteRequestController extends Controller
             ]);
         } else {
             $quote->reject($notes);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Quote rejected. We appreciate your feedback.',
@@ -263,7 +243,7 @@ class QuoteRequestController extends Controller
     public function technicalFields(Request $request): JsonResponse
     {
         $serviceType = $request->get('service_type', 'other');
-        
+
         $fields = QuoteRequest::getTechnicalFieldsForType($serviceType);
 
         return response()->json([

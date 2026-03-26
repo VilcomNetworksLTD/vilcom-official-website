@@ -10,8 +10,13 @@ class VmsService
 {
     public function getBookingUrl(): string
     {
-        $base = rtrim(config('services.vms.base_url', 'https://vms.vilcom.co.ke/api/organizations'), '/');
+        //
+        // Priority 1: Use the ENV variable if set (Recommended)
+        // Ensure your .env has: VMS_BASE_URL=https://vmsapi.vilcom.co.ke/api/organizations
+        $base = config('services.vms.base_url', 'https://vmsapi.vilcom.co.ke/api/organizations');
+
         $slug = config('services.vms.org_slug', 'vilcom-networks-limited');
+
         return "{$base}/{$slug}/bookings";
     }
 
@@ -21,31 +26,22 @@ class VmsService
     public function syncBooking(Booking $booking, string $idType, string $idNumber): ?array
     {
         // ─── 1. Map "Location" ────────────────────────────────────────
-        // VMS needs a physical or virtual location.
-        // We derive this from your internal 'meeting_type'.
         $location = match ($booking->meeting_type) {
-            'in_person' => 'Main Reception', // Default for physical visits
-            'virtual'   => 'Virtual / Online', // For Zoom/Teams
+            'in_person' => 'Main Reception',
+            'virtual'   => 'Virtual / Online',
             'phone'     => 'Phone Call',
             default     => 'Main Reception',
         };
 
         // ─── 2. Map "Host Name" ─────────────────────────────────────────
-        // VMS requires a host. We use the assigned staff member.
         $hostName = optional($booking->assignedStaff)->name ?? 'Reception';
 
         // ─── 3. Map "Visit Type" & "Purpose" ───────────────────────────────
-        // Since VMS does not have a "Service Type", we use:
-        // - visit_type: A generic category (Meeting)
-        // - purpose: The specific reason (Your Product Name)
+        $visitType = 'Meeting';
 
-        $visitType = 'Meeting'; // Standard VMS category
-
-        // Use the Product Name as the purpose so the host knows why they are coming
         $productName = $booking->product_snapshot['name'] ?? 'Consultation';
         $purpose = $productName;
 
-        // Append internal notes to the purpose if they exist
         if ($booking->notes) {
             $purpose .= ": {$booking->notes}";
         }
@@ -65,7 +61,7 @@ class VmsService
             'visit_time'       => $booking->booking_time,
             'visit_type'       => $visitType,
             'purpose'          => $purpose,
-            'id_type'          => $idType,
+            'id_type'          => $idType, // e.g. "national_id" (lowercase as per successful curl)
             'id_number'        => $idNumber,
             'host_name'        => $hostName,
             'location'         => $location,
@@ -73,7 +69,23 @@ class VmsService
         ], fn($v) => $v !== null && $v !== '');
 
         try {
+            // Define Headers to mimic a browser request (prevents 401 errors)
+            $headers = [
+                'Accept'       => 'application/json',
+                'Content-Type'  => 'application/json',
+                'User-Agent'   => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Referer'      => 'https://vms.vilcom.co.ke', // Allowlist your own domain
+                'Origin'       => 'https://vms.vilcom.co.ke',
+            ];
+
+            // OPTIONAL: If you ever need to add an API Key (e.g. if VMS changes policy)
+            // $apiKey = config('services.vms.api_key');
+            // if ($apiKey) {
+            //     $headers['Authorization'] = 'Bearer ' . $apiKey;
+            // }
+
             $response = Http::timeout(10)
+                ->withHeaders($headers)
                 ->acceptJson()
                 ->post($this->getBookingUrl(), $payload);
 

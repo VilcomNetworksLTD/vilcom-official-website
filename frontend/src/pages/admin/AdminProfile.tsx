@@ -204,12 +204,13 @@ export default function AdminProfile() {
             </div>
           </Section>
 
-          {/* Password change section */}
+                    {/* Password change section */}
           <ChangePasswordSection
+            insideForm={true}                    // ← This fixes the warning
             sectionAccent="text-blue-400"
             buttonClass="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-500/20 border-blue-500/30"
           />
-
+          
           {/* Actions */}
           <div className="flex items-center justify-between gap-3 pt-1">
             <p className="text-xs text-slate-600">{dirty ? "You have unsaved changes" : "All changes saved"}</p>

@@ -11,18 +11,34 @@ class Booking extends Model
 {
     use SoftDeletes;
 
+    /**
+     * The attributes that are mass assignable.
+     */
     protected $fillable = [
         'user_id', 'first_name', 'last_name', 'email', 'phone',
-        'company_name', 'customer_type',
-        'product_id', 'product_snapshot',
+        'company_name',
+        'customer_type', // 'new', 'existing'
+
+        'product_id',
+        'product_snapshot', // JSON
+
+        'activity_type',   // 'meeting', 'interview', 'consultancy', 'training'
+        'meeting_mode',    // 'in_person', 'virtual', 'phone'
+
         'assigned_to', 'reference',
         'booking_date', 'booking_time', 'duration_minutes',
-        'meeting_type', 'meeting_link', 'meeting_location',
+
+        'meeting_link', 'meeting_location',
         'notes', 'internal_notes', 'status',
+
         'confirmed_at', 'confirmed_by',
         'cancelled_at', 'cancellation_reason',
+
         'rescheduled_from', 'original_date', 'original_time',
+
         'reminder_sent', 'reminder_sent_at',
+
+        // VMS Fields
         'id_type', 'id_number',
         'vms_reference', 'vms_check_in_code', 'vms_qr_code_url', 'vms_synced_at',
     ];
@@ -33,15 +49,16 @@ class Booking extends Model
         'confirmed_at'     => 'datetime',
         'cancelled_at'     => 'datetime',
         'reminder_sent_at' => 'datetime',
+        'vms_synced_at'    => 'datetime',
         'reminder_sent'    => 'boolean',
-        'product_snapshot' => 'array', // Auto JSON decode
+        'product_snapshot' => 'array',
     ];
 
     protected $appends = ['client_name', 'client_display', 'meeting_purpose'];
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
     // VIRTUAL ATTRIBUTES
-    // ─────────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
 
     public function getClientNameAttribute(): string
     {
@@ -51,79 +68,42 @@ class Booking extends Model
     public function getClientDisplayAttribute(): string
     {
         $name = $this->client_name;
-        if ($this->customer_type === 'business' && $this->company_name) {
+        // If a company name exists, append it regardless of customer_type
+        if ($this->company_name) {
             return "{$name} ({$this->company_name})";
         }
         return $name;
     }
 
     /**
-     * Returns the meeting purpose from the frozen product snapshot.
-     * Falls back to the live product name, then a generic label.
-     * This means the booking record stays accurate even if the product
-     * is renamed, repriced, or deleted later.
+     * Determines the purpose of the meeting.
+     * 1. Checks the frozen product snapshot (preferred for history).
+     * 2. Checks the live product relationship.
+     * 3. Falls back to Activity Type (for Interviews/General visits with no product).
      */
     public function getMeetingPurposeAttribute(): string
     {
-        if ($this->product_snapshot && isset($this->product_snapshot['purpose_label'])) {
-            return $this->product_snapshot['purpose_label'];
+        if ($this->product_snapshot && isset($this->product_snapshot['name'])) {
+            return $this->product_snapshot['name'];
         }
+
         if ($this->relationLoaded('product') && $this->product) {
             return $this->product->name;
         }
-        return 'Consultation';
+
+        // Fallback for non-product bookings (Interviews, etc.)
+        return ucfirst($this->activity_type ?? 'Consultation');
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // NAME FORMAT COMPATIBILITY
-    // Handles both 'name' (single) and 'first_name'/'last_name' user tables
-    // ─────────────────────────────────────────────────────────────────────────
-
-    public static function fromUser(User $user): array
-    {
-        $attrs = $user->getAttributes();
-
-        if (array_key_exists('first_name', $attrs)) {
-            $firstName = $user->first_name ?? '';
-            $lastName  = $user->last_name ?? '';
-        } else {
-            $parts     = explode(' ', trim($user->name ?? ''), 2);
-            $firstName = $parts[0] ?? '';
-            $lastName  = $parts[1] ?? '';
-        }
-
-        return [
-            'user_id'       => $user->id,
-            'first_name'    => $firstName,
-            'last_name'     => $lastName,
-            'email'         => $user->email,
-            'phone'         => $user->phone ?? null,
-            'company_name'  => $user->company_name ?? null,
-            'customer_type' => $user->customer_type ?? 'individual',
-        ];
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // REFERENCE GENERATION
-    // ─────────────────────────────────────────────────────────────────────────
-
-    public static function generateReference(): string
-    {
-        $year  = now()->format('Y');
-        $count = self::whereYear('created_at', $year)->withTrashed()->count() + 1;
-        return 'VLC-' . $year . '-' . str_pad($count, 5, '0', STR_PAD_LEFT);
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
     // RELATIONSHIPS
-    // ─────────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /** Live product — may be null if product was deleted (use product_snapshot instead) */
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
@@ -144,49 +124,33 @@ class Booking extends Model
         return $this->belongsTo(Booking::class, 'rescheduled_from');
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
     // SCOPES
-    // ─────────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
 
     public function scopePending(Builder $q): Builder   { return $q->where('status', 'pending'); }
     public function scopeConfirmed(Builder $q): Builder { return $q->where('status', 'confirmed'); }
     public function scopeToday(Builder $q): Builder     { return $q->whereDate('booking_date', today()); }
+
     public function scopeUpcoming(Builder $q): Builder
     {
         return $q->whereIn('status', ['pending', 'confirmed'])
                  ->where('booking_date', '>=', today());
     }
-    public function scopeForProductType(Builder $q, string $type): Builder
-    {
-        return $q->whereHas('product', fn($p) => $p->where('type', $type));
-    }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
     // HELPERS
-    // ─────────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
 
     public function isPending(): bool   { return $this->status === 'pending'; }
     public function isConfirmed(): bool { return $this->status === 'confirmed'; }
     public function isCancelled(): bool { return $this->status === 'cancelled'; }
     public function isCompleted(): bool { return $this->status === 'completed'; }
 
-    public function confirm(int $confirmedBy, ?string $meetingLink = null): void
+    public static function generateReference(): string
     {
-        $this->update(array_filter([
-            'status'       => 'confirmed',
-            'confirmed_at' => now(),
-            'confirmed_by' => $confirmedBy,
-            'meeting_link' => $meetingLink,
-        ]));
-    }
-
-    public function cancel(string $reason): void
-    {
-        $this->update([
-            'status'              => 'cancelled',
-            'cancelled_at'        => now(),
-            'cancellation_reason' => $reason,
-        ]);
+        $year  = now()->format('Y');
+        $count = self::whereYear('created_at', $year)->withTrashed()->count() + 1;
+        return 'VLC-' . $year . '-' . str_pad($count, 5, '0', STR_PAD_LEFT);
     }
 }
-

@@ -243,82 +243,70 @@ class CareerApplicationController extends Controller
     /**
      * Download CV file (Admin/HR only)
      */
-    public function downloadCv(int $id): JsonResponse
+    public function downloadCv(int $id)
     {
-        $application = CareerApplication::find($id);
-
-        if (!$application) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Application not found',
-            ], 404);
-        }
+        $application = CareerApplication::findOrFail($id);
 
         if (!$application->cv_path || !Storage::disk('public')->exists($application->cv_path)) {
             return response()->json([
                 'success' => false,
-                'message' => 'CV file not found',
+                'message' => 'CV file not found on server.',
             ], 404);
         }
 
-        $filePath = storage_path('app/public/' . $application->cv_path);
-        $fileName = $application->application_number . '_cv.' . pathinfo($application->cv_path, PATHINFO_EXTENSION);
+        $fileName = $application->application_number . '_CV.' .
+                    pathinfo($application->cv_path, PATHINFO_EXTENSION);
 
-        return response()->download($filePath, $fileName);
+        return Storage::disk('public')->download(
+            $application->cv_path,
+            $fileName
+        );
     }
 
     /**
-     * Download certificates file (Admin/HR only)
+     * Download Certificates file (Admin/HR only)
      */
-    public function downloadCertificates(int $id): JsonResponse
+    public function downloadCertificates(int $id)
     {
-        $application = CareerApplication::find($id);
-
-        if (!$application) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Application not found',
-            ], 404);
-        }
+        $application = CareerApplication::findOrFail($id);
 
         if (!$application->certificates_path || !Storage::disk('public')->exists($application->certificates_path)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Certificates file not found',
+                'message' => 'Certificates file not found on server.',
             ], 404);
         }
 
-        $filePath = storage_path('app/public/' . $application->certificates_path);
-        $fileName = $application->application_number . '_certificates.' . pathinfo($application->certificates_path, PATHINFO_EXTENSION);
+        $fileName = $application->application_number . '_Certificates.' .
+                    pathinfo($application->certificates_path, PATHINFO_EXTENSION);
 
-        return response()->download($filePath, $fileName);
+        return Storage::disk('public')->download(
+            $application->certificates_path,
+            $fileName
+        );
     }
 
     /**
-     * Download additional documents file (Admin/HR only)
+     * Download Additional Documents (Admin/HR only)
      */
-    public function downloadAdditionalDocuments(int $id): JsonResponse
+    public function downloadAdditionalDocuments(int $id)
     {
-        $application = CareerApplication::find($id);
-
-        if (!$application) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Application not found',
-            ], 404);
-        }
+        $application = CareerApplication::findOrFail($id);
 
         if (!$application->additional_documents_path || !Storage::disk('public')->exists($application->additional_documents_path)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Additional documents file not found',
+                'message' => 'Additional documents file not found on server.',
             ], 404);
         }
 
-        $filePath = storage_path('app/public/' . $application->additional_documents_path);
-        $fileName = $application->application_number . '_additional.' . pathinfo($application->additional_documents_path, PATHINFO_EXTENSION);
+        $fileName = $application->application_number . '_Additional_Docs.' .
+                    pathinfo($application->additional_documents_path, PATHINFO_EXTENSION);
 
-        return response()->download($filePath, $fileName);
+        return Storage::disk('public')->download(
+            $application->additional_documents_path,
+            $fileName
+        );
     }
 
     /**

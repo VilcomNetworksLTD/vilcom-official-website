@@ -8,7 +8,6 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
-use Spatie\Activitylog\LogOptions;
 
 class User extends Authenticatable
 {
@@ -127,25 +126,6 @@ class User extends Authenticatable
             'password_reset_expires_at' => 'datetime',
             'emerald_approval_reviewed_at' => 'datetime',
         ];
-    }
-
-    /**
-     * Activity log configuration
-     */
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logOnly([
-                'name',
-                'email',
-                'phone',
-                'status',
-                'address',
-                'customer_type',
-                'department',
-            ])
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
     }
 
     // ============================================
@@ -757,7 +737,7 @@ public function leads()
      */
     public function isStaffOrAdmin(): bool
     {
-        return $this->hasAnyRole(['staff', 'admin', 'sales', 'technical_support', 'web_developer', 'content_manager']);
+        return $this->hasAnyRole(['staff', 'admin', 'sales', 'technical_support', 'web_developer', 'content_manager', 'hr']);
     }
 
     // ============================================

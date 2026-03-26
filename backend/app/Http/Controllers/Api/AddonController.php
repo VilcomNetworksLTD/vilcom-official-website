@@ -7,6 +7,7 @@ use App\Http\Requests\Addon\StoreAddonRequest;
 use App\Http\Requests\Addon\UpdateAddonRequest;
 use App\Http\Resources\AddonResource;
 use App\Models\Addon;
+use App\Models\UserActivity;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
@@ -103,10 +104,15 @@ class AddonController extends Controller
 
         $addon = Addon::create($data);
 
-        activity()
-            ->causedBy(auth()->user())
-            ->performedOn($addon)
-            ->log('Addon created');
+        UserActivity::log(
+            auth()->user(),
+            'addon_created',
+            'Addon created',
+            $addon,
+            null,
+            $addon->toArray(),
+            $request
+        );
 
         return response()->json([
             'success' => true,
@@ -159,10 +165,15 @@ class AddonController extends Controller
 
         $addon->update($data);
 
-        activity()
-            ->causedBy(auth()->user())
-            ->performedOn($addon)
-            ->log('Addon updated');
+        UserActivity::log(
+            auth()->user(),
+            'addon_updated',
+            'Addon updated',
+            $addon,
+            null,
+            $addon->fresh()->toArray(),
+            $request
+        );
 
         return response()->json([
             'success' => true,
@@ -182,10 +193,15 @@ class AddonController extends Controller
             \Storage::disk('public')->delete($addon->image);
         }
 
-        activity()
-            ->causedBy(auth()->user())
-            ->performedOn($addon)
-            ->log('Addon deleted');
+        UserActivity::log(
+            auth()->user(),
+            'addon_deleted',
+            'Addon deleted',
+            $addon,
+            null,
+            null,
+            request()
+        );
 
         $addon->delete();
 

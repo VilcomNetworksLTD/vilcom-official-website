@@ -1,19 +1,22 @@
-import { useState, useEffect } from 'react';
-import { quotesApi, type QuoteSubmission } from '@/services/quotes';
-import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+import { quotesApi } from '@/services/quotes';
 
 interface QuoteRequestFormProps {
   productId?: number;
   productName?: string;
-  serviceType?: string; // Preselected service type from parent page
+  serviceType?: string;
   onSuccess?: (quoteNumber: string) => void;
   onCancel?: () => void;
 }
 
-// Glassmorphic card style (matching ContactUs.tsx)
-const glassCardStyle = { background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 32px rgba(0,0,0,0.2)' };
+// ─── Exact styles from original ───────────────────────────────────────────────
+const glassCardStyle = {
+  background: 'rgba(255, 255, 255, 0.08)',
+  border: '1px solid rgba(255, 255, 255, 0.15)',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 32px rgba(0,0,0,0.2)',
+};
 
-// Service types with their labels
+// ─── Backend constants (mirrors QuoteRequest model exactly) ───────────────────
 const SERVICE_TYPES: Record<string, string> = {
   internet_plan: 'Internet Plan',
   hosting_package: 'Hosting Package',
@@ -30,7 +33,6 @@ const SERVICE_TYPES: Record<string, string> = {
   other: 'Other',
 };
 
-// Technical fields for each service type
 const TECHNICAL_FIELDS: Record<string, Record<string, string>> = {
   internet_plan: {
     required_bandwidth: 'Required Bandwidth (Mbps)',
@@ -39,12 +41,14 @@ const TECHNICAL_FIELDS: Record<string, Record<string, string>> = {
     coverage_area: 'Coverage Area / Location',
     static_ip_required: 'Static IP Required?',
     sla_requirement: 'SLA Requirement',
+    additional_services: 'Additional Services Needed',
   },
   hosting_package: {
     storage_needed: 'Storage Needed (GB)',
     bandwidth_needed: 'Monthly Bandwidth (GB)',
     domains_count: 'Number of Domains',
     email_accounts: 'Email Accounts Required',
+    databases_needed: 'Databases Required',
     control_panel: 'Preferred Control Panel',
     backup_requirements: 'Backup Requirements',
   },
@@ -55,6 +59,7 @@ const TECHNICAL_FIELDS: Record<string, Record<string, string>> = {
     existing_system_integration: 'Existing System Integration',
     design_preferences: 'Design Preferences',
     content_ready: 'Is Content Ready?',
+    domain_ready: 'Is Domain Ready?',
   },
   cloud_services: {
     cloud_type: 'Cloud Type (Public/Private/Hybrid)',
@@ -62,6 +67,7 @@ const TECHNICAL_FIELDS: Record<string, Record<string, string>> = {
     storage_requirements: 'Storage Requirements',
     expected_users: 'Expected Number of Users',
     data_residency: 'Data Residency Requirements',
+    sla_requirement: 'SLA Requirement',
     scalability_needs: 'Scalability Needs',
   },
   cyber_security: {
@@ -71,6 +77,7 @@ const TECHNICAL_FIELDS: Record<string, Record<string, string>> = {
     current_setup: 'Current Security Setup',
     compliance_requirements: 'Compliance Requirements (ISO, GDPR, etc.)',
     monitoring_needs: '24/7 Monitoring Needed?',
+    incident_response: 'Incident Response Required',
   },
   network_infrastructure: {
     network_size: 'Network Size (Number of devices)',
@@ -78,12 +85,13 @@ const TECHNICAL_FIELDS: Record<string, Record<string, string>> = {
     current_infrastructure: 'Current Infrastructure Details',
     required_features: 'Required Network Features',
     equipment_preferences: 'Equipment Preferences',
+    wiring_needed: 'Wiring/Cabling Required',
   },
   isp_services: {
     bandwidth_requirement: 'Bandwidth Requirement',
     number_of_locations: 'Number of Locations',
     service_level: 'Service Level Required',
-    static_ips_needed: 'Number of Static IPs Needed',
+    static_ips_needed: 'Number of Static IPs',
     redundancy_required: 'Redundancy Required?',
     coverage_location: 'Coverage Location',
   },
@@ -99,12 +107,14 @@ const TECHNICAL_FIELDS: Record<string, Record<string, string>> = {
     bandwidth_requirement: 'Bandwidth Requirement',
     uptime_requirement: 'Uptime Requirement',
     data_usage_estimation: 'Estimated Monthly Data Usage',
+    equipment_preferences: 'Equipment Preferences',
   },
   media_services: {
     service_type: 'Type of Media Service',
     content_type: 'Content Type',
     delivery_requirements: 'Delivery Requirements',
     encoding_needs: 'Encoding Needs',
+    storage_requirements: 'Storage Requirements',
   },
   erp_services: {
     erp_module: 'ERP Module Needed',
@@ -129,106 +139,147 @@ const TECHNICAL_FIELDS: Record<string, Record<string, string>> = {
 };
 
 const BUDGET_RANGES = [
-  { value: 'under_10k', label: 'Under KES 10,000' },
-  { value: '10k_50k', label: 'KES 10,000 - 50,000' },
-  { value: '50k_100k', label: 'KES 50,000 - 100,000' },
-  { value: '100k_250k', label: 'KES 100,000 - 250,000' },
-  { value: '250k_500k', label: 'KES 250,000 - 500,000' },
-  { value: '500k_1m', label: 'KES 500,000 - 1,000,000' },
-  { value: '1m_5m', label: 'KES 1,000,000 - 5,000,000' },
-  { value: 'over_5m', label: 'Over KES 5,000,000' },
-  { value: 'flexible', label: 'Flexible / Discuss' },
+  { value: 'under_10k',  label: 'Under KES 10,000' },
+  { value: '10k_50k',    label: 'KES 10,000 - 50,000' },
+  { value: '50k_100k',   label: 'KES 50,000 - 100,000' },
+  { value: '100k_250k',  label: 'KES 100,000 - 250,000' },
+  { value: '250k_500k',  label: 'KES 250,000 - 500,000' },
+  { value: '500k_1m',    label: 'KES 500,000 - 1,000,000' },
+  { value: '1m_5m',      label: 'KES 1,000,000 - 5,000,000' },
+  { value: 'over_5m',    label: 'Over KES 5,000,000' },
+  { value: 'flexible',   label: 'Flexible / Discuss' },
 ];
 
 const TIMELINE_OPTIONS = [
-  { value: 'asap', label: 'As Soon As Possible' },
+  { value: 'asap',           label: 'As Soon As Possible' },
   { value: 'within_1_month', label: 'Within 1 Month' },
-  { value: '1_3_months', label: '1-3 Months' },
-  { value: '3_6_months', label: '3-6 Months' },
-  { value: '6_12_months', label: '6-12 Months' },
-  { value: 'flexible', label: 'Flexible' },
+  { value: '1_3_months',     label: '1-3 Months' },
+  { value: '3_6_months',     label: '3-6 Months' },
+  { value: '6_12_months',    label: '6-12 Months' },
+  { value: 'flexible',       label: 'Flexible' },
 ];
 
-export default function QuoteRequestForm({ productId, productName, serviceType: initialServiceType, onSuccess, onCancel }: QuoteRequestFormProps) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  
-  // Check if service type is pre-selected (from product page)
+// ─── Shared classes matching original exactly ─────────────────────────────────
+const inputClass =
+  'w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent placeholder-white/40';
+const labelClass = 'block text-sm font-semibold text-white/80 mb-2';
+
+export default function QuoteRequestForm({
+  productId,
+  productName,
+  serviceType: initialServiceType,
+  onSuccess,
+  onCancel,
+}: QuoteRequestFormProps) {
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+  const [success, setSuccess]         = useState<string | null>(null);
+
   const isServiceTypeLocked = !!initialServiceType;
-  
-  // Form state - initialize with initialServiceType if provided
-  const [serviceType, setServiceType] = useState<string>(initialServiceType || '');
-  const [contactName, setContactName] = useState('');
-  const [contactEmail, setContactEmail] = useState('');
-  const [contactPhone, setContactPhone] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [budgetRange, setBudgetRange] = useState('');
-  const [timeline, setTimeline] = useState('');
-  const [preferredStartDate, setPreferredStartDate] = useState('');
-  const [urgency, setUrgency] = useState<'low' | 'medium' | 'high' | 'critical'>('medium');
-  const [additionalNotes, setAdditionalNotes] = useState('');
-  
-  // Technical requirements - dynamic based on service type
+
+  // ─── Form state (identical to original) ──────────────────────────────────
+  const [serviceType,         setServiceType]         = useState(initialServiceType || '');
+  const [contactName,         setContactName]         = useState('');
+  const [contactEmail,        setContactEmail]        = useState('');
+  const [contactPhone,        setContactPhone]        = useState('');
+  const [companyName,         setCompanyName]         = useState('');
+  const [budgetRange,         setBudgetRange]         = useState('');
+  const [timeline,            setTimeline]            = useState('');
+  const [preferredStartDate,  setPreferredStartDate]  = useState('');
+  const [urgency,             setUrgency]             = useState<'low' | 'medium' | 'high' | 'critical'>('medium');
+  const [additionalNotes,     setAdditionalNotes]     = useState('');
   const [technicalRequirements, setTechnicalRequirements] = useState<Record<string, string>>({});
-  
-  // General info
-  const [projectOverview, setProjectOverview] = useState('');
-  const [targetAudience, setTargetAudience] = useState('');
+  const [projectOverview,     setProjectOverview]     = useState('');
+  const [targetAudience,      setTargetAudience]      = useState('');
   const [complianceStandards, setComplianceStandards] = useState('');
 
-  // Get technical fields for selected service type
-  const currentTechnicalFields = serviceType ? (TECHNICAL_FIELDS[serviceType] || TECHNICAL_FIELDS.other) : {};
+  const currentTechnicalFields = serviceType
+    ? TECHNICAL_FIELDS[serviceType] || TECHNICAL_FIELDS.other
+    : {};
 
   const handleTechnicalFieldChange = (key: string, value: string) => {
-    setTechnicalRequirements(prev => ({ ...prev, [key]: value }));
+    setTechnicalRequirements((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
+    setFieldErrors({});
     setLoading(true);
 
     try {
-      const submissionData: QuoteSubmission = {
-        service_type: serviceType,
-        contact_name: contactName,
-        contact_email: contactEmail,
-        contact_phone: contactPhone || undefined,
-        company_name: companyName || undefined,
-        product_id: productId,
-        general_info: {
-          project_overview: projectOverview,
-          target_audience: targetAudience,
-          compliance_standards: complianceStandards,
-        },
-        technical_requirements: Object.keys(technicalRequirements).length > 0 ? technicalRequirements : undefined,
-        budget_range: budgetRange || undefined,
-        timeline: timeline || undefined,
-        preferred_start_date: preferredStartDate || undefined,
-        urgency,
-        additional_notes: additionalNotes || undefined,
-        source: 'web',
-      };
+      // ── Build general_info — only include populated fields ──────────────
+      // Backend casts this as array. Sending empty strings on nullable fields
+      // can fail validation on some Laravel versions, so we omit them.
+      const generalInfo: Record<string, string> = {};
+      if (projectOverview.trim())     generalInfo.project_overview     = projectOverview.trim();
+      if (targetAudience.trim())      generalInfo.target_audience      = targetAudience.trim();
+      if (complianceStandards.trim()) generalInfo.compliance_standards = complianceStandards.trim();
 
-      const result = await quotesApi.submit(submissionData);
-      setSuccess(`Quote request submitted! Your quote number is ${result.quote_number}`);
+      // ── Strip blank technical requirement fields before sending ──────────
+      const filledTechReqs = Object.fromEntries(
+        Object.entries(technicalRequirements).filter(([, v]) => v.trim() !== '')
+      );
+
+      // ── Log exact payload for debugging (check browser console)
+      const payload = {
+        service_type:           serviceType,
+        contact_name:           contactName,
+        contact_email:          contactEmail,
+        contact_phone:          contactPhone          || undefined,
+        company_name:           companyName           || undefined,
+        product_id:             productId,
+        general_info:           Object.keys(generalInfo).length       ? generalInfo      : undefined,
+        technical_requirements: Object.keys(filledTechReqs).length    ? filledTechReqs   : undefined,
+        budget_range:           budgetRange           || undefined,
+        timeline:               timeline              || undefined,
+        preferred_start_date:   preferredStartDate    || undefined,
+        urgency:                urgency,
+        additional_notes:       additionalNotes       || undefined,
+        source:                 'web',
+      };
       
-      if (onSuccess) {
-        onSuccess(result.quote_number);
-      }
+      console.log('[QuoteRequestForm] Submitting payload:', payload);
+
+      // ── Call quotesApi.submit()
+      const result = await quotesApi.submit(payload);
+
+      setSuccess(`Quote request submitted! Your quote number is ${result.quote_number}`);
+      if (onSuccess) onSuccess(result.quote_number);
+
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to submit quote request. Please try again.');
+      // Laravel 422 — surface per-field validation errors under each input
+      if (err.response?.status === 422 && err.response.data?.errors) {
+        setFieldErrors(err.response.data.errors);
+        setError(err.response.data.message || 'Please fix the errors below.');
+      } else {
+        setError(err.response?.data?.message || 'Failed to submit quote request. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  // Renders the first backend error for a given field name
+  const fieldError = (name: string) =>
+    fieldErrors[name] ? (
+      <p className="text-red-400 text-xs mt-1">{fieldErrors[name][0]}</p>
+    ) : null;
+
   return (
-    <div className="relative rounded-2xl p-8 overflow-hidden backdrop-blur-md max-w-3xl mx-auto" style={glassCardStyle}>
-      <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: 'inset 0 0 20px rgba(255,255,255,0.05)' }} />
+    <div
+      className="relative rounded-2xl p-8 overflow-hidden backdrop-blur-md max-w-3xl mx-auto"
+      style={glassCardStyle}
+    >
+      <div
+        className="absolute inset-0 rounded-2xl"
+        style={{ boxShadow: 'inset 0 0 20px rgba(255,255,255,0.05)' }}
+      />
+
       <div className="relative z-10">
+
+        {/* ── Header ─────────────────────────────────────────────────────── */}
         <div className="mb-6">
           <h2 className="font-heading text-2xl font-bold text-white">Request a Quote</h2>
           {productName && (
@@ -238,12 +289,14 @@ export default function QuoteRequestForm({ productId, productName, serviceType: 
           )}
         </div>
 
+        {/* ── Global error banner ─────────────────────────────────────────── */}
         {error && (
-          <div className="mb-4 p-4 bg-red-500/20 border border-red-500/40 rounded-lg text-red-300">
+          <div className="mb-4 p-4 bg-red-500/20 border border-red-500/40 rounded-lg text-red-300 text-sm">
             {error}
           </div>
         )}
 
+        {/* ── Success state ───────────────────────────────────────────────── */}
         {success ? (
           <div className="text-center py-8">
             <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -254,7 +307,7 @@ export default function QuoteRequestForm({ productId, productName, serviceType: 
             <h3 className="text-xl font-semibold text-white mb-2">Quote Request Submitted!</h3>
             <p className="text-cyan-300">{success}</p>
             <p className="text-white/50 mt-4 text-sm">
-              Our team will review your request and get back to you within 24-48 hours.
+              Our team will review your request and get back to you within 24–48 hours.
             </p>
             {onSuccess && (
               <button
@@ -265,12 +318,15 @@ export default function QuoteRequestForm({ productId, productName, serviceType: 
               </button>
             )}
           </div>
+
         ) : (
+        /* ── Form ──────────────────────────────────────────────────────────── */
         <form onSubmit={handleSubmit} className="space-y-6">
+
           {/* Service Type */}
           <div>
-            <label className="block text-sm font-semibold text-white/80 mb-2">
-              Service Type {isServiceTypeLocked ? '' : '*'}
+            <label className={labelClass}>
+              Service Type {!isServiceTypeLocked && '*'}
             </label>
             {isServiceTypeLocked ? (
               <div className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white font-medium">
@@ -284,184 +340,200 @@ export default function QuoteRequestForm({ productId, productName, serviceType: 
                   setTechnicalRequirements({});
                 }}
                 required
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                className={inputClass}
+                style={{ colorScheme: 'dark' }}
               >
                 <option value="">Select a service type...</option>
                 {Object.entries(SERVICE_TYPES).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                  <option key={value} value={value} className="bg-gray-900">{label}</option>
                 ))}
               </select>
             )}
+            {fieldError('service_type')}
           </div>
 
-          {/* Contact Information */}
+          {/* Contact info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-white/80 mb-2">
-                Contact Name *
-              </label>
+              <label className={labelClass}>Contact Name *</label>
               <input
                 type="text"
                 value={contactName}
                 onChange={(e) => setContactName(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent placeholder-white/40"
+                className={inputClass}
                 placeholder="Your full name"
               />
+              {fieldError('contact_name')}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-white/80 mb-2">
-                Email Address *
-              </label>
+              <label className={labelClass}>Email Address *</label>
               <input
                 type="email"
                 value={contactEmail}
                 onChange={(e) => setContactEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent placeholder-white/40"
+                className={inputClass}
                 placeholder="your@email.com"
               />
+              {fieldError('contact_email')}
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-white/80 mb-2">
-                Phone Number
-              </label>
+              <label className={labelClass}>Phone Number</label>
               <input
                 type="tel"
                 value={contactPhone}
                 onChange={(e) => setContactPhone(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent placeholder-white/40"
+                className={inputClass}
                 placeholder="+254 7XX XXX XXX"
               />
+              {fieldError('contact_phone')}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-white/80 mb-2">
-                Company Name
-              </label>
+              <label className={labelClass}>Company Name</label>
               <input
                 type="text"
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent placeholder-white/40"
+                className={inputClass}
                 placeholder="Your company (optional)"
+              />
+              {fieldError('company_name')}
+            </div>
+          </div>
+
+          {/* General info */}
+          <div>
+            <label className={labelClass}>Project Overview</label>
+            <textarea
+              value={projectOverview}
+              onChange={(e) => setProjectOverview(e.target.value)}
+              rows={3}
+              className={`${inputClass} resize-none`}
+              placeholder="Describe your project goals, objectives, and what you aim to accomplish..."
+            />
+            {fieldError('general_info')}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Target Audience</label>
+              <input
+                type="text"
+                value={targetAudience}
+                onChange={(e) => setTargetAudience(e.target.value)}
+                className={inputClass}
+                placeholder="e.g. SMEs in Nairobi"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Compliance Standards</label>
+              <input
+                type="text"
+                value={complianceStandards}
+                onChange={(e) => setComplianceStandards(e.target.value)}
+                className={inputClass}
+                placeholder="e.g. ISO 27001, GDPR"
               />
             </div>
           </div>
 
-          {/* General Information */}
-          <div>
-            <label className="block text-sm font-semibold text-white/80 mb-2">
-              Project Overview *
-            </label>
-            <textarea
-              value={projectOverview}
-              onChange={(e) => setProjectOverview(e.target.value)}
-              required
-              rows={3}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent placeholder-white/40 resize-none"
-              placeholder="Describe your project goals, objectives, and what you aim to accomplish..."
-            />
-          </div>
-
-          {/* Technical Requirements - Dynamic based on service type */}
-          {serviceType && currentTechnicalFields && Object.keys(currentTechnicalFields).length > 0 && (
+          {/* Technical requirements — dynamic per service type */}
+          {serviceType && Object.keys(currentTechnicalFields).length > 0 && (
             <div className="bg-white/5 p-4 rounded-lg border border-white/10">
               <h3 className="text-lg font-semibold text-white mb-4">Technical Requirements</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {Object.entries(currentTechnicalFields).map(([key, label]) => (
                   <div key={key}>
-                    <label className="block text-sm font-semibold text-white/80 mb-2">
-                      {label}
-                    </label>
+                    <label className={labelClass}>{label}</label>
                     <input
                       type="text"
                       value={technicalRequirements[key] || ''}
                       onChange={(e) => handleTechnicalFieldChange(key, e.target.value)}
-                      className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent placeholder-white/40"
+                      className={inputClass}
                       placeholder={`Enter ${label.toLowerCase()}`}
                     />
                   </div>
                 ))}
               </div>
+              {fieldError('technical_requirements')}
             </div>
           )}
 
-          {/* Budget and Timeline */}
+          {/* Budget & Timeline */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-white/80 mb-2">
-                Budget Range
-              </label>
+              <label className={labelClass}>Budget Range</label>
               <select
                 value={budgetRange}
                 onChange={(e) => setBudgetRange(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                className={inputClass}
+                style={{ colorScheme: 'dark' }}
               >
                 <option value="">Select budget range...</option>
-                {BUDGET_RANGES.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
+                {BUDGET_RANGES.map((o) => (
+                  <option key={o.value} value={o.value} className="bg-gray-900">{o.label}</option>
                 ))}
               </select>
+              {fieldError('budget_range')}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-white/80 mb-2">
-                Timeline
-              </label>
+              <label className={labelClass}>Timeline</label>
               <select
                 value={timeline}
                 onChange={(e) => setTimeline(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                className={inputClass}
+                style={{ colorScheme: 'dark' }}
               >
                 <option value="">Select timeline...</option>
-                {TIMELINE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
+                {TIMELINE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value} className="bg-gray-900">{o.label}</option>
                 ))}
               </select>
+              {fieldError('timeline')}
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-white/80 mb-2">
-                Preferred Start Date
-              </label>
+              <label className={labelClass}>Preferred Start Date</label>
               <input
                 type="date"
                 value={preferredStartDate}
                 onChange={(e) => setPreferredStartDate(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                className={inputClass}
+                style={{ colorScheme: 'dark' }}
               />
+              {fieldError('preferred_start_date')}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-white/80 mb-2">
-                Urgency Level
-              </label>
+              <label className={labelClass}>Urgency Level</label>
               <select
                 value={urgency}
                 onChange={(e) => setUrgency(e.target.value as any)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                className={inputClass}
+                style={{ colorScheme: 'dark' }}
               >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
+                <option value="low"      className="bg-gray-900">Low</option>
+                <option value="medium"   className="bg-gray-900">Medium</option>
+                <option value="high"     className="bg-gray-900">High</option>
+                <option value="critical" className="bg-gray-900">Critical</option>
               </select>
+              {fieldError('urgency')}
             </div>
           </div>
 
-          {/* Additional Notes */}
+          {/* Additional notes */}
           <div>
-            <label className="block text-sm font-semibold text-white/80 mb-2">
-              Additional Notes
-            </label>
+            <label className={labelClass}>Additional Notes</label>
             <textarea
               value={additionalNotes}
               onChange={(e) => setAdditionalNotes(e.target.value)}
               rows={3}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent placeholder-white/40 resize-none"
+              className={`${inputClass} resize-none`}
               placeholder="Any other information you'd like to share..."
             />
           </div>
@@ -491,4 +563,3 @@ export default function QuoteRequestForm({ productId, productName, serviceType: 
     </div>
   );
 }
-

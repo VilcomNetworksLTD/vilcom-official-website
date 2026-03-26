@@ -18,14 +18,14 @@ return new class extends Migration
             $table->string('location')->nullable();
             $table->text('description')->nullable();
             $table->foreignId('media_id')->nullable()->constrained('media')->nullOnDelete();
-            
+
             // For stats display on the frontend like "50,000+" -> "Homes Connected"
             $table->string('stats_value')->nullable();
             $table->string('stats_label')->nullable();
-            
+
             $table->boolean('is_published')->default(true);
             $table->integer('sort_order')->default(0);
-            
+
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
         });

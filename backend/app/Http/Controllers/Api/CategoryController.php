@@ -8,6 +8,7 @@ use App\Http\Requests\Category\UpdateCategoryRequest;
 use App\Http\Resources\CategoryResource;
 use App\Http\Resources\CategoryCollection;
 use App\Models\Category;
+use App\Models\UserActivity;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
@@ -136,10 +137,15 @@ class CategoryController extends Controller
             $category->update(['banner' => $path]);
         }
 
-        activity()
-            ->causedBy(auth()->user())
-            ->performedOn($category)
-            ->log('Category created');
+        UserActivity::log(
+            auth()->user(),
+            'category_created',
+            'Category created',
+            $category,
+            null,
+            $category->toArray(),
+            $request
+        );
 
         return response()->json([
             'success' => true,
@@ -242,10 +248,15 @@ class CategoryController extends Controller
 
         $category->update($data);
 
-        activity()
-            ->causedBy(auth()->user())
-            ->performedOn($category)
-            ->log('Category updated');
+        UserActivity::log(
+            auth()->user(),
+            'category_updated',
+            'Category updated',
+            $category,
+            null,
+            $category->fresh()->toArray(),
+            $request
+        );
 
         return response()->json([
             'success' => true,
@@ -280,10 +291,12 @@ class CategoryController extends Controller
             ], 422);
         }
 
-        activity()
-            ->causedBy(auth()->user())
-            ->performedOn($category)
-            ->log('Category deleted');
+        UserActivity::log(
+            auth()->user(),
+            'category_deleted',
+            'Category deleted',
+            $category
+        );
 
         $category->delete();
 

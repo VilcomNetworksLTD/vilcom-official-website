@@ -9,6 +9,7 @@ use App\Http\Resources\ProductResource;
 use App\Http\Resources\ProductCollection;
 use App\Models\Product;
 use App\Models\Category;
+use App\Models\UserActivity;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
@@ -171,10 +172,15 @@ class ProductController extends Controller
             $product->addons()->attach($addons);
         }
 
-        activity()
-            ->causedBy(auth()->user())
-            ->performedOn($product)
-            ->log('Product created');
+        UserActivity::log(
+            auth()->user(),
+            'product_created',
+            'Product created',
+            $product,
+            null,
+            $product->toArray(),
+            $request
+        );
 
         return response()->json([
             'success' => true,
@@ -271,10 +277,15 @@ class ProductController extends Controller
             $product->addons()->sync($addons);
         }
 
-        activity()
-            ->causedBy(auth()->user())
-            ->performedOn($product)
-            ->log('Product updated');
+        UserActivity::log(
+            auth()->user(),
+            'product_updated',
+            'Product updated',
+            $product,
+            null,
+            $product->fresh()->toArray(),
+            $request
+        );
 
         return response()->json([
             'success' => true,
@@ -312,10 +323,15 @@ class ProductController extends Controller
             }
         }
 
-        activity()
-            ->causedBy(auth()->user())
-            ->performedOn($product)
-            ->log('Product deleted');
+        UserActivity::log(
+            auth()->user(),
+            'product_deleted',
+            'Product deleted',
+            $product,
+            null,
+            null,
+            request()
+        );
 
         $product->delete();
 

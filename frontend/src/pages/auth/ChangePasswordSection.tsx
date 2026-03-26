@@ -86,29 +86,32 @@ const Section = ({ icon: Icon, title, accent = "text-blue-400", children }: Sect
  * Drop this component at the bottom of any profile settings page form.
  *
  * Props:
- *   accentFocus  – Tailwind focus ring classes to match role theme (optional)
- *   sectionAccent – Icon colour class to match role theme (optional)
- *   buttonClass  – Full button className override (optional)
+ *   insideForm    – Set to true when used inside another <form> (prevents nesting)
+ *   accentFocus   – Tailwind focus ring classes (optional)
+ *   sectionAccent – Icon colour class (optional)
+ *   buttonClass   – Full button className override (optional)
  */
 export default function ChangePasswordSection({
+  insideForm = false,
   accentFocus,
   sectionAccent = "text-blue-400",
   buttonClass = "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-500/20 border-blue-500/30",
 }: {
+  insideForm?: boolean;
   accentFocus?: string;
   sectionAccent?: string;
   buttonClass?: string;
 }) {
   const { toast } = useToast();
 
-  const [current,     setCurrent]     = useState("");
-  const [newPw,       setNewPw]       = useState("");
-  const [confirm,     setConfirm]     = useState("");
-  const [saving,      setSaving]      = useState(false);
-  const [banner,      setBanner]      = useState<{ type: "success" | "error"; msg: string } | null>(null);
+  const [current, setCurrent] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [banner, setBanner] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   const isDirty = current || newPw || confirm;
-  const pw      = strength(newPw);
+  const pw = strength(newPw);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,50 +124,61 @@ export default function ChangePasswordSection({
     setSaving(true);
     try {
       await passwordApi.changePassword({
-        current_password:      current,
-        password:              newPw,
+        current_password: current,
+        password: newPw,
         password_confirmation: confirm,
       });
-      setCurrent(""); setNewPw(""); setConfirm("");
+
+      setCurrent(""); 
+      setNewPw(""); 
+      setConfirm("");
       setBanner({ type: "success", msg: "Password changed. All other sessions have been logged out." });
       toast({ title: "Password updated!", description: "You remain logged in on this device." });
     } catch (err: any) {
       setBanner({
         type: "error",
-        msg:  err?.response?.data?.message ?? "Failed to change password. Please try again.",
+        msg: err?.response?.data?.message ?? "Failed to change password. Please try again.",
       });
     } finally {
       setSaving(false);
     }
   };
 
-  return (
+  const content = (
     <Section icon={ShieldCheck} title="Change Password" accent={sectionAccent}>
       {/* Banner */}
       {banner && (
         <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium ${
-          banner.type === "success" ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-300" : "bg-red-500/10 border-red-500/25 text-red-300"
+          banner.type === "success" 
+            ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-300" 
+            : "bg-red-500/10 border-red-500/25 text-red-300"
         }`}>
           {banner.type === "success" ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
           {banner.msg}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-5">
+      <div className="space-y-5">
         {/* Current password */}
         <PasswordInput
-          id="current_password" label="Current Password"
-          value={current} onChange={setCurrent}
+          id="current_password"
+          label="Current Password"
+          value={current}
+          onChange={setCurrent}
           placeholder="Your current password"
-          disabled={saving} accentFocus={accentFocus}
+          disabled={saving}
+          accentFocus={accentFocus}
         />
 
         {/* New password */}
         <PasswordInput
-          id="new_password" label="New Password"
-          value={newPw} onChange={setNewPw}
+          id="new_password"
+          label="New Password"
+          value={newPw}
+          onChange={setNewPw}
           placeholder="Min. 8 characters"
-          disabled={saving} accentFocus={accentFocus}
+          disabled={saving}
+          accentFocus={accentFocus}
         />
 
         {/* Strength bar */}
@@ -172,7 +186,12 @@ export default function ChangePasswordSection({
           <div className="space-y-1.5">
             <div className="flex gap-1">
               {[1, 2, 3, 4].map((n) => (
-                <div key={n} className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${pw && pw.score >= n ? pw.color : "bg-white/[0.06]"}`} />
+                <div
+                  key={n}
+                  className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                    pw && pw.score >= n ? pw.color : "bg-white/[0.06]"
+                  }`}
+                />
               ))}
             </div>
             {pw?.label && (
@@ -186,19 +205,23 @@ export default function ChangePasswordSection({
 
         {/* Confirm */}
         <PasswordInput
-          id="confirm_password" label="Confirm New Password"
-          value={confirm} onChange={setConfirm}
+          id="confirm_password"
+          label="Confirm New Password"
+          value={confirm}
+          onChange={setConfirm}
           placeholder="Repeat new password"
-          disabled={saving} accentFocus={accentFocus}
+          disabled={saving}
+          accentFocus={accentFocus}
         />
 
         {/* Match indicator */}
         {confirm && newPw && (
           <p className={`text-xs flex items-center gap-1.5 ${confirm === newPw ? "text-emerald-400" : "text-red-400"}`}>
-            {confirm === newPw
-              ? <><CheckCircle2 className="w-3 h-3" />Passwords match</>
-              : <><AlertCircle  className="w-3 h-3" />Passwords do not match</>
-            }
+            {confirm === newPw ? (
+              <><CheckCircle2 className="w-3 h-3" />Passwords match</>
+            ) : (
+              <><AlertCircle className="w-3 h-3" />Passwords do not match</>
+            )}
           </p>
         )}
 
@@ -214,10 +237,21 @@ export default function ChangePasswordSection({
             disabled={saving || !isDirty}
             className={`text-white font-semibold px-6 h-10 rounded-xl shadow-lg border disabled:opacity-40 disabled:cursor-not-allowed flex items-center ${buttonClass}`}
           >
-            {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Updating…</> : <><Save className="w-4 h-4 mr-2" />Update Password</>}
+            {saving ? (
+              <><Loader2 className="w-4 h-4 animate-spin mr-2" />Updating…</>
+            ) : (
+              <><Save className="w-4 h-4 mr-2" />Update Password</>
+            )}
           </Button>
         </div>
-      </form>
+      </div>
     </Section>
   );
+
+  // ── Render logic to prevent nested forms ─────────────────────────────────────
+  if (insideForm) {
+    return content;                    // No <form> wrapper
+  }
+
+  return <form onSubmit={handleSubmit} noValidate>{content}</form>;
 }
