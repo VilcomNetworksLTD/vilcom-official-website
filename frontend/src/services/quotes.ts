@@ -11,6 +11,7 @@ export interface QuoteRequest {
   contact_email: string;
   contact_phone?: string;
   company_name?: string;
+  product_id?: number;
   general_info?: Record<string, unknown>;
   technical_requirements?: Record<string, unknown>;
   budget_range?: string;
@@ -166,6 +167,18 @@ export const quotesApi = {
     }>>(`/quotes/${quoteNumber}/respond`, { response, notes });
     return result.data.data;
   },
+
+  // Resend quote email
+  async resend(quoteNumber: string): Promise<{
+    quote_number: string;
+    resent_at: string;
+  }> {
+    const result = await api.post<ApiResponse<{
+      quote_number: string;
+      resent_at: string;
+    }>>(`/quotes/${quoteNumber}/resend`);
+    return result.data.data;
+  },
 };
 
 // ============================================
@@ -255,6 +268,20 @@ export const adminQuotesApi = {
   // Delete quote
   async delete(id: number): Promise<void> {
     await api.delete(`/admin/quotes/${id}`);
+  },
+
+  // Resend quote email to customer (admin-initiated)
+  async resend(id: number): Promise<{
+    quote_number: string;
+    resent_to: string;
+    resent_at: string;
+  }> {
+    const result = await api.post<ApiResponse<{
+      quote_number: string;
+      resent_to: string;
+      resent_at: string;
+    }>>(`/admin/quotes/${id}/resend`);
+    return result.data.data;
   },
 };
 

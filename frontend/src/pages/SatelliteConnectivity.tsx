@@ -22,6 +22,7 @@ const SatelliteConnectivity = () => {
       icon={<Satellite className="w-10 h-10" />}
       iconBgColor="bg-gradient-to-br from-[hsl(220,80%,50%)] to-[hsl(30,100%,55%)]"
       iconColor="text-white"
+      serviceType="satellite_connectivity"
     />
   );
 };

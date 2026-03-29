@@ -34,6 +34,7 @@ class QuoteRequest extends Model
         'customer_responded_at',
         'subscription_id',
         'quote_valid_until',
+        'resent_at',
         'contact_name',
         'contact_email',
         'contact_phone',
@@ -47,16 +48,17 @@ class QuoteRequest extends Model
     protected function casts(): array
     {
         return [
-            'general_info' => 'array',
+            'general_info'           => 'array',
             'technical_requirements' => 'array',
-            'preferred_start_date' => 'date',
-            'quoted_price' => 'decimal:2',
-            'quoted_at' => 'datetime',
-            'responded_at' => 'datetime',
-            'customer_responded_at' => 'datetime',
-            'quote_valid_until' => 'datetime',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
+            'preferred_start_date'   => 'date',
+            'quoted_price'           => 'decimal:2',
+            'quoted_at'              => 'datetime',
+            'responded_at'           => 'datetime',
+            'customer_responded_at'  => 'datetime',
+            'quote_valid_until'      => 'datetime',
+            'resent_at'              => 'datetime',
+            'created_at'             => 'datetime',
+            'updated_at'             => 'datetime',
         ];
     }
 
@@ -65,57 +67,58 @@ class QuoteRequest extends Model
     // ============================================
 
     const SERVICE_TYPES = [
-        'internet_plan' => 'Internet Plan',
-        'hosting_package' => 'Hosting Package',
-        'web_development' => 'Web Development',
-        'cloud_services' => 'Cloud Services',
-        'cyber_security' => 'Cyber Security',
+        'internet_plan'          => 'Internet Plan',
+        'hosting_package'        => 'Hosting Package',
+        'web_development'        => 'Web Development',
+        'cloud_services'         => 'Cloud Services',
+        'cyber_security'         => 'Cyber Security',
         'network_infrastructure' => 'Network Infrastructure',
-        'isp_services' => 'ISP Services',
-        'cpe_device' => 'CPE Device',
+        'isp_services'           => 'ISP Services',
+        'cpe_device'             => 'CPE Device',
         'satellite_connectivity' => 'Satellite Connectivity',
-        'media_services' => 'Media Services',
-        'erp_services' => 'ERP Services',
-        'smart_integration' => 'Smart Integration',
-        'other' => 'Other',
+        'media_services'         => 'Media Services',
+        'erp_services'           => 'ERP Services',
+        'smart_integration'      => 'Smart Integration',
+        'service'                => 'Enterprise Service',
+        'other'                  => 'Other',
     ];
 
     const STATUSES = [
-        'pending' => 'Pending',
-        'under_review' => 'Under Review',
-        'quoted' => 'Quoted',
-        'accepted' => 'Accepted',
-        'rejected' => 'Rejected',
-        'expired' => 'Expired',
-        'converted_to_subscription' => 'Converted to Subscription',
+        'pending'                  => 'Pending',
+        'under_review'             => 'Under Review',
+        'quoted'                   => 'Quoted',
+        'accepted'                 => 'Accepted',
+        'rejected'                 => 'Rejected',
+        'expired'                  => 'Expired',
+        'converted_to_subscription'=> 'Converted to Subscription',
     ];
 
     const URGENCY_LEVELS = [
-        'low' => 'Low',
-        'medium' => 'Medium',
-        'high' => 'High',
+        'low'      => 'Low',
+        'medium'   => 'Medium',
+        'high'     => 'High',
         'critical' => 'Critical',
     ];
 
     const BUDGET_RANGES = [
-        'under_10k' => 'Under KES 10,000',
-        '10k_50k' => 'KES 10,000 - 50,000',
-        '50k_100k' => 'KES 50,000 - 100,000',
-        '100k_250k' => 'KES 100,000 - 250,000',
-        '250k_500k' => 'KES 250,000 - 500,000',
-        '500k_1m' => 'KES 500,000 - 1,000,000',
-        '1m_5m' => 'KES 1,000,000 - 5,000,000',
-        'over_5m' => 'Over KES 5,000,000',
-        'flexible' => 'Flexible / Discuss',
+        'under_10k'  => 'Under KES 10,000',
+        '10k_50k'    => 'KES 10,000 - 50,000',
+        '50k_100k'   => 'KES 50,000 - 100,000',
+        '100k_250k'  => 'KES 100,000 - 250,000',
+        '250k_500k'  => 'KES 250,000 - 500,000',
+        '500k_1m'    => 'KES 500,000 - 1,000,000',
+        '1m_5m'      => 'KES 1,000,000 - 5,000,000',
+        'over_5m'    => 'Over KES 5,000,000',
+        'flexible'   => 'Flexible / Discuss',
     ];
 
     const TIMELINE_OPTIONS = [
-        'asap' => 'As Soon As Possible',
+        'asap'           => 'As Soon As Possible',
         'within_1_month' => 'Within 1 Month',
-        '1_3_months' => '1-3 Months',
-        '3_6_months' => '3-6 Months',
-        '6_12_months' => '6-12 Months',
-        'flexible' => 'Flexible',
+        '1_3_months'     => '1-3 Months',
+        '3_6_months'     => '3-6 Months',
+        '6_12_months'    => '6-12 Months',
+        'flexible'       => 'Flexible',
     ];
 
     // ============================================
@@ -269,6 +272,16 @@ class QuoteRequest extends Model
         return 'Pending';
     }
 
+    // NOTE: getGeneralInfoAttribute() and getTechnicalRequirementsAttribute() have been
+    // intentionally removed. They were duplicating the 'array' cast defined in casts()
+    // above, and the conflict caused Eloquent to mishandle JSON serialization on insert,
+    // resulting in those fields being written as null to the database silently.
+    // The 'array' cast in casts() handles everything correctly on its own.
+
+    // ============================================
+    // STATE CHECK HELPERS
+    // ============================================
+
     /**
      * Check if quote can be edited
      */
@@ -290,7 +303,19 @@ class QuoteRequest extends Model
      */
     public function canCustomerRespond(): bool
     {
-        return $this->status === 'quoted' && in_array($this->customer_response, ['pending', null]);
+        return $this->status === 'quoted'
+            && in_array($this->customer_response, ['pending', null]);
+    }
+
+    /**
+     * Check if quote can be resent by customer
+     */
+    public function canResend(User $user = null): bool
+    {
+        $user = $user ?? auth('sanctum')?->user();
+        return $this->status === 'quoted'
+            && $user
+            && $this->user_id === $user->id;
     }
 
     // ============================================
@@ -303,26 +328,10 @@ class QuoteRequest extends Model
     public static function generateQuoteNumber(): string
     {
         $prefix = 'QUOTE';
-        $date = now()->format('Ym');
+        $date   = now()->format('Ym');
         $random = strtoupper(Str::random(6));
-        
+
         return "{$prefix}-{$date}-{$random}";
-    }
-
-    /**
-     * Get general info as array with defaults
-     */
-    public function getGeneralInfoAttribute($value): array
-    {
-        return $value ? json_decode($value, true) : [];
-    }
-
-    /**
-     * Get technical requirements as array with defaults
-     */
-    public function getTechnicalRequirementsAttribute($value): array
-    {
-        return $value ? json_decode($value, true) : [];
     }
 
     /**
@@ -331,36 +340,36 @@ class QuoteRequest extends Model
     public function markAsUnderReview(int $staffId): void
     {
         $this->update([
-            'status' => 'under_review',
-            'assigned_staff_id' => $staffId,
+            'status'             => 'under_review',
+            'assigned_staff_id'  => $staffId,
         ]);
     }
 
     /**
      * Submit a quote
      */
-    public function submitQuote(float $price, string $notes, string $response): void
+    public function submitQuote(float $price, ?string $notes, string $response): void
     {
         $this->update([
-            'status' => 'quoted',
-            'quoted_price' => $price,
-            'staff_notes' => $notes,
-            'admin_response' => $response,
-            'quoted_at' => now(),
-            'responded_at' => now(),
-            'quote_valid_until' => now()->addDays(30), // Quote valid for 30 days
+            'status'            => 'quoted',
+            'quoted_price'      => $price,
+            'staff_notes'       => $notes,
+            'admin_response'    => $response,
+            'quoted_at'         => now(),
+            'responded_at'      => now(),
+            'quote_valid_until' => now()->addDays(30),
         ]);
     }
 
     /**
      * Accept quote by customer
      */
-    public function accept(string $notes = null): void
+    public function accept(?string $notes = null): void
     {
         $this->update([
-            'status' => 'accepted',
-            'customer_response' => 'accepted',
-            'customer_notes' => $notes,
+            'status'                => 'accepted',
+            'customer_response'     => 'accepted',
+            'customer_notes'        => $notes,
             'customer_responded_at' => now(),
         ]);
     }
@@ -368,12 +377,12 @@ class QuoteRequest extends Model
     /**
      * Reject quote by customer
      */
-    public function reject(string $notes = null): void
+    public function reject(?string $notes = null): void
     {
         $this->update([
-            'status' => 'rejected',
-            'customer_response' => 'rejected',
-            'customer_notes' => $notes,
+            'status'                => 'rejected',
+            'customer_response'     => 'rejected',
+            'customer_notes'        => $notes,
             'customer_responded_at' => now(),
         ]);
     }
@@ -384,7 +393,7 @@ class QuoteRequest extends Model
     public function convertToSubscription(int $subscriptionId): void
     {
         $this->update([
-            'status' => 'converted_to_subscription',
+            'status'          => 'converted_to_subscription',
             'subscription_id' => $subscriptionId,
         ]);
     }
@@ -397,109 +406,108 @@ class QuoteRequest extends Model
         $fields = [
             'internet_plan' => [
                 'required_bandwidth' => 'Required Bandwidth (Mbps)',
-                'number_of_users' => 'Number of Users',
-                'connection_type' => 'Connection Type',
-                'coverage_area' => 'Coverage Area',
+                'number_of_users'    => 'Number of Users',
+                'connection_type'    => 'Connection Type',
+                'coverage_area'      => 'Coverage Area',
                 'static_ip_required' => 'Static IP Required',
-                'sla_requirement' => 'SLA Requirement',
-                'additional_services' => 'Additional Services Needed',
+                'sla_requirement'    => 'SLA Requirement',
+                'additional_services'=> 'Additional Services Needed',
             ],
             'hosting_package' => [
-                'storage_needed' => 'Storage Needed (GB)',
-                'bandwidth_needed' => 'Monthly Bandwidth (GB)',
-                'domains_count' => 'Number of Domains',
-                'email_accounts' => 'Email Accounts Required',
-                'databases_needed' => 'Databases Required',
-                'control_panel' => 'Preferred Control Panel',
+                'storage_needed'      => 'Storage Needed (GB)',
+                'bandwidth_needed'    => 'Monthly Bandwidth (GB)',
+                'domains_count'       => 'Number of Domains',
+                'email_accounts'      => 'Email Accounts Required',
+                'databases_needed'    => 'Databases Required',
+                'control_panel'       => 'Preferred Control Panel',
                 'backup_requirements' => 'Backup Requirements',
             ],
             'web_development' => [
-                'project_type' => 'Project Type',
-                'target_platforms' => 'Target Platforms',
-                'desired_features' => 'Desired Features',
+                'project_type'                => 'Project Type',
+                'target_platforms'            => 'Target Platforms',
+                'desired_features'            => 'Desired Features',
                 'existing_system_integration' => 'Existing System Integration',
-                'design_preferences' => 'Design Preferences',
-                'content_ready' => 'Is Content Ready',
-                'domain_ready' => 'Is Domain Ready',
+                'design_preferences'          => 'Design Preferences',
+                'content_ready'               => 'Is Content Ready',
+                'domain_ready'                => 'Is Domain Ready',
             ],
             'cloud_services' => [
-                'cloud_type' => 'Cloud Type (Public/Private/Hybrid)',
-                'compute_resources' => 'Compute Resources (CPU/RAM)',
-                'storage_requirements' => 'Storage Requirements',
-                'expected_users' => 'Expected Number of Users',
-                'data_residency' => 'Data Residency Requirements',
-                'sla_requirement' => 'SLA Requirement',
-                'scalability_needs' => 'Scalability Needs',
+                'cloud_type'         => 'Cloud Type (Public/Private/Hybrid)',
+                'compute_resources'  => 'Compute Resources (CPU/RAM)',
+                'storage_requirements'=> 'Storage Requirements',
+                'expected_users'     => 'Expected Number of Users',
+                'data_residency'     => 'Data Residency Requirements',
+                'sla_requirement'    => 'SLA Requirement',
+                'scalability_needs'  => 'Scalability Needs',
             ],
             'cyber_security' => [
-                'security_type' => 'Type of Security Solution',
-                'number_of_devices' => 'Number of Devices',
-                'users_to_protect' => 'Number of Users',
-                'current_setup' => 'Current Security Setup',
+                'security_type'           => 'Type of Security Solution',
+                'number_of_devices'       => 'Number of Devices',
+                'users_to_protect'        => 'Number of Users',
+                'current_setup'           => 'Current Security Setup',
                 'compliance_requirements' => 'Compliance Requirements',
-                'monitoring_needs' => '24/7 Monitoring Needed',
-                'incident_response' => 'Incident Response Required',
+                'monitoring_needs'        => '24/7 Monitoring Needed',
+                'incident_response'       => 'Incident Response Required',
             ],
             'network_infrastructure' => [
-                'network_size' => 'Network Size',
-                'number_of_locations' => 'Number of Locations',
+                'network_size'           => 'Network Size',
+                'number_of_locations'    => 'Number of Locations',
                 'current_infrastructure' => 'Current Infrastructure Details',
-                'required_features' => 'Required Network Features',
-                'equipment_preferences' => 'Equipment Preferences',
-                'wiring_needed' => 'Wiring/Cabling Required',
+                'required_features'      => 'Required Network Features',
+                'equipment_preferences'  => 'Equipment Preferences',
+                'wiring_needed'          => 'Wiring/Cabling Required',
             ],
             'isp_services' => [
                 'bandwidth_requirement' => 'Bandwidth Requirement',
-                'number_of_locations' => 'Number of Locations',
-                'service_level' => 'Service Level Required',
-                'static_ips_needed' => 'Number of Static IPs',
-                'redundancy_required' => 'Redundancy Required',
-                'coverage_location' => 'Coverage Location',
+                'number_of_locations'   => 'Number of Locations',
+                'service_level'         => 'Service Level Required',
+                'static_ips_needed'     => 'Number of Static IPs',
+                'redundancy_required'   => 'Redundancy Required',
+                'coverage_location'     => 'Coverage Location',
             ],
             'cpe_device' => [
-                'device_type' => 'Type of CPE Device',
-                'quantity' => 'Quantity Needed',
+                'device_type'                => 'Type of CPE Device',
+                'quantity'                   => 'Quantity Needed',
                 'compatibility_requirements' => 'Compatibility Requirements',
-                'management_needs' => 'Management/Monitoring Needs',
-                'installation_support' => 'Installation Support Required',
+                'management_needs'           => 'Management/Monitoring Needs',
+                'installation_support'       => 'Installation Support Required',
             ],
             'satellite_connectivity' => [
-                'location_type' => 'Location Type',
+                'location_type'         => 'Location Type',
                 'bandwidth_requirement' => 'Bandwidth Requirement',
-                'uptime_requirement' => 'Uptime Requirement',
+                'uptime_requirement'    => 'Uptime Requirement',
                 'data_usage_estimation' => 'Estimated Data Usage',
                 'equipment_preferences' => 'Equipment Preferences',
             ],
             'media_services' => [
-                'service_type' => 'Type of Media Service',
-                'content_type' => 'Content Type',
-                'delivery_requirements' => 'Delivery Requirements',
-                'encoding_needs' => 'Encoding Needs',
+                'service_type'         => 'Type of Media Service',
+                'content_type'         => 'Content Type',
+                'delivery_requirements'=> 'Delivery Requirements',
+                'encoding_needs'       => 'Encoding Needs',
                 'storage_requirements' => 'Storage Requirements',
             ],
             'erp_services' => [
-                'erp_module' => 'ERP Module Needed',
-                'number_of_users' => 'Number of Users',
-                'current_systems' => 'Current Systems in Use',
-                'integration_needs' => 'Integration Requirements',
-                'customization_level' => 'Customization Level',
-                'training_needed' => 'Training Required',
+                'erp_module'         => 'ERP Module Needed',
+                'number_of_users'    => 'Number of Users',
+                'current_systems'    => 'Current Systems in Use',
+                'integration_needs'  => 'Integration Requirements',
+                'customization_level'=> 'Customization Level',
+                'training_needed'    => 'Training Required',
             ],
             'smart_integration' => [
-                'integration_type' => 'Type of Integration',
-                'systems_to_integrate' => 'Systems to Integrate',
-                'automation_goals' => 'Automation Goals',
-                'existing_hardware' => 'Existing Hardware',
-                'iot_requirements' => 'IoT Requirements',
+                'integration_type'    => 'Type of Integration',
+                'systems_to_integrate'=> 'Systems to Integrate',
+                'automation_goals'    => 'Automation Goals',
+                'existing_hardware'   => 'Existing Hardware',
+                'iot_requirements'    => 'IoT Requirements',
             ],
             'other' => [
-                'project_description' => 'Project Description',
-                'specific_requirements' => 'Specific Requirements',
-                'additional_info' => 'Additional Information',
+                'project_description'  => 'Project Description',
+                'specific_requirements'=> 'Specific Requirements',
+                'additional_info'      => 'Additional Information',
             ],
         ];
 
         return $fields[$type] ?? $fields['other'];
     }
 }
-

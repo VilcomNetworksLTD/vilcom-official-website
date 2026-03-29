@@ -23,6 +23,7 @@ const CloudSolutions = () => {
       iconBgColor="bg-gradient-to-br from-[hsl(30,100%,55%)] to-[hsl(220,80%,50%)]"
       iconColor="text-white"
       blobColor="bg-orange-500/20"
+      serviceType="cloud_services"
     />
   );
 };

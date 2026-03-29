@@ -1,15 +1,8 @@
-# ProductManagement 404 Fix - TODO
-
-## [x] 1. Plan Approved
-✅ User confirmed: Change slug → id in 4 API calls
-
-## [✅] 2. Edit ProductManagement.tsx
-✅ All 4 changes applied successfully (handleSubmit + 3 toggles)
-
-## [ ] 3. Test Changes
-- [ ] Edit existing product → Save (no 404)
-- [ ] Toggle status/featured/quote-based → Works  
-- [ ] Delete still works (already used id)
-
-## [ ] 4. Complete
-Mark done, attempt_completion
+# EarthGlobe3D Continental Landmass Fix
+## Steps:
+1. [ ] Create TODO.md (current)
+2. [ ] Replace triangulation in `createGeoJSONFillGeometry` with spherical geodesic method + hole handling
+3. [ ] Update `GeoJSONFill` material for better overlay (emissive, offset)
+4. [ ] Test: Toggle Countries → full white continents no gaps
+5. [ ] Update TODO.md with progress
+6. [ ] attempt_completion

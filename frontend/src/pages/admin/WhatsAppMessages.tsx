@@ -19,6 +19,7 @@ import {
   Ban,
   ArrowUpRight,
   TrendingUp,
+  UserPlus,
 } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import whatsappService, { WhatsAppMessage } from '@/services/whatsapp';
@@ -114,6 +115,8 @@ const DetailDrawer = ({
   isAdmin: boolean;
 }) => {
   const [acting, setActing] = useState(false);
+  const [convertMsg, setConvertMsg] = useState<{ type: 'success'|'error'; text: string } | null>(null);
+  const [convertingClient, setConvertingClient] = useState(false);
 
   const act = async (fn: () => Promise<unknown>) => {
     setActing(true);
@@ -258,6 +261,36 @@ const DetailDrawer = ({
               Mark as Failed
             </button>
           )}
+          {/* Convert to Client */}
+          {convertMsg && (
+            <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
+              convertMsg.type === 'success' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'
+            }`}>
+              {convertMsg.type === 'success' ? <UserPlus className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+              {convertMsg.text}
+            </div>
+          )}
+          <button
+            disabled={convertingClient}
+            onClick={async () => {
+              setConvertingClient(true);
+              setConvertMsg(null);
+              try {
+                const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/v1/admin/clients/convert`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` },
+                  body: JSON.stringify({ source_type: 'whatsapp', source_id: msg.id }),
+                });
+                const data = await res.json();
+                setConvertMsg({ type: res.ok ? 'success' : 'error', text: data.message ?? (res.ok ? 'Client provisioned!' : 'Failed.') });
+                if (res.ok) onUpdate();
+              } catch { setConvertMsg({ type: 'error', text: 'Network error.' }); }
+              finally { setConvertingClient(false); }
+            }}
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 rounded-lg hover:bg-cyan-500/25 transition-all text-xs sm:text-sm font-medium disabled:opacity-50"
+          >
+            {convertingClient ? <><span className="w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" /> Provisioning...</> : <><UserPlus className="w-4 h-4" /> Convert to Client</>}
+          </button>
         </div>
       </div>
     </div>

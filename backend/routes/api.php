@@ -272,6 +272,8 @@ Route::prefix('press-articles')->group(function () {
 
             Route::post('/{quoteNumber}/respond', [QuoteRequestController::class, 'respond'])
                 ->name('api.quotes.respond');
+            Route::post('/{quoteNumber}/resend', [QuoteRequestController::class, 'resend'])
+                ->name('api.quotes.resend');
         });
     });
 
@@ -296,6 +298,9 @@ Route::prefix('press-articles')->group(function () {
 
         Route::post('/{id}/quote', [AdminQuoteRequestController::class, 'submitQuote'])
             ->name('api.admin.quotes.submit-quote');
+
+        Route::post('/{id}/resend', [AdminQuoteRequestController::class, 'resend'])
+            ->name('api.admin.quotes.resend');
 
         Route::post('/{id}/assign', [AdminQuoteRequestController::class, 'assign'])
             ->name('api.admin.quotes.assign');
@@ -617,6 +622,9 @@ Route::prefix('press-articles')->group(function () {
     // CLIENTS MANAGEMENT ROUTES (Admin/Staff Only)
     // ============================================
     Route::prefix('admin/clients')->middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+        Route::post('/convert', [ClientController::class, 'convert'])
+            ->name('api.admin.clients.convert');
+
         Route::get('/', [ClientController::class, 'index'])
             ->name('api.admin.clients.index');
 
@@ -648,7 +656,7 @@ Route::prefix('press-articles')->group(function () {
     Route::prefix('admin/emerald-approvals')->middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
         Route::get('/', [EmeraldApprovalController::class, 'index'])
             ->name('api.admin.emerald-approvals.index');
-        
+
         Route::get('/statistics', [EmeraldApprovalController::class, 'statistics'])
             ->name('api.admin.emerald-approvals.statistics');
 
@@ -772,6 +780,10 @@ Route::prefix('admin/coverage')->middleware(['auth:sanctum', 'role:admin|staff']
 
     Route::get('analytics', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'analytics']);
     Route::get('check-logs', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'checkLogs']);
+
+    // Region GeoJSON files (served from storage/app/geojson/)
+    Route::get('regions', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'regionsList']);
+    Route::get('regions/{region}', [App\Http\Controllers\Api\Admin\CoverageZoneController::class, 'regionGeojson']);
 });
 
     // ============================================

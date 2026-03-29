@@ -45,8 +45,154 @@ class ProductSeeder extends Seeder
         // STEP 5: CREATE WEB DEVELOPMENT SERVICES
         // ============================================
         $this->createWebDevelopmentServices();
+        $this->createEnterpriseServices();
 
         $this->command->info('✅ All products seeded successfully!');
+    }
+
+    /**
+     * Create Enterprise Quote-Based Services
+     */
+    private function createEnterpriseServices(): void
+    {
+        $this->command->info('Creating enterprise services...');
+
+        $category = Category::where('slug', 'enterprise-services')->first();
+
+        if (!$category) {
+            $this->command->error('No enterprise-services category found! Make sure CategorySeeder is run first.');
+            return;
+        }
+
+        $services = [
+            [
+                'name' => 'Internet Connectivity',
+                'slug' => 'internet-connectivity',
+                'sku' => 'SERVICE-INTERNET-CONNECTIVITY',
+                'short_description' => 'High-speed fiber internet for homes and businesses with reliable, blazing-fast connections.',
+                'description' => 'High-speed fiber internet for homes and businesses with reliable, blazing-fast connections. Available in various packages including Home and Business plans.',
+                'sort_order' => 1,
+            ],
+            [
+                'name' => 'Enterprise Connectivity',
+                'slug' => 'enterprise-connectivity',
+                'sku' => 'SERVICE-ENTERPRISE-CONNECTIVITY',
+                'short_description' => 'Secure, reliable, and scalable network solutions that keep your business seamlessly connected.',
+                'description' => 'Secure, reliable, and scalable network solutions that keep your business seamlessly connected.',
+                'sort_order' => 2,
+            ],
+            [
+                'name' => 'Cloud Solutions',
+                'slug' => 'cloud-solutions',
+                'sku' => 'SERVICE-CLOUD-SOLUTIONS',
+                'short_description' => 'Vilcom Drive/Photos services for storage, collaboration, and flexible digital growth.',
+                'description' => 'Vilcom Drive/Photos services for storage, collaboration, and flexible digital growth.',
+                'sort_order' => 3,
+            ],
+            [
+                'name' => 'Cyber Security',
+                'slug' => 'cyber-security',
+                'sku' => 'SERVICE-CYBER-SECURITY',
+                'short_description' => 'Safeguard your data, people, and business against digital threats.',
+                'description' => 'Safeguard your data, people, and business against digital threats.',
+                'sort_order' => 4,
+            ],
+            [
+                'name' => 'Smart Integration',
+                'slug' => 'smart-integration',
+                'sku' => 'SERVICE-SMART-INTEGRATION',
+                'short_description' => 'IoT and digital tools to streamline and transform business operations.',
+                'description' => 'IoT and digital tools to streamline and transform business operations.',
+                'sort_order' => 5,
+            ],
+            [
+                'name' => 'Web Development',
+                'slug' => 'web-development-enterprise',
+                'sku' => 'SERVICE-WEB-DEV',
+                'short_description' => 'Android, iOS, & Web Development - Custom app and web solutions tailored for your business needs.',
+                'description' => 'Android, iOS, & Web Development - Custom app and web solutions tailored for your business needs.',
+                'sort_order' => 6,
+            ],
+            [
+                'name' => 'ERP As A Service',
+                'slug' => 'erp-service',
+                'sku' => 'SERVICE-ERP',
+                'short_description' => 'Streamline. Simplify. Succeed. Integrated enterprise management tools for efficient business processes.',
+                'description' => 'Streamline. Simplify. Succeed. Integrated enterprise management tools for efficient business processes.',
+                'sort_order' => 7,
+            ],
+            [
+                'name' => 'ISP Billing As A Service',
+                'slug' => 'isp-billing',
+                'sku' => 'SERVICE-ISP-BILLING',
+                'short_description' => 'Smart billing, seamless growth. Simplified, automated billing solutions for Internet Service Providers.',
+                'description' => 'Smart billing, seamless growth. Simplified, automated billing solutions for Internet Service Providers.',
+                'sort_order' => 8,
+            ],
+            [
+                'name' => 'ISP CPE As A Service',
+                'slug' => 'isp-cpe',
+                'sku' => 'SERVICE-ISP-CPE',
+                'short_description' => 'Plug in. Power up. Provisioned. Automated customer device setup for smooth ISP operations.',
+                'description' => 'Plug in. Power up. Provisioned. Automated customer device setup for smooth ISP operations.',
+                'sort_order' => 9,
+            ],
+            [
+                'name' => 'ISP Device Management',
+                'slug' => 'isp-device-management',
+                'sku' => 'SERVICE-ISP-DEVICE-MGMT',
+                'short_description' => 'Control every device, anywhere. Centralized control and monitoring of ISP devices.',
+                'description' => 'Control every device, anywhere. Centralized control and monitoring of ISP devices.',
+                'sort_order' => 10,
+            ],
+            [
+                'name' => 'Firewall Solutions',
+                'slug' => 'firewall-solutions',
+                'sku' => 'SERVICE-FIREWALL',
+                'short_description' => 'Your digital shield, always on. Advanced protection against network threats for businesses and homes.',
+                'description' => 'Your digital shield, always on. Advanced protection against network threats for businesses and homes.',
+                'sort_order' => 11,
+            ],
+            [
+                'name' => 'Deep Packet Inspection',
+                'slug' => 'deep-packet-inspection',
+                'sku' => 'SERVICE-DPI',
+                'short_description' => 'See deeper. Secure smarter. Real-time traffic analysis for optimized network performance and security.',
+                'description' => 'See deeper. Secure smarter. Real-time traffic analysis for optimized network performance and security.',
+                'sort_order' => 12,
+            ],
+            [
+                'name' => 'Satellite Connectivity',
+                'slug' => 'satellite-connectivity',
+                'sku' => 'SERVICE-SATELLITE',
+                'short_description' => 'Connecting the unserved, everywhere. Remote area satellite connectivity delivering reliable internet.',
+                'description' => 'Connecting the unserved, everywhere. Remote area satellite connectivity delivering reliable internet.',
+                'sort_order' => 13,
+            ],
+        ];
+
+        foreach ($services as $service) {
+            Product::create([
+                'category_id' => $category->id,
+                'name' => $service['name'],
+                'slug' => $service['slug'],
+                'description' => $service['description'],
+                'short_description' => $service['short_description'],
+                'sku' => $service['sku'],
+                'type' => 'service',
+                'price_one_time' => null,
+                'is_quote_based' => true,
+                'features' => [],
+                'is_active' => true,
+                'is_featured' => true,
+                'badge' => 'Learn More',
+                'sort_order' => $service['sort_order'],
+                'meta_title' => $service['name'] . ' | Vilcom Networks',
+                'meta_description' => $service['short_description'],
+            ]);
+        }
+
+        $this->command->info('Enterprise services seeded successfully!');
     }
 
     /**

@@ -305,6 +305,24 @@ export const adminCoverageApi = {
     const response = await axios.get('/admin/coverage/check-logs', { params });
     return response.data;
   },
+
+  // ── Region GeoJSON files ─────────────────────────────────────────────────
+
+  /**
+   * List available region GeoJSON files stored on the server.
+   */
+  getRegionsList: async (): Promise<{ data: { slug: string; name: string; file: string; size: number }[] }> => {
+    const response = await axios.get('/admin/coverage/regions');
+    return response.data;
+  },
+
+  /**
+   * Get raw GeoJSON data for a specific region (e.g. "nairobi", "kajiado").
+   */
+  getRegionGeojson: async (region: string): Promise<any> => {
+    const response = await axios.get(`/admin/coverage/regions/${region}`);
+    return response.data;
+  },
 };
 
 export default coverageApi;

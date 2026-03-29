@@ -222,7 +222,22 @@ class CategorySeeder extends Seeder
             'sort_order' => 4,
         ]);
 
-        // 5. Domain Names
+        // 5. Enterprise Services
+        Category::create([
+            'name' => 'Enterprise Services',
+            'slug' => 'enterprise-services',
+            'type' => 'other',
+            'description' => 'Comprehensive enterprise-grade digital and network solutions',
+            'short_description' => 'Scalable business solutions',
+            'icon' => 'fas fa-briefcase',
+            'color' => '#4F46E5',
+            'is_featured' => true,
+            'is_active' => true,
+            'show_in_menu' => true,
+            'sort_order' => 5,
+        ]);
+
+        // 6. Domain Names
         Category::create([
             'name' => 'Domain Names',
             'slug' => 'domain-names',
@@ -234,10 +249,10 @@ class CategorySeeder extends Seeder
             'is_featured' => false,
             'is_active' => true,
             'show_in_menu' => true,
-            'sort_order' => 5,
+            'sort_order' => 6,
         ]);
 
-        // 6. Add-ons & Extras
+        // 7. Add-ons & Extras
         $addons = Category::create([
             'name' => 'Add-ons & Extras',
             'slug' => 'addons-extras',
@@ -249,7 +264,7 @@ class CategorySeeder extends Seeder
             'is_featured' => false,
             'is_active' => true,
             'show_in_menu' => false,
-            'sort_order' => 6,
+            'sort_order' => 7,
         ]);
 
         $addons->children()->create([

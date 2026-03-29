@@ -2,7 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, ScrollRestoration, Navigate } from "react-router-dom";
+import ScrollToTop from "@/components/ScrollToTop";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Plans from "./pages/Plans";
@@ -84,6 +85,7 @@ import ClientProfile from "./pages/clients/ClientProfile";
 // Password reset flow (public pages)
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword  from "./pages/auth/ResetPassword";
+import ServicesSlug from "./pages/Services/Slug";
 
 const queryClient = new QueryClient();
 
@@ -111,26 +113,29 @@ const App = () => (
             <CookieConsent />
             <WhatsAppButton />
           </DashboardGuard>
+          <ScrollToTop />
           <Routes>
+            
             {/* ── Public ── */}
             <Route path="/"                         element={<Index />} />
             <Route path="/plans"                    element={<Plans />} />
             <Route path="/fiber"                    element={<Plans />} />
             <Route path="/coverage"                 element={<Coverage />} />
             <Route path="/speed-test"               element={<SpeedTest />} />
+            <Route path="/services/:slug"           element={<ServicesSlug />} />
             <Route path="/hosting"                  element={<Hosting />} />
-            <Route path="/web-development"          element={<WebDevelopment />} />
-            <Route path="/cloud-solutions"          element={<CloudSolutions />} />
-            <Route path="/cyber-security"           element={<CyberSecurity />} />
-            <Route path="/smart-integration"        element={<SmartIntegration />} />
-            <Route path="/software-development"     element={<SoftwareDevelopment />} />
-            <Route path="/erp-service"              element={<ErpService />} />
-            <Route path="/isp-billing"              element={<IspBilling />} />
-            <Route path="/isp-cpe"                  element={<IspCpe />} />
-            <Route path="/isp-device-management"    element={<IspDeviceManagement />} />
-            <Route path="/firewall-solutions"       element={<FirewallSolutions />} />
-            <Route path="/deep-packet-inspection"   element={<DeepPacketInspection />} />
-            <Route path="/satellite-connectivity"   element={<SatelliteConnectivity />} />
+            <Route path="/web-development"          element={<Navigate to="/services/web-development-enterprise" replace />} />
+            <Route path="/cloud-solutions"          element={<Navigate to="/services/cloud-solutions" replace />} />
+            <Route path="/cyber-security"           element={<Navigate to="/services/cyber-security" replace />} />
+            <Route path="/smart-integration"        element={<Navigate to="/services/smart-integration" replace />} />
+            <Route path="/software-development"     element={<Navigate to="/services/web-development-enterprise" replace />} />
+            <Route path="/erp-service"              element={<Navigate to="/services/erp-service" replace />} />
+            <Route path="/isp-billing"              element={<Navigate to="/services/isp-billing" replace />} />
+            <Route path="/isp-cpe"                  element={<Navigate to="/services/isp-cpe" replace />} />
+            <Route path="/isp-device-management"    element={<Navigate to="/services/isp-device-management" replace />} />
+            <Route path="/firewall-solutions"       element={<Navigate to="/services/firewall-solutions" replace />} />
+            <Route path="/deep-packet-inspection"   element={<Navigate to="/services/deep-packet-inspection" replace />} />
+            <Route path="/satellite-connectivity"   element={<Navigate to="/services/satellite-connectivity" replace />} />
             <Route path="/domains"                  element={<Domains />} />
             <Route path="/blog"                     element={<Blog />} />
             <Route path="/auth"                     element={<Auth />} />

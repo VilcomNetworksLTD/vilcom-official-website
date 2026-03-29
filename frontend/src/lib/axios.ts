@@ -2,7 +2,7 @@ import axios from "axios";
 
 // API Base URL from environment or default to localhost
 // Strip /api/v1 if already present in env to avoid double paths
-let API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+let API_URL = import.meta.env.VITE_API_URL;
 API_URL = API_URL.replace(/\/api\/v1$/, "");
 
 // Create axios instance with default config

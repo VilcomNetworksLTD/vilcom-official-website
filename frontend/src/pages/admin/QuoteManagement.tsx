@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import {
   Loader2, RefreshCw, FileText, MessageCircle, DollarSign,
   Users, Clock, CheckCircle2, MoreHorizontal, Eye, Send,
-  ChevronLeft, ChevronRight, Search, X, AlertCircle,
+  ChevronLeft, ChevronRight, Search, X, AlertCircle, UserPlus, MailCheck, XCircle,
 } from 'lucide-react';
 import { adminQuotesApi, type QuoteRequest, type QuoteStatistics } from '@/services/quotes';
 import {
@@ -88,11 +88,14 @@ const UrgencyBadge = ({ urgency }: { urgency: string }) => {
 };
 
 // ─── Quote Card (Mobile) ─────────────────────────────────────────────────────
-const QuoteCard = ({ quote, onView, onMarkReview, onSubmitQuote }: {
+const QuoteCard = ({ quote, onView, onMarkReview, onSubmitQuote, onConvertToClient, onResendQuote, onUpdateStatus }: {
   quote: QuoteRequest;
   onView: () => void;
   onMarkReview: (id: number) => void;
   onSubmitQuote: (quote: QuoteRequest) => void;
+  onConvertToClient: (quote: QuoteRequest) => void;
+  onResendQuote: (quote: QuoteRequest) => void;
+  onUpdateStatus: (id: number, status: 'accepted' | 'rejected') => void;
 }) => (
   <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
     <div className="flex items-start justify-between gap-3">
@@ -125,6 +128,37 @@ const QuoteCard = ({ quote, onView, onMarkReview, onSubmitQuote }: {
               </DropdownMenuItem>
             </>
           )}
+          {quote.status === 'quoted' && (
+            <>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem className="gap-2 text-violet-400 hover:text-violet-300 cursor-pointer focus:bg-violet-500/10"
+                onClick={() => onSubmitQuote(quote)}>
+                <Send className="w-3.5 h-3.5" /> Update & Resubmit
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 text-teal-400 hover:text-teal-300 cursor-pointer focus:bg-teal-500/10"
+                onClick={() => onResendQuote(quote)}>
+                <MailCheck className="w-3.5 h-3.5" /> Resend Email
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem className="gap-2 text-emerald-400 hover:text-emerald-300 cursor-pointer focus:bg-emerald-500/10"
+                onClick={() => onUpdateStatus(quote.id, 'accepted')}>
+                <CheckCircle2 className="w-3.5 h-3.5" /> Accept Quote
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 text-red-400 hover:text-red-300 cursor-pointer focus:bg-red-500/10"
+                onClick={() => onUpdateStatus(quote.id, 'rejected')}>
+                <XCircle className="w-3.5 h-3.5" /> Reject Quote
+              </DropdownMenuItem>
+            </>
+          )}
+          {(quote.status === 'quoted' || quote.status === 'accepted') && (
+            <>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem className="gap-2 text-emerald-400 hover:text-emerald-300 cursor-pointer focus:bg-emerald-500/10"
+                onClick={() => onConvertToClient(quote)}>
+                <UserPlus className="w-3.5 h-3.5" /> Convert to Client
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
@@ -133,9 +167,16 @@ const QuoteCard = ({ quote, onView, onMarkReview, onSubmitQuote }: {
       <UrgencyBadge urgency={quote.urgency ?? 'low'} />
     </div>
     <div className="flex items-center justify-between pt-1 border-t border-white/10">
-      <span className="text-[10px] font-medium text-slate-400 capitalize px-2 py-1 rounded-lg bg-white/5 border border-white/10">
-        {SERVICE_LABELS[quote.service_type] ?? quote.service_type}
-      </span>
+      <div className="flex flex-col gap-0.5">
+        <span className="text-[10px] font-medium text-slate-400 capitalize px-2 py-1 rounded-lg bg-white/5 border border-white/10 w-fit">
+          {SERVICE_LABELS[quote.service_type] ?? quote.service_type}
+        </span>
+        {(quote.product || quote.product_id) && (
+          <span className="text-[10px] text-blue-400 pl-1">
+            {quote.product?.name ?? `Product #${quote.product_id}`}
+          </span>
+        )}
+      </div>
       <div className="text-right">
          {quote.quoted_price ? (
            <span className="text-emerald-400 font-semibold text-sm">KES {quote.quoted_price.toLocaleString()}</span>
@@ -150,12 +191,15 @@ const QuoteCard = ({ quote, onView, onMarkReview, onSubmitQuote }: {
 // ─── Quote Detail Modal ──────────────────────────────────────────────────────
 
 const QuoteDetailModal = ({
-  quote, onClose, onMarkReview, onOpenQuoteForm,
+  quote, onClose, onMarkReview, onOpenQuoteForm, onConvertToClient, onResendQuote, onUpdateStatus
 }: {
   quote: QuoteRequest;
   onClose: () => void;
   onMarkReview: (id: number) => void;
   onOpenQuoteForm: (quote: QuoteRequest) => void;
+  onConvertToClient: (quote: QuoteRequest) => void;
+  onResendQuote: (quote: QuoteRequest) => void;
+  onUpdateStatus: (id: number, status: 'accepted' | 'rejected') => void;
 }) => {
   const canAct = quote.status === 'pending' || quote.status === 'under_review';
   return (
@@ -184,6 +228,18 @@ const QuoteDetailModal = ({
                 {SERVICE_LABELS[quote.service_type] ?? quote.service_type}
               </span>
             </div>
+            {(quote.product || quote.product_id) && (
+              <div className="sm:col-span-2">
+                <p className="text-xs text-slate-500 uppercase tracking-wider mb-1.5">Linked Product</p>
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-300 text-sm font-medium">
+                  <span className="w-2 h-2 bg-blue-400 rounded-full" />
+                  {quote.product?.name ?? `Product #${quote.product_id}`}
+                  {quote.product_id && (
+                    <span className="text-xs text-slate-500 ml-1">(ID: {quote.product_id})</span>
+                  )}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Contact */}
@@ -263,6 +319,32 @@ const QuoteDetailModal = ({
                 <Send className="w-3.5 h-3.5 mr-1.5" /> Submit Quote
               </Button>
             </>
+          )}
+          {quote.status === 'quoted' && (
+            <>
+              <Button size="sm"
+                onClick={() => { onResendQuote(quote); onClose(); }}
+                className="bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/30 text-xs font-semibold h-9 px-4 rounded-lg flex-1 sm:flex-none">
+                <MailCheck className="w-3.5 h-3.5 mr-1.5" /> Resend Email
+              </Button>
+              <Button size="sm"
+                onClick={() => { onUpdateStatus(quote.id, 'accepted'); onClose(); }}
+                className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold h-9 px-4 rounded-lg flex-1 sm:flex-none">
+                <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Accept
+              </Button>
+              <Button size="sm"
+                onClick={() => { onUpdateStatus(quote.id, 'rejected'); onClose(); }}
+                className="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 text-xs font-semibold h-9 px-4 rounded-lg flex-1 sm:flex-none">
+                <XCircle className="w-3.5 h-3.5 mr-1.5" /> Reject
+              </Button>
+            </>
+          )}
+          {(quote.status === 'quoted' || quote.status === 'accepted') && (
+            <Button size="sm"
+              onClick={() => { onClose(); onConvertToClient(quote); }}
+              className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold h-9 px-4 rounded-lg flex-1 sm:flex-none">
+              <UserPlus className="w-3.5 h-3.5 mr-1.5" /> Convert to Client
+            </Button>
           )}
           <Button variant="ghost" size="sm" onClick={onClose} className="text-slate-400 hover:text-white h-9 w-full sm:w-auto sm:ml-auto">
             Close
@@ -378,6 +460,9 @@ export default function QuoteManagement() {
   const [refreshing, setRefreshing]   = useState(false);
   const [detailQuote, setDetailQuote] = useState<QuoteRequest | null>(null);
   const [quoteFormFor, setQuoteFormFor] = useState<QuoteRequest | null>(null);
+  const [convertingQuote, setConvertingQuote] = useState<QuoteRequest | null>(null);
+  const [convertMsg, setConvertMsg]   = useState<{ type: 'success'|'error'; text: string } | null>(null);
+  const [resendingId, setResendingId] = useState<number | null>(null);
   const [filters, setFilters]         = useState({ status: '', service_type: '', search: '' });
   const [pagination, setPagination]   = useState({ current_page: 1, last_page: 1, total: 0 });
 
@@ -389,9 +474,7 @@ export default function QuoteManagement() {
       if (filters.service_type) params.service_type = filters.service_type;
       if (filters.search)       params.search       = filters.search;
 
-      console.log('[QuoteManagement] Loading quotes with params:', params);
       const result = await adminQuotesApi.getAll(params);
-      console.log('[QuoteManagement] Quotes loaded successfully:', result.data?.length ?? 0, 'quotes');
       setQuotes(result.data ?? []);
       setPagination(p => ({
         ...p,
@@ -400,12 +483,7 @@ export default function QuoteManagement() {
         total:        result.meta?.total        ?? 0,
       }));
     } catch (e: any) {
-      console.error('[QuoteManagement] Failed to load quotes:', {
-        status: e.response?.status,
-        message: e.response?.data?.message,
-        errors: e.response?.data?.errors,
-        fullError: e
-      });
+      console.error('[QuoteManagement] Failed to load quotes:', e);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -414,32 +492,21 @@ export default function QuoteManagement() {
 
   const loadStatistics = async () => {
     try {
-      console.log('[QuoteManagement] Loading statistics...');
       const stats = await adminQuotesApi.getStatistics();
-      console.log('[QuoteManagement] Statistics loaded:', stats);
       setStatistics(stats);
     } catch (e: any) {
-      console.error('[QuoteManagement] Failed to load statistics:', {
-        status: e.response?.status,
-        message: e.response?.data?.message,
-        errors: e.response?.data?.errors,
-        fullError: e
-      });
+      console.error('[QuoteManagement] Failed to load statistics:', e);
     }
   };
 
   const refresh = () => { loadQuotes(true); loadStatistics(); };
 
-  // Initial load on component mount
   useEffect(() => {
-    console.log('[QuoteManagement] Component mounted, loading initial data...');
     loadQuotes();
     loadStatistics();
   }, []);
 
-  // Reload when filters or pagination changes
   useEffect(() => {
-    console.log('[QuoteManagement] Filters or pagination changed, reloading...', { filters, current_page: pagination.current_page });
     loadQuotes();
   }, [filters.status, filters.service_type, filters.search, pagination.current_page]);
 
@@ -448,11 +515,57 @@ export default function QuoteManagement() {
     catch (e) { console.error(e); }
   };
 
+  const handleResendQuote = async (quote: QuoteRequest) => {
+    setResendingId(quote.id);
+    try {
+      const result = await adminQuotesApi.resend(quote.id);
+      setConvertMsg({ type: 'success', text: `Quote email resent to ${result.resent_to} ✓` });
+      refresh();
+    } catch {
+      setConvertMsg({ type: 'error', text: 'Failed to resend quote. Please try again.' });
+    } finally {
+      setResendingId(null);
+    }
+  };
+
+  const handleUpdateStatus = async (id: number, status: 'accepted' | 'rejected') => {
+    try {
+      await adminQuotesApi.update(id, { status });
+      refresh();
+    } catch {
+      setConvertMsg({ type: 'error', text: `Failed to mark quote as ${status}.` });
+    }
+  };
+
   const handleSubmitQuote = async (id: number, data: {
     quoted_price: number; staff_notes?: string; admin_response: string;
   }) => {
     await adminQuotesApi.submitQuote(id, data);
     refresh();
+  };
+
+  const handleConvertToClient = async (quote: QuoteRequest) => {
+    if (!confirm(`Convert "${quote.contact_name}" into a Client account?\n\nAn email with a password setup link will be sent to: ${quote.contact_email}`)) return;
+    setConvertingQuote(quote);
+    setConvertMsg(null);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/v1/admin/clients/convert`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` },
+        body: JSON.stringify({ source_type: 'quote', source_id: quote.id }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setConvertMsg({ type: 'success', text: data.message ?? 'Client provisioned successfully!' });
+        refresh();
+      } else {
+        setConvertMsg({ type: 'error', text: data.message ?? 'Conversion failed. Please try again.' });
+      }
+    } catch {
+      setConvertMsg({ type: 'error', text: 'Network error. Please try again.' });
+    } finally {
+      setConvertingQuote(null);
+    }
   };
 
   const formatDate = (d: string) =>
@@ -592,9 +705,16 @@ export default function QuoteManagement() {
                 </span>
 
                 {/* Service */}
-                <span className="text-xs font-medium text-slate-400 capitalize px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 w-fit truncate">
-                  {SERVICE_LABELS[quote.service_type] ?? quote.service_type}
-                </span>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-medium text-slate-400 capitalize px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 w-fit truncate">
+                    {SERVICE_LABELS[quote.service_type] ?? quote.service_type}
+                  </span>
+                  {(quote.product || quote.product_id) && (
+                    <span className="text-[10px] text-blue-400 truncate pl-1">
+                      {quote.product?.name ?? `Product #${quote.product_id}`}
+                    </span>
+                  )}
+                </div>
 
                 {/* Customer */}
                 <div className="min-w-0">
@@ -635,6 +755,7 @@ export default function QuoteManagement() {
                     </DropdownMenuItem>
                     {(quote.status === 'pending' || quote.status === 'under_review') && (
                       <>
+                        <DropdownMenuSeparator className="bg-white/10" />
                         <DropdownMenuItem
                           className="gap-2 text-amber-400 hover:text-amber-300 cursor-pointer focus:bg-amber-500/10 focus:text-amber-300"
                           onClick={() => handleMarkReview(quote.id)}>
@@ -645,6 +766,46 @@ export default function QuoteManagement() {
                           className="gap-2 text-violet-400 hover:text-violet-300 cursor-pointer focus:bg-violet-500/10 focus:text-violet-300"
                           onClick={() => setQuoteFormFor(quote)}>
                           <Send className="w-3.5 h-3.5" /> Submit Quote
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {quote.status === 'quoted' && (
+                      <>
+                        <DropdownMenuSeparator className="bg-white/10" />
+                        <DropdownMenuItem
+                          className="gap-2 text-violet-400 hover:text-violet-300 cursor-pointer focus:bg-violet-500/10 focus:text-violet-300"
+                          onClick={() => setQuoteFormFor(quote)}>
+                          <Send className="w-3.5 h-3.5" /> Update & Resubmit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={resendingId === quote.id}
+                          className="gap-2 text-teal-400 hover:text-teal-300 cursor-pointer focus:bg-teal-500/10 focus:text-teal-300"
+                          onClick={() => handleResendQuote(quote)}>
+                          {resendingId === quote.id
+                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            : <MailCheck className="w-3.5 h-3.5" />}
+                          Resend Quote Email
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className="bg-white/10" />
+                        <DropdownMenuItem
+                          className="gap-2 text-emerald-400 hover:text-emerald-300 cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-300"
+                          onClick={() => handleUpdateStatus(quote.id, 'accepted')}>
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Accept Quote
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="gap-2 text-red-400 hover:text-red-300 cursor-pointer focus:bg-red-500/10 focus:text-red-300"
+                          onClick={() => handleUpdateStatus(quote.id, 'rejected')}>
+                          <XCircle className="w-3.5 h-3.5" /> Reject Quote
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {(quote.status === 'quoted' || quote.status === 'accepted') && (
+                      <>
+                        <DropdownMenuSeparator className="bg-white/10" />
+                        <DropdownMenuItem
+                          className="gap-2 text-emerald-400 hover:text-emerald-300 cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-300"
+                          onClick={() => handleConvertToClient(quote)}>
+                          <UserPlus className="w-3.5 h-3.5" /> Convert to Client
                         </DropdownMenuItem>
                       </>
                     )}
@@ -672,6 +833,9 @@ export default function QuoteManagement() {
               onView={() => setDetailQuote(quote)}
               onMarkReview={handleMarkReview}
               onSubmitQuote={(q) => { setDetailQuote(null); setQuoteFormFor(q); }}
+              onConvertToClient={handleConvertToClient}
+              onResendQuote={handleResendQuote}
+              onUpdateStatus={handleUpdateStatus}
             />
           ))}
         </div>
@@ -704,6 +868,29 @@ export default function QuoteManagement() {
 
       </div>
 
+      {/* Convert to Client toast */}
+      {convertMsg && (
+        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-xl border text-sm font-medium shadow-2xl transition-all ${
+          convertMsg.type === 'success'
+            ? 'bg-emerald-900/90 border-emerald-500/40 text-emerald-300'
+            : 'bg-red-900/90 border-red-500/40 text-red-300'
+        }`}>
+          {convertMsg.type === 'success' ? <UserPlus className="w-4 h-4" /> : <X className="w-4 h-4" />}
+          {convertMsg.text}
+          <button onClick={() => setConvertMsg(null)} className="ml-2 opacity-60 hover:opacity-100"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
+
+      {/* Converting overlay */}
+      {convertingQuote && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="flex items-center gap-3 px-6 py-4 bg-slate-900 rounded-xl border border-white/10 text-white">
+            <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
+            <span>Provisioning client account…</span>
+          </div>
+        </div>
+      )}
+
       {/* Modals */}
       {detailQuote && (
         <QuoteDetailModal
@@ -711,6 +898,9 @@ export default function QuoteManagement() {
           onClose={() => setDetailQuote(null)}
           onMarkReview={handleMarkReview}
           onOpenQuoteForm={q => { setDetailQuote(null); setQuoteFormFor(q); }}
+          onConvertToClient={handleConvertToClient}
+          onResendQuote={q => { setDetailQuote(null); handleResendQuote(q); }}
+          onUpdateStatus={(id, status) => { handleUpdateStatus(id, status); setDetailQuote(null); }}
         />
       )}
 

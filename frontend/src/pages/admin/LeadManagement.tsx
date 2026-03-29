@@ -8,7 +8,7 @@ import {
   Loader2, RefreshCw, Users, Search, X, MoreHorizontal, Eye,
   UserCheck, TrendingUp, Zap, ChevronLeft, ChevronRight,
   MessageCircle, Star, Globe, Smartphone, Monitor, Tablet,
-  CheckCircle2, XCircle, ArrowRightCircle, Trash2,
+  CheckCircle2, XCircle, ArrowRightCircle, Trash2, UserPlus,
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -190,6 +190,7 @@ const LeadDetailModal = ({ leadId, onClose, onAction }: {
   const [lead, setLead]       = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
   const [acting, setActing]   = useState<string | null>(null);
+  const [convertMsg, setConvertMsg] = useState<{ type: 'success'|'error'; text: string } | null>(null);
   const [staffList, setStaffList] = useState<{id:number;name:string}[]>([]);
   const [assignId, setAssignId]   = useState('');
   const [newStatus, setNewStatus] = useState('');
@@ -337,20 +338,51 @@ const LeadDetailModal = ({ leadId, onClose, onAction }: {
         ) : <p className="text-slate-500 text-sm py-8 text-center">Lead not found.</p>}
 
         {lead && (
-          <DialogFooter className="flex gap-2 flex-wrap">
-            {lead.status !== 'converted' && (
-              <Button size="sm" disabled={acting === 'convert'}
-                onClick={() => act('convert', () => adminLeadsApi.convert(lead.id))}
-                className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold h-9 px-4 rounded-lg flex-1 sm:flex-none">
-                {acting === 'convert' ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <ArrowRightCircle className="w-3.5 h-3.5 mr-1.5" />} Convert
-              </Button>
+          <DialogFooter className="flex gap-2 flex-col sm:flex-row flex-wrap">
+            {convertMsg && (
+              <div className={`w-full flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
+                convertMsg.type === 'success' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'
+              }`}>
+                {convertMsg.type === 'success' ? <UserPlus className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+                {convertMsg.text}
+              </div>
             )}
-            <Button size="sm" disabled={acting === 'auto-assign'}
-              onClick={() => act('auto-assign', () => adminLeadsApi.autoAssign(lead.id))}
-              className="bg-slate-500/20 hover:bg-slate-500/30 text-slate-300 border border-slate-500/30 text-xs font-semibold h-9 px-4 rounded-lg flex-1 sm:flex-none">
-              {acting === 'auto-assign' ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <Zap className="w-3.5 h-3.5 mr-1.5" />} Auto-assign
-            </Button>
-            <Button variant="ghost" size="sm" onClick={onClose} className="text-slate-400 hover:text-white h-9 w-full sm:w-auto sm:ml-auto">Close</Button>
+            <div className="flex gap-2 flex-wrap w-full sm:w-auto">
+              {lead.status !== 'converted' && (
+                <Button size="sm" disabled={acting === 'convert'}
+                  onClick={() => act('convert', () => adminLeadsApi.convert(lead.id))}
+                  className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold h-9 px-4 rounded-lg flex-1 sm:flex-none">
+                  {acting === 'convert' ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <ArrowRightCircle className="w-3.5 h-3.5 mr-1.5" />} Mark Converted
+                </Button>
+              )}
+              <Button size="sm"
+                disabled={acting === 'provision-client'}
+                onClick={async () => {
+                  if (!lead.email && !confirm('No email found. A placeholder will be used; the client cannot set a password automatically. Continue?')) return;
+                  setActing('provision-client');
+                  setConvertMsg(null);
+                  try {
+                    const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/v1/admin/clients/convert`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` },
+                      body: JSON.stringify({ source_type: 'lead', source_id: lead.id }),
+                    });
+                    const data = await res.json();
+                    setConvertMsg({ type: res.ok ? 'success' : 'error', text: data.message ?? (res.ok ? 'Client provisioned!' : 'Failed.') });
+                    if (res.ok) { onAction(); }
+                  } catch { setConvertMsg({ type: 'error', text: 'Network error.' }); }
+                  finally { setActing(null); }
+                }}
+                className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 text-xs font-semibold h-9 px-4 rounded-lg flex-1 sm:flex-none">
+                {acting === 'provision-client' ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <UserPlus className="w-3.5 h-3.5 mr-1.5" />} Convert to Client
+              </Button>
+              <Button size="sm" disabled={acting === 'auto-assign'}
+                onClick={() => act('auto-assign', () => adminLeadsApi.autoAssign(lead.id))}
+                className="bg-slate-500/20 hover:bg-slate-500/30 text-slate-300 border border-slate-500/30 text-xs font-semibold h-9 px-4 rounded-lg flex-1 sm:flex-none">
+                {acting === 'auto-assign' ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <Zap className="w-3.5 h-3.5 mr-1.5" />} Auto-assign
+              </Button>
+              <Button variant="ghost" size="sm" onClick={onClose} className="text-slate-400 hover:text-white h-9 w-full sm:w-auto sm:ml-auto">Close</Button>
+            </div>
           </DialogFooter>
         )}
       </DialogContent>

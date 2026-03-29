@@ -23,6 +23,7 @@ const CyberSecurity = () => {
       iconBgColor="bg-gradient-to-br from-[hsl(220,80%,50%)] to-[hsl(220,30%,50%)]"
       iconColor="text-white"
       blobColor="bg-blue-500/20"
+      serviceType="cyber_security"
     />
   );
 };

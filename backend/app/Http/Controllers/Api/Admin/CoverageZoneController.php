@@ -9,6 +9,7 @@ use App\Models\CoverageInterestSignup;
 use App\Models\AddressCheckLog;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class CoverageZoneController extends Controller
@@ -479,6 +480,63 @@ class CoverageZoneController extends Controller
                 'last_page'    => $logs->lastPage(),
             ],
         ]);
+    }
+
+    // ============================================
+    // REGION GEOJSON FILES
+    // ============================================
+
+    /**
+     * GET /api/v1/admin/coverage/regions
+     * Returns a list of available region GeoJSON files.
+     */
+    public function regionsList()
+    {
+        $dir   = 'geojson';
+        $files = Storage::disk('local')->files($dir);
+
+        $regions = collect($files)
+            ->filter(fn (string $f) => str_ends_with(strtolower($f), '.geojson'))
+            ->map(function (string $f) {
+                $basename = pathinfo($f, PATHINFO_FILENAME);
+                $size     = Storage::disk('local')->size($f);
+                return [
+                    'slug' => strtolower($basename),
+                    'name' => ucfirst(strtolower($basename)),
+                    'file' => $basename . '.geojson',
+                    'size' => $size,
+                ];
+            })
+            ->values();
+
+        return response()->json(['data' => $regions]);
+    }
+
+    /**
+     * GET /api/v1/admin/coverage/regions/{region}
+     * Serves the raw GeoJSON content for a specific region.
+     */
+    public function regionGeojson(string $region)
+    {
+        // Sanitise: only allow alphanumeric, hyphens, underscores
+        $safe = preg_replace('/[^A-Za-z0-9_\-]/', '', $region);
+
+        // Try exact case, then uppercase (files are stored as NAIROBI.geojson etc.)
+        $candidates = [
+            "geojson/{$safe}.geojson",
+            "geojson/" . strtoupper($safe) . '.geojson',
+            "geojson/" . ucfirst(strtolower($safe)) . '.geojson',
+        ];
+
+        foreach ($candidates as $path) {
+            if (Storage::disk('local')->exists($path)) {
+                $content = Storage::disk('local')->get($path);
+                return response($content, 200)
+                    ->header('Content-Type', 'application/geo+json');
+            }
+        }
+
+        return response()->json(['message' => 'Region GeoJSON not found.'], 404);
     }
 
     // ============================================

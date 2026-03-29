@@ -58,6 +58,11 @@ class QuoteRequestController extends Controller
         // Send notification to all admin/staff users
         $this->notifyStaffOfNewQuote($quoteRequest);
 
+        // Notify the client that their request has been received
+        if (!empty($quoteRequest->contact_email)) {
+            \Illuminate\Support\Facades\Mail::to($quoteRequest->contact_email)->send(new \App\Mail\QuoteReceivedMail($quoteRequest));
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Quote request submitted successfully',
@@ -224,6 +229,50 @@ class QuoteRequestController extends Controller
                 ],
             ]);
         }
+    }
+
+    /**
+     * Resend quote email to customer (Authenticated - owner)
+     */
+    public function resend(Request $request, string $quoteNumber): JsonResponse
+    {
+        $user = $request->user();
+
+        $quote = QuoteRequest::where('quote_number', $quoteNumber)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$quote) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Quote not found or unauthorized',
+            ], 404);
+        }
+
+        if (!$quote->canResend($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This quote cannot be resent at this time',
+            ], 400);
+        }
+
+        // Use the admin notification method (sends PDF email)
+        app(\App\Http\Controllers\Api\Admin\QuoteRequestController::class)
+            ->notifyCustomerOfQuote($quote);
+
+        // Mark as resent
+        $quote->update([
+            'resent_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Quote resent successfully. Check your email for the updated PDF.',
+            'data' => [
+                'quote_number' => $quote->quote_number,
+                'resent_at' => $quote->fresh()->resent_at,
+            ],
+        ]);
     }
 
     /**

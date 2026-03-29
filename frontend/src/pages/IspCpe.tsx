@@ -22,6 +22,7 @@ const IspCpe = () => {
       icon={<Plug className="w-10 h-10" />}
       iconBgColor="bg-gradient-to-br from-[hsl(220,30%,50%)] to-[hsl(220,80%,50%)]"
       iconColor="text-white"
+      serviceType="cpe_device"
     />
   );
 };

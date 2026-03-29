@@ -223,5 +223,94 @@ class ClientController extends Controller
             'new_clients_this_month' => $newClientsThisMonth,
         ]);
     }
+
+    /**
+     * Convert Application entities (Lead, Quote Request, WhatsApp) directly into a secure Client account.
+     */
+    public function convert(Request $request)
+    {
+        $request->validate([
+            'source_type' => ['required', 'in:lead,quote,whatsapp'],
+            'source_id' => ['required', 'integer'],
+        ]);
+
+        $name = null;
+        $email = null;
+        $phone = null;
+        $company_name = null;
+        $sourceModel = null;
+
+        if ($request->source_type === 'lead') {
+            $sourceModel = \App\Models\Lead::findOrFail($request->source_id);
+            $name = $sourceModel->name;
+            $email = $sourceModel->email;
+            $phone = $sourceModel->phone;
+            $company_name = $sourceModel->company_name;
+        } elseif ($request->source_type === 'quote') {
+            $sourceModel = \App\Models\QuoteRequest::findOrFail($request->source_id);
+            $name = $sourceModel->contact_name;
+            $email = $sourceModel->contact_email;
+            $phone = $sourceModel->contact_phone;
+            $company_name = $sourceModel->company_name;
+        } elseif ($request->source_type === 'whatsapp') {
+            $sourceModel = \App\Models\WhatsappMessage::findOrFail($request->source_id);
+            $name = $sourceModel->sender_name ?? 'WhatsApp User';
+            // WhatsApp might lack an email, generate a placeholder if needed
+            $email = $sourceModel->email ?? ($sourceModel->sender_phone . '@vilcom-whatsapp.placeholder.com');
+            $phone = $sourceModel->sender_phone;
+        }
+
+        // Search for existing user with that email
+        $existingUser = User::where('email', $email)->first();
+
+        if ($existingUser) {
+            // Already exists, just ensure they have the client role and return
+            if (!$existingUser->hasRole('client')) {
+                $existingUser->assignRole('client');
+            }
+
+            // Bind the source to the user if applicable
+            if ($request->source_type === 'quote') {
+                $sourceModel->update(['user_id' => $existingUser->id]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Account already existed. Successfully linked to existing Client record.',
+                'client' => $existingUser
+            ]);
+        }
+
+        // Create new secure client record
+        $client = User::create([
+            'name' => $name,
+            'email' => $email,
+            'password' => Hash::make(\Illuminate\Support\Str::random(32)), // Secure impossible random password initially
+            'phone' => $phone,
+            'customer_type' => $company_name ? 'business' : 'individual',
+            'company_name' => $company_name,
+            'status' => 'active',
+        ]);
+
+        $client->assignRole('client');
+
+        // Bind source to the brand new user
+        if ($request->source_type === 'quote') {
+            $sourceModel->update(['user_id' => $client->id]);
+        } elseif ($request->source_type === 'lead') {
+            $sourceModel->update(['status' => 'converted']);
+        }
+
+        // Send them a password reset email natively via Laravel so they can set their real password independently
+        if (!str_contains($email, 'vilcom-whatsapp.placeholder.com')) {
+            \Illuminate\Support\Facades\Password::broker()->sendResetLink(['email' => $email]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Client successfully provisioned! An email has been dispatched allowing them to securely set their password.',
+            'client' => $client
+        ], 201);
+    }
 }
 

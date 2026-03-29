@@ -165,10 +165,10 @@ const staffSections: SidebarSection[] = [
     { icon: Briefcase, label: 'Careers', href: '/admin/careers' },
     { icon: Shield, label: 'Emerald Approvals', href: '/admin/emerald-approvals' },
   ]},
-  { title: 'Billing', items: [
-    { icon: Receipt, label: 'Invoices', href: '/admin/invoices' },
-    { icon: DollarSign, label: 'Payments', href: '/admin/payments' },
-  ]},
+  //{ title: 'Billing', items: [
+  //  { icon: Receipt, label: 'Invoices', href: '/admin/invoices' },
+  //  { icon: DollarSign, label: 'Payments', href: '/admin/payments' },
+ // ]},
   { title: 'Content', items: [
     { icon: Package, label: 'Plans', href: '/admin/plans' },
     { icon: Building2, label: 'Coverage', href: '/admin/coverage' },
@@ -195,7 +195,7 @@ const adminSections: SidebarSection[] = [
     { icon: Package, label: 'Plans & Pricing', href: '/admin/plans' },
     { icon: Wifi, label: 'Subscriptions', href: '/admin/subscriptions' },
     { icon: Building2, label: 'Coverage Areas', href: '/admin/coverage' },
-    { icon: Globe, label: 'Domains', href: '/admin/domains' },
+    //{ icon: Globe, label: 'Domains', href: '/admin/domains' },
     { icon: FileText, label: 'Quote Requests', href: '/admin/quotes' },
     { icon: Users2, label: 'Leads', href: '/admin/leads' },
   ]},
@@ -208,11 +208,11 @@ const adminSections: SidebarSection[] = [
     { icon: MessageSquare, label: 'Testimonials', href: '/admin/testimonials' },
     { icon: HelpCircle, label: 'FAQs', href: '/admin/faqs' },
   ]},
-  { title: 'Billing', items: [
-    { icon: Receipt, label: 'Invoices', href: '/admin/invoices' },
-    { icon: DollarSign, label: 'Payments', href: '/admin/payments' },
-    { icon: TrendingUp, label: 'Revenue', href: '/admin/revenue' },
-  ]},
+    // { title: 'Billing', items: [
+   //  { icon: Receipt, label: 'Invoices', href: '/admin/invoices' },
+   // { icon: DollarSign, label: 'Payments', href: '/admin/payments' },
+   // { icon: TrendingUp, label: 'Revenue', href: '/admin/revenue' },
+  // ]},
   { title: 'Support', items: [
     { icon: LifeBuoy, label: 'Tickets', href: '/admin/tickets' },
     {
@@ -230,9 +230,9 @@ const adminSections: SidebarSection[] = [
     { icon: HeadphonesIcon, label: 'Support', href: '/admin/support' },
   ]},
   { title: 'System', items: [
-    { icon: BarChart3, label: 'Reports', href: '/admin/reports' },
-    { icon: Database, label: 'Backups', href: '/admin/backups' },
-    { icon: Settings, label: 'Settings', href: '/admin/settings' },
+   // { icon: BarChart3, label: 'Reports', href: '/admin/reports' },
+   // { icon: Database, label: 'Backups', href: '/admin/backups' },
+    //{ icon: Settings, label: 'Settings', href: '/admin/settings' },
     { icon: Mail, label: 'Email Templates', href: '/admin/emails' },
   ]},
 ];

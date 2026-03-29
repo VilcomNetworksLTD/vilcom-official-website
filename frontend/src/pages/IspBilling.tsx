@@ -22,6 +22,7 @@ const IspBilling = () => {
       icon={<CreditCard className="w-10 h-10" />}
       iconBgColor="bg-gradient-to-br from-[hsl(30,100%,55%)] to-[hsl(220,80%,50%)]"
       iconColor="text-white"
+      serviceType="isp_services"
     />
   );
 };

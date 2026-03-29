@@ -95,7 +95,7 @@ class ProductController extends Controller
         // Sorting
         $sortBy = $request->get('sort_by', 'sort_order');
         $sortOrder = $request->get('sort_order', 'asc');
-        
+
         $validSortFields = ['name', 'price_monthly', 'speed_mbps', 'created_at', 'sort_order'];
         if (in_array($sortBy, $validSortFields)) {
             $query->orderBy($sortBy, $sortOrder);
@@ -105,7 +105,7 @@ class ProductController extends Controller
 
         // Pagination
         $perPage = $request->get('per_page', 12);
-        
+
         if ($perPage === 'all') {
             $products = $query->get();
             return response()->json([
@@ -140,6 +140,13 @@ class ProductController extends Controller
 
         $data = $request->validated();
         $data['slug'] = $data['slug'] ?? Str::slug($data['name']);
+
+        // Auto-publish non-fibre services/products
+        if (isset($data['type']) && $data['type'] !== 'internet_plan') {
+            $data['is_active'] = true;
+            $data['is_featured'] = true;
+            \Log::info('Auto-published non-fibre product', ['type' => $data['type'], 'name' => $data['name']]);
+        }
 
         // Handle image upload
         if ($request->hasFile('image')) {
@@ -252,7 +259,7 @@ class ProductController extends Controller
                     \Storage::disk('public')->delete($image);
                 }
             }
-            
+
             $gallery = [];
             foreach ($request->file('gallery') as $file) {
                 $gallery[] = $file->store('products/gallery', 'public');
@@ -351,9 +358,9 @@ class ProductController extends Controller
     public function byCategory(Request $request, string $categorySlug): JsonResponse
     {
         $category = Category::where('slug', $categorySlug)->firstOrFail();
-        
+
         $request->merge(['category_id' => $category->id]);
-        
+
         return $this->index($request);
     }
 
@@ -366,7 +373,7 @@ class ProductController extends Controller
     public function featured(Request $request): JsonResponse
     {
         $limit = $request->get('limit', 6);
-        
+
         $products = Product::active()
             ->featured()
             ->with(['category'])
@@ -432,8 +439,8 @@ class ProductController extends Controller
                 'coverage_available' => $isAvailable,
                 'has_capacity' => $hasCapacity,
                 'in_stock' => $inStock,
-                'message' => $available 
-                    ? 'Product is available in your area' 
+                'message' => $available
+                    ? 'Product is available in your area'
                     : 'Product is not currently available in your area',
             ],
         ]);

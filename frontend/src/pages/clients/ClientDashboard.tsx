@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { 
   Wifi, 
+  FileText,
   CreditCard, 
   Ticket, 
   Package,
@@ -70,6 +71,7 @@ const ClientDashboard = () => {
   // Quick actions — UNCHANGED
   const quickActions = [
     { icon: Wifi,       label: 'My Services',    href: '/client/services',                    color: 'from-amber-500 to-yellow-500',  bgColor: 'bg-amber-500/20'  },
+    { icon: FileText,   label: 'My Quotes',      href: '/client/quotes',                      color: 'from-blue-500 to-indigo-500',   bgColor: 'bg-blue-500/20' },
     { icon: CreditCard, label: 'Pay Bills',       href: '/client/services',                    color: 'from-orange-500 to-amber-500',  bgColor: 'bg-orange-500/20' },
     { icon: Ticket,     label: 'Support Ticket',  href: '/client/tickets',                     color: 'from-yellow-500 to-orange-500', bgColor: 'bg-yellow-500/20' },
     { icon: Package,    label: 'Upgrade Plan',    href: '/client/services#available-services', color: 'from-amber-600 to-yellow-600',  bgColor: 'bg-amber-600/20'  },

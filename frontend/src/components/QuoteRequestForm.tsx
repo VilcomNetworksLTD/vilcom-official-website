@@ -30,6 +30,7 @@ const SERVICE_TYPES: Record<string, string> = {
   media_services: 'Media Services',
   erp_services: 'ERP Services',
   smart_integration: 'Smart Integration',
+  service: 'Enterprise Service',
   other: 'Other',
 };
 

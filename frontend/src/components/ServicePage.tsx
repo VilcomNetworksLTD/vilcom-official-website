@@ -22,6 +22,8 @@ interface ServicePageProps {
   iconColor: string;
   blobColor?: string;
   serviceType?: string; // New prop for quote form
+  productId?: number;
+  productName?: string;
 }
 
 // Map icons to use consistent styling
@@ -29,7 +31,7 @@ const getIconComponent = (icon: React.ReactNode) => {
   return icon;
 };
 
-const ServicePage = ({ title, subtitle, description, features, icon, iconBgColor, iconColor, blobColor = "bg-purple-500/20", serviceType }: ServicePageProps) => {
+const ServicePage = ({ title, subtitle, description, features, icon, iconBgColor, iconColor, blobColor = "bg-purple-500/20", serviceType, productId, productName }: ServicePageProps) => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -223,6 +225,8 @@ const ServicePage = ({ title, subtitle, description, features, icon, iconBgColor
             {serviceType ? (
               <QuoteRequestForm 
                 serviceType={serviceType}
+                productId={productId}
+                productName={productName}
                 onSuccess={handleQuoteSuccess}
               />
             ) : (

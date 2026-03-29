@@ -191,22 +191,58 @@ class QuoteRequestController extends Controller
     /**
      * Notify customer that their quote is ready
      */
-    private function notifyCustomerOfQuote(QuoteRequest $quote): void
+    public function notifyCustomerOfQuote(QuoteRequest $quote): void
     {
-        // If user is logged in, notify through their user account
+        // If user is logged in, notify through their user account for dashboard alerts
         if ($quote->user_id) {
             $user = User::find($quote->user_id);
             if ($user) {
                 $user->notify(new QuoteReadyNotification($quote));
-                return;
             }
         }
 
-        // Otherwise, send notification using the contact email
-        // Note: For this to work, User model needs CanSendDirectNotification trait
-        // or we need to create a temporary notification channel
-        // For now, we'll log that email should be sent
-        \Log::info("Quote ready email should be sent to: {$quote->contact_email} for quote #{$quote->quote_number}");
+        // Always send the actual email with the PDF to the contact email provided
+        if (!empty($quote->contact_email)) {
+            \Illuminate\Support\Facades\Mail::to($quote->contact_email)->send(new \App\Mail\QuotePricedMail($quote));
+        }
+    }
+
+    /**
+     * Resend a quoted email to the customer (Admin/Staff)
+     * Useful when price has been updated or client did not receive the first email.
+     */
+    public function resend(int $id): JsonResponse
+    {
+        $quote = QuoteRequest::find($id);
+
+        if (!$quote) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Quote request not found',
+            ], 404);
+        }
+
+        if ($quote->status !== 'quoted') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only quotes in "quoted" status can be resent. Please submit a quote first.',
+            ], 400);
+        }
+
+        $this->notifyCustomerOfQuote($quote);
+
+        // Track the resend timestamp
+        $quote->update(['resent_at' => now()]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Quote email resent to {$quote->contact_email} successfully.",
+            'data' => [
+                'quote_number' => $quote->quote_number,
+                'resent_to'    => $quote->contact_email,
+                'resent_at'    => $quote->fresh()->resent_at,
+            ],
+        ]);
     }
 
     /**

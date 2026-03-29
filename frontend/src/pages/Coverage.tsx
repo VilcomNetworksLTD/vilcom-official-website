@@ -217,7 +217,7 @@ const Coverage = () => {
           <main style={{
             flex: 1, position: "relative", overflow: "hidden",
             isolation: "isolate",
-            background: "linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#1e40af 100%)",
+            background: "linear-gradient(180deg, #f0f5fa 0%, #e2ecf5 50%, #dce6f0 100%)",
           }}>
             <div style={{ position: "absolute", inset: 0 }}>{renderMap()}</div>
           </main>
@@ -284,7 +284,7 @@ const Coverage = () => {
             minHeight: 420,
             position: "relative",
             isolation: "isolate",
-            background: "linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#1e40af 100%)",
+            background: "linear-gradient(180deg, #f0f5fa 0%, #e2ecf5 50%, #dce6f0 100%)",
           }}>
             {renderMap()}
 

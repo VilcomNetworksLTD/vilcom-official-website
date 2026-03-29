@@ -63,9 +63,13 @@ const HeroSection = () => {
           • Gives the Canvas a concrete pixel height on every breakpoint.
           • EarthGlobe3D fills 100% of this box thanks to the fix in that file.
         */}
-        <div className="globe-canvas-box">
+        <div className="globe-canvas-box" style={{ position: 'relative', width: '100%', height: '500px' }}>
           <EarthGlobe3D />
+          <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 100, background: 'rgba(0,0,0,0.7)', color: 'white', padding: '5px 10px', fontSize: '12px', borderRadius: '4px' }}>
+            Hero Globe Debug (check console)
+          </div>
         </div>
+
 
         {/* Orbit ring — desktop only (hidden via CSS on mobile) */}
         <div className="orbit-ring" aria-hidden>
@@ -284,7 +288,10 @@ const HeroSection = () => {
         .globe-canvas-box {
           position: absolute;
           inset: 0;
-          margin-top: 100px;
+          margin-top: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         .orbit-ring {
           position: absolute; top: 50%; left: 50%;
@@ -295,10 +302,10 @@ const HeroSection = () => {
         .globe-fade-left {
           position: absolute; inset-block: 0; left: 0; width: 75%;
           background: linear-gradient(90deg,
-            rgba(5,5,10,0.65) 0%,
-            rgba(5,5,10,0.35) 18%,
-            rgba(5,5,10,0.15) 40%,
-            rgba(5,5,10,0.05) 60%,
+            rgba(5,5,10,0.85) 0%,
+            rgba(5,5,10,0.55) 18%,
+            rgba(5,5,10,0.30) 40%,
+            rgba(5,5,10,0.10) 60%,
             transparent 80%);
           pointer-events: none;
         }
@@ -352,7 +359,7 @@ const HeroSection = () => {
             position: absolute;
             bottom: 0; left: 0; right: 0;
             height: 120px;
-            background: linear-gradient(to bottom, transparent 0%, rgba(5,5,10,1) 100%);
+            background: linear-gradient(to bottom, transparent 0%, #05050A 100%);
             pointer-events: none;
           }
 
