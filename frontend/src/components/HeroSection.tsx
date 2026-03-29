@@ -63,13 +63,9 @@ const HeroSection = () => {
           • Gives the Canvas a concrete pixel height on every breakpoint.
           • EarthGlobe3D fills 100% of this box thanks to the fix in that file.
         */}
-        <div className="globe-canvas-box" style={{ position: 'relative', width: '100%', height: '500px' }}>
+        <div className="globe-canvas-box">
           <EarthGlobe3D />
-          <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 100, background: 'rgba(0,0,0,0.7)', color: 'white', padding: '5px 10px', fontSize: '12px', borderRadius: '4px' }}>
-            Hero Globe Debug (check console)
-          </div>
         </div>
-
 
         {/* Orbit ring — desktop only (hidden via CSS on mobile) */}
         <div className="orbit-ring" aria-hidden>
@@ -141,14 +137,14 @@ const HeroSection = () => {
         {/* Service Badges */}
         <div className="badges-row mb-10 anim-3">
           {[
-            { icon: Server, label: "Web Hosting" },
-            { icon: Cloud,  label: "Cloud Solutions" },
-            { icon: Lock,   label: "Cyber Security" },
-          ].map(({ icon: Icon, label }) => (
-            <div key={label} className="badge-item flex items-center gap-3 rounded-2xl" style={{ background: "rgba(6,182,212,0.08)", border: "1px solid rgba(6,182,212,0.20)", backdropFilter: "blur(12px)" }}>
+            { icon: Server, label: "Web Hosting", url: "/hosting" },
+            { icon: Cloud,  label: "Cloud Solutions", url: "/services/cloud-solutions" },
+            { icon: Lock,   label: "Cyber Security", url: "/services/cyber-security" },
+          ].map(({ icon: Icon, label, url }) => (
+            <Link key={label} to={url} className="badge-item flex items-center gap-3 rounded-2xl hover:scale-105 transition-all cursor-pointer" style={{ background: "rgba(6,182,212,0.08)", border: "1px solid rgba(6,182,212,0.20)", backdropFilter: "blur(12px)" }}>
               <Icon className="w-5 h-5 text-cyan-400 flex-shrink-0" />
-              <span className="font-semibold badge-label" style={{ color: "rgba(255,255,255,0.75)" }}>{label}</span>
-            </div>
+              <span className="font-semibold badge-label hover:text-white transition-colors" style={{ color: "rgba(255,255,255,0.75)" }}>{label}</span>
+            </Link>
           ))}
         </div>
 
@@ -288,10 +284,7 @@ const HeroSection = () => {
         .globe-canvas-box {
           position: absolute;
           inset: 0;
-          margin-top: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          margin-top: 100px;
         }
         .orbit-ring {
           position: absolute; top: 50%; left: 50%;
@@ -302,10 +295,10 @@ const HeroSection = () => {
         .globe-fade-left {
           position: absolute; inset-block: 0; left: 0; width: 75%;
           background: linear-gradient(90deg,
-            rgba(5,5,10,0.85) 0%,
-            rgba(5,5,10,0.55) 18%,
-            rgba(5,5,10,0.30) 40%,
-            rgba(5,5,10,0.10) 60%,
+            rgba(5,5,10,0.65) 0%,
+            rgba(5,5,10,0.35) 18%,
+            rgba(5,5,10,0.15) 40%,
+            rgba(5,5,10,0.05) 60%,
             transparent 80%);
           pointer-events: none;
         }
@@ -329,7 +322,7 @@ const HeroSection = () => {
         /* ══════════════════════════════════
            TABLET  768 – 1024px
         ══════════════════════════════════ */
-        @media (max-width: 1024px) {
+@media (max-width: 1024px) {
           .hero-root {
             flex-direction: column !important;
             align-items: stretch !important;
@@ -341,7 +334,7 @@ const HeroSection = () => {
             position: relative !important;
             inset: auto !important;
             width: 100% !important;
-            height: 340px;
+            height: 312px;
             order: -1;
             overflow: hidden;
           }
@@ -350,7 +343,7 @@ const HeroSection = () => {
             position: absolute !important;
             inset: 0 !important;
             margin-top: 0 !important;
-            height: 340px !important;
+            height: 312px !important;
           }
           .orbit-ring       { display: none !important; }
           .globe-fade-left  { display: none; }
@@ -359,7 +352,7 @@ const HeroSection = () => {
             position: absolute;
             bottom: 0; left: 0; right: 0;
             height: 120px;
-            background: linear-gradient(to bottom, transparent 0%, #05050A 100%);
+            background: linear-gradient(to bottom, transparent 0%, rgba(5,5,10,1) 100%);
             pointer-events: none;
           }
 
@@ -371,9 +364,9 @@ const HeroSection = () => {
         /* ══════════════════════════════════
            MOBILE  ≤ 767px
         ══════════════════════════════════ */
-        @media (max-width: 767px) {
-          .globe-wrapper    { height: 280px; }
-          .globe-canvas-box { height: 280px !important; }
+@media (max-width: 767px) {
+          .globe-wrapper    { height: 256px; }
+          .globe-canvas-box { height: 256px !important; }
 
           .content-section  { padding: 20px 16px 40px !important; }
           .hero-heading     { font-size: 1.75rem !important; line-height: 1.2 !important; }
@@ -395,9 +388,9 @@ const HeroSection = () => {
         /* ══════════════════════════════════
            VERY SMALL  ≤ 400px
         ══════════════════════════════════ */
-        @media (max-width: 400px) {
-          .globe-wrapper    { height: 220px; }
-          .globe-canvas-box { height: 220px !important; }
+@media (max-width: 400px) {
+          .globe-wrapper    { height: 202px; }
+          .globe-canvas-box { height: 202px !important; }
 
           .hero-heading { font-size: 1.5rem !important; }
           .hero-body    { font-size: 0.875rem !important; }

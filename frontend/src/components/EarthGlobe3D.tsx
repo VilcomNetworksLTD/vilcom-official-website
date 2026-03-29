@@ -200,10 +200,10 @@ const useOceanTexture = () =>
     const c = cv.getContext("2d", { alpha: false })!;
 
     const g = c.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0,    "#0a1729");
+    g.addColorStop(0, "#0a1729");
     g.addColorStop(0.35, "#1e3a5f");
     g.addColorStop(0.65, "#1e40af");
-    g.addColorStop(1,    "#132e5e");
+    g.addColorStop(1, "#132e5e");
     c.fillStyle = g;
     c.fillRect(0, 0, W, H);
 
@@ -251,9 +251,9 @@ const StarField = ({ count = 1600 }: { count?: number }) => {
       const th = Math.random() * Math.PI * 2;
       const ph = Math.acos(2 * Math.random() - 1);
       const r = 28 + Math.random() * 25;
-      a[i*3]   = r * Math.sin(ph) * Math.cos(th);
-      a[i*3+1] = r * Math.sin(ph) * Math.sin(th);
-      a[i*3+2] = r * Math.cos(ph);
+      a[i * 3] = r * Math.sin(ph) * Math.cos(th);
+      a[i * 3 + 1] = r * Math.sin(ph) * Math.sin(th);
+      a[i * 3 + 2] = r * Math.cos(ph);
     }
     return a;
   }, [count]);
@@ -277,17 +277,17 @@ const GridLines = () => {
       const lat = (i / ls) * Math.PI - Math.PI / 2;
       const y = r * Math.sin(lat), rl = r * Math.cos(lat);
       for (let j = 0; j < seg; j++) {
-        const t1 = (j/seg)*Math.PI*2, t2 = ((j+1)/seg)*Math.PI*2;
-        v.push(rl*Math.cos(t1),y,rl*Math.sin(t1), rl*Math.cos(t2),y,rl*Math.sin(t2));
+        const t1 = (j / seg) * Math.PI * 2, t2 = ((j + 1) / seg) * Math.PI * 2;
+        v.push(rl * Math.cos(t1), y, rl * Math.sin(t1), rl * Math.cos(t2), y, rl * Math.sin(t2));
       }
     }
     for (let i = 0; i < lns; i++) {
-      const lon = (i/lns)*Math.PI*2;
+      const lon = (i / lns) * Math.PI * 2;
       for (let j = 0; j < seg; j++) {
-        const p1=(j/seg)*Math.PI-Math.PI/2, p2=((j+1)/seg)*Math.PI-Math.PI/2;
+        const p1 = (j / seg) * Math.PI - Math.PI / 2, p2 = ((j + 1) / seg) * Math.PI - Math.PI / 2;
         v.push(
-          r*Math.cos(p1)*Math.cos(lon),r*Math.sin(p1),r*Math.cos(p1)*Math.sin(lon),
-          r*Math.cos(p2)*Math.cos(lon),r*Math.sin(p2),r*Math.cos(p2)*Math.sin(lon)
+          r * Math.cos(p1) * Math.cos(lon), r * Math.sin(p1), r * Math.cos(p1) * Math.sin(lon),
+          r * Math.cos(p2) * Math.cos(lon), r * Math.sin(p2), r * Math.cos(p2) * Math.sin(lon)
         );
       }
     }
@@ -484,13 +484,15 @@ const EarthGlobe3D = () => {
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
         dpr={mobile ? [1, 1.5] : [1, 2]}
       >
-        <Scene
-          tex={tex}
-          worldGeo={worldGeo}
-          kenyaGeo={kenyaGeo}
-          showCountries={showCountries}
-          showCounties={showCounties}
-        />
+        <group scale={mobile ? 0.60 : 0.70}>
+          <Scene
+            tex={tex}
+            worldGeo={worldGeo}
+            kenyaGeo={kenyaGeo}
+            showCountries={showCountries}
+            showCounties={showCounties}
+          />
+        </group>
       </Canvas>
 
       <div style={{
