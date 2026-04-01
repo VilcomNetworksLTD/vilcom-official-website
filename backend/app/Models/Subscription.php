@@ -6,17 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Subscription extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
     protected $table = 'subscriptions';
 
     /**
@@ -25,29 +20,81 @@ class Subscription extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        // Ownership
         'user_id',
+        'subscription_number',
+
+        // Product
         'product_id',
+        'product_variant_id',
+        'coverage_zone_id',
+
+        // Billing
         'billing_cycle',
-        'price',
+        'base_price',
+        'addons_total',
+        'discount_amount',
         'setup_fee',
+        'total_amount',
+        'currency',
+
+        // Proration
+        'proration_credit',
+        'proration_charge',
+        'proration_date',
+
+        // Status
         'status',
-        'start_date',
-        'next_billing_date',
-        'end_date',
-        'cancellation_reason',
+
+        // Dates
+        'trial_ends_at',
+        'started_at',
+        'current_period_start',
+        'current_period_end',
+        'next_renewal_at',
         'cancelled_at',
-        'cancellation_date',
-        'cancelled_by',
-        'suspension_reason',
         'suspended_at',
+        'expires_at',
+
+        // Cancellation
+        'cancel_reason',
+        'cancel_notes',
+        'cancel_at_period_end',
+
+        // Suspension
+        'suspension_reason',
+        'grace_period_days',
+        'grace_period_ends_at',
+
+        // Plan Change Queue
+        'pending_product_id',
+        'pending_variant_id',
+        'pending_change_type',
+        'pending_change_date',
+
+        // Renewal
+        'auto_renew',
+        'renewal_reminder_days',
+        'last_reminder_sent_at',
+
+        // Trial
+        'is_trial',
+        'trial_days',
+
+        // Staff
+        'created_by',
+        'managed_by',
+        'cancelled_by',
         'suspended_by',
-        'activated_at',
+
+        // Installation
         'installation_address',
         'installation_notes',
         'installation_date',
-        'installation Technician',
-        'auto_renew',
-        'notes',
+        'installation_technician',
+
+        'internal_notes',
+        'metadata',
     ];
 
     /**
@@ -58,40 +105,60 @@ class Subscription extends Model
     protected function casts(): array
     {
         return [
-            'start_date' => 'datetime',
-            'next_billing_date' => 'datetime',
-            'end_date' => 'datetime',
+            // Dates
+            'trial_ends_at' => 'datetime',
+            'started_at' => 'datetime',
+            'current_period_start' => 'datetime',
+            'current_period_end' => 'datetime',
+            'next_renewal_at' => 'datetime',
             'cancelled_at' => 'datetime',
-            'cancellation_date' => 'datetime',
             'suspended_at' => 'datetime',
-            'activated_at' => 'datetime',
+            'expires_at' => 'datetime',
             'installation_date' => 'datetime',
+            'proration_date' => 'datetime',
+            'last_reminder_sent_at' => 'datetime',
+
+            // Booleans
             'auto_renew' => 'boolean',
-            'price' => 'decimal:2',
+            'cancel_at_period_end' => 'boolean',
+            'is_trial' => 'boolean',
+
+            // Decimals
+            'base_price' => 'decimal:2',
+            'addons_total' => 'decimal:2',
+            'discount_amount' => 'decimal:2',
             'setup_fee' => 'decimal:2',
+            'total_amount' => 'decimal:2',
+            'proration_credit' => 'decimal:2',
+            'proration_charge' => 'decimal:2',
+
+            // JSON
+            'metadata' => 'array',
         ];
     }
-
-
 
     // ============================================
     // RELATIONSHIPS
     // ============================================
 
-    /**
-     * Get the user that owns the subscription
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Get the product associated with the subscription
-     */
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function productVariant(): BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class);
+    }
+
+    public function coverageZone(): BelongsTo
+    {
+        return $this->belongsTo(CoverageZone::class);
     }
 
     /**
@@ -120,125 +187,114 @@ class Subscription extends Model
         return $this->hasMany(Payment::class);
     }
 
-    /**
-     * Get the user who cancelled the subscription
-     */
-    public function cancelledByUser(): BelongsTo
+    // Staff/Audit Relationships
+    public function cancelledBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cancelled_by');
     }
 
-    /**
-     * Get the user who suspended the subscription
-     */
-    public function suspendedByUser(): BelongsTo
+    public function suspendedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'suspended_by');
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function managedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'managed_by');
     }
 
     // ============================================
     // SCOPES
     // ============================================
 
-    /**
-     * Scope to get only active subscriptions
-     */
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
     }
 
-    /**
-     * Scope to get pending subscriptions
-     */
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
     }
 
-    /**
-     * Scope to get cancelled subscriptions
-     */
     public function scopeCancelled($query)
     {
         return $query->where('status', 'cancelled');
     }
 
-    /**
-     * Scope to get suspended subscriptions
-     */
     public function scopeSuspended($query)
     {
         return $query->where('status', 'suspended');
     }
 
-    /**
-     * Scope to get expired subscriptions
-     */
     public function scopeExpired($query)
     {
         return $query->where('status', 'expired');
     }
 
-    /**
-     * Scope to filter by billing cycle
-     */
     public function scopeByBillingCycle($query, $billingCycle)
     {
         return $query->where('billing_cycle', $billingCycle);
     }
 
-    /**
-     * Scope to filter by user
-     */
     public function scopeForUser($query, $userId)
     {
         return $query->where('user_id', $userId);
+    }
+
+    /**
+     * Scope for subscriptions due for renewal within specified days
+     */
+    public function scopeDueForRenewal($query, $days = 7)
+    {
+        return $query->active()
+            ->whereNotNull('current_period_end')
+            ->where('current_period_end', '<=', now()->addDays($days));
+    }
+
+    /**
+     * Scope for subscriptions in grace period (active but overdue)
+     */
+    public function scopeInGracePeriod($query)
+    {
+        return $query->active()
+            ->whereNotNull('current_period_end')
+            ->where('current_period_end', '<', now());
     }
 
     // ============================================
     // ACCESSORS & HELPERS
     // ============================================
 
-    /**
-     * Check if the subscription is active
-     */
     public function getIsActiveAttribute(): bool
     {
         return $this->status === 'active';
     }
 
-    /**
-     * Check if the subscription is pending
-     */
     public function getIsPendingAttribute(): bool
     {
         return $this->status === 'pending';
     }
 
-    /**
-     * Check if the subscription is cancelled
-     */
     public function getIsCancelledAttribute(): bool
     {
         return $this->status === 'cancelled';
     }
 
-    /**
-     * Check if the subscription is suspended
-     */
     public function getIsSuspendedAttribute(): bool
     {
         return $this->status === 'suspended';
     }
 
-    /**
-     * Check if the subscription is expired
-     */
     public function getIsExpiredAttribute(): bool
     {
         return $this->status === 'expired' ||
-            ($this->end_date && $this->end_date->isPast());
+            ($this->expires_at && $this->expires_at->isPast());
     }
 
     /**
@@ -246,11 +302,10 @@ class Subscription extends Model
      */
     public function getIsDueForRenewalAttribute(): bool
     {
-        if (!$this->next_billing_date) {
+        if (!$this->current_period_end) {
             return false;
         }
-
-        return $this->next_billing_date->diffInDays(now()) <= 7;
+        return $this->current_period_end->diffInDays(now()) <= 7;
     }
 
     /**
@@ -258,28 +313,24 @@ class Subscription extends Model
      */
     public function getDaysUntilNextBillingAttribute(): ?int
     {
-        if (!$this->next_billing_date) {
+        if (!$this->current_period_end) {
             return null;
         }
-
-        return now()->diffInDays($this->next_billing_date, false);
+        return now()->diffInDays($this->current_period_end, false);
     }
 
     /**
-     * Get formatted price with currency
+     * Helper to get the formatted total
      */
-    public function getFormattedPriceAttribute(): string
+    public function getFormattedTotalAttribute(): string
     {
-        return number_format($this->price, 2);
+        return number_format($this->total_amount, 2);
     }
 
     // ============================================
     // STATUS METHODS
     // ============================================
 
-    /**
-     * Activate the subscription
-     */
     public function activate(): bool
     {
         return $this->update([
@@ -287,13 +338,12 @@ class Subscription extends Model
             'suspended_at' => null,
             'suspension_reason' => null,
             'suspended_by' => null,
-            'activated_at' => now(),
+            'started_at' => now(),
+            'current_period_start' => now(),
+            'current_period_end' => $this->calculateNextBillingDate(),
         ]);
     }
 
-    /**
-     * Suspend the subscription
-     */
     public function suspend(string $reason, int $suspendedBy): bool
     {
         return $this->update([
@@ -304,58 +354,43 @@ class Subscription extends Model
         ]);
     }
 
-    /**
-     * Cancel the subscription
-     */
     public function cancel(string $reason = null, bool $immediate = false, int $cancelledBy = null): bool
     {
         $data = [
             'status' => $immediate ? 'cancelled' : 'pending_cancellation',
-            'cancellation_reason' => $reason,
+            'cancel_reason' => $reason,
             'cancelled_at' => $immediate ? now() : null,
-            'cancellation_date' => $immediate ? now() : $this->next_billing_date,
+            'cancel_at_period_end' => !$immediate,
             'cancelled_by' => $cancelledBy,
         ];
 
         return $this->update($data);
     }
 
-    /**
-     * Renew the subscription
-     */
     public function renew(): bool
     {
         $nextBillingDate = $this->calculateNextBillingDate($this->billing_cycle);
 
         return $this->update([
-            'next_billing_date' => $nextBillingDate,
+            'current_period_end' => $nextBillingDate,
+            'next_renewal_at' => $nextBillingDate,
             'status' => 'active',
-            'cancellation_reason' => null,
+            'cancel_reason' => null,
             'cancelled_at' => null,
-            'cancellation_date' => null,
+            'cancel_at_period_end' => false,
         ]);
     }
 
-    /**
-     * Calculate next billing date based on billing cycle
-     */
-    private function calculateNextBillingDate(string $billingCycle): \Carbon\Carbon
+    private function calculateNextBillingDate(string $billingCycle = null): \Carbon\Carbon
     {
-        switch ($billingCycle) {
-            case 'monthly':
-                return now()->addMonth();
-            case 'quarterly':
-                return now()->addMonths(3);
-            case 'semi_annually':
-                return now()->addMonths(6);
-            case 'annually':
-                return now()->addYear();
-            case 'biennially':
-                return now()->addYears(2);
-            default:
-                return now()->addMonth();
-        }
+        $cycle = $billingCycle ?? $this->billing_cycle;
+
+        return match ($cycle) {
+            'monthly' => now()->addMonth(),
+            'quarterly' => now()->addMonths(3),
+            'semi_annually' => now()->addMonths(6),
+            'annually' => now()->addYear(),
+            default => now()->addMonth(),
+        };
     }
 }
-
-

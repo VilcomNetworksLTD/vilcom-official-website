@@ -3,8 +3,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, ScrollRestoration, Navigate } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
+import VisitorTracker from "./components/VisitorTracker";
 import ScrollToTop from "@/components/ScrollToTop";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, ProtectedRoute } from "@/contexts/AuthContext";
+import Unauthorized from "./pages/Unauthorized";
 import Index from "./pages/Index";
 import Plans from "./pages/Plans";
 import Coverage from "./pages/Coverage";
@@ -76,6 +79,7 @@ import AdminPressArticles from "./pages/admin/PressArticles";
 import AdminGallery from "./pages/admin/AdminGallery";
 import AdminCareerManagement from "./pages/admin/AdminCareerManagement";
 import EmeraldApprovals from "./pages/admin/EmeraldApprovals";
+import AnalyticsDashboard from "./pages/admin/AnalyticsDashboard";
 
 // ── Role-specific profile pages ───────────────────────────────────────────────
 import AdminProfile  from "./pages/admin/AdminProfile";
@@ -103,14 +107,16 @@ const DashboardGuard = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AuthProvider>
-        <BrowserRouter>
-          <DashboardGuard>
-            <CookieConsent />
+  <HelmetProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AuthProvider>
+          <BrowserRouter>
+            <VisitorTracker />
+            <DashboardGuard>
+              <CookieConsent />
             <WhatsAppButton />
           </DashboardGuard>
           <ScrollToTop />
@@ -166,48 +172,50 @@ const App = () => (
             {/* ══════════════════════════════════════════════════════════
                 ADMIN
             ══════════════════════════════════════════════════════════ */}
-            <Route path="/admin/dashboard"          element={<AdminDashboard />} />
-            <Route path="/admin/profile"            element={<AdminProfile />} />
-            <Route path="/admin/categories"         element={<CategoryManagement />} />
-            <Route path="/admin/products"           element={<ProductManagement />} />
-            <Route path="/admin/subscriptions"      element={<SubscriptionManagement />} />
-            <Route path="/admin/quotes"             element={<QuoteManagement />} />
-            <Route path="/admin/whatsapp-messages"  element={<WhatsAppMessages />} />
-            <Route path="/admin/tickets"            element={<TicketManagement />} />
-            <Route path="/admin/staff"              element={<StaffManagement />} />
-            <Route path="/admin/roles"              element={<RolesManagement />} />
-            <Route path="/admin/banners"            element={<BannerManagement />} />
-            <Route path="/admin/testimonials"       element={<TestimonialManagement />} />
-            <Route path="/admin/faqs"               element={<FaqManagement />} />
-            <Route path="/admin/media"              element={<MediaLibrary />} />
-            <Route path="/admin/portfolio-manager" element={<AdminPortfolio />} />
-            <Route path="/admin/coverage"           element={<CoverageManagement />} />
-            <Route path="/admin/invoices"           element={<InvoiceManagement />} />
-            <Route path="/admin/users"              element={<Users />} />
-            <Route path="/admin/clients"            element={<Clients />} />
-            <Route path="/admin/leads"              element={<LeadManagement />} />
+            <Route path="/unauthorized" element={<Unauthorized />} />
+            <Route path="/admin/dashboard"          element={<ProtectedRoute requireRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/profile"            element={<ProtectedRoute requireRoles={['admin']}><AdminProfile /></ProtectedRoute>} />
+            <Route path="/admin/categories"         element={<ProtectedRoute requireRoles={['admin']}><CategoryManagement /></ProtectedRoute>} />
+            <Route path="/admin/products"           element={<ProtectedRoute requireRoles={['admin']}><ProductManagement /></ProtectedRoute>} />
+            <Route path="/admin/subscriptions"      element={<ProtectedRoute requireRoles={['admin', 'staff', 'sales']}><SubscriptionManagement /></ProtectedRoute>} />
+            <Route path="/admin/quotes"             element={<ProtectedRoute requireRoles={['admin', 'staff', 'sales']}><QuoteManagement /></ProtectedRoute>} />
+            <Route path="/admin/whatsapp-messages"  element={<ProtectedRoute requireRoles={['admin', 'staff']}><WhatsAppMessages /></ProtectedRoute>} />
+            <Route path="/admin/tickets"            element={<ProtectedRoute requireRoles={['admin', 'staff', 'technical_support']}><TicketManagement /></ProtectedRoute>} />
+            <Route path="/admin/staff"              element={<ProtectedRoute requireRoles={['admin']}><StaffManagement /></ProtectedRoute>} />
+            <Route path="/admin/roles"              element={<ProtectedRoute requireRoles={['admin']}><RolesManagement /></ProtectedRoute>} />
+            <Route path="/admin/banners"            element={<ProtectedRoute requireRoles={['admin', 'web_developer', 'content_manager']}><BannerManagement /></ProtectedRoute>} />
+            <Route path="/admin/testimonials"       element={<ProtectedRoute requireRoles={['admin', 'content_manager']}><TestimonialManagement /></ProtectedRoute>} />
+            <Route path="/admin/faqs"               element={<ProtectedRoute requireRoles={['admin', 'content_manager', 'technical_support']}><FaqManagement /></ProtectedRoute>} />
+            <Route path="/admin/media"              element={<ProtectedRoute requireRoles={['admin', 'web_developer', 'content_manager']}><MediaLibrary /></ProtectedRoute>} />
+            <Route path="/admin/portfolio-manager" element={<ProtectedRoute requireRoles={['admin', 'web_developer', 'content_manager']}><AdminPortfolio /></ProtectedRoute>} />
+            <Route path="/admin/coverage"           element={<ProtectedRoute requireRoles={['admin', 'staff']}><CoverageManagement /></ProtectedRoute>} />
+            <Route path="/admin/invoices"           element={<ProtectedRoute requireRoles={['admin', 'staff']}><InvoiceManagement /></ProtectedRoute>} />
+            <Route path="/admin/users"              element={<ProtectedRoute requireRoles={['admin']}><Users /></ProtectedRoute>} />
+            <Route path="/admin/clients"            element={<ProtectedRoute requireRoles={['admin', 'staff', 'sales']}><Clients /></ProtectedRoute>} />
+            <Route path="/admin/leads"              element={<ProtectedRoute requireRoles={['admin', 'staff', 'sales']}><LeadManagement /></ProtectedRoute>} />
             {/* ── NEW CMS routes ── */}
-            <Route path="/admin/press-articles"     element={<AdminPressArticles />} />
-            <Route path="/admin/gallery-manager"    element={<AdminGallery />} />
-            <Route path="/admin/contact-messages"   element={<ContactMessages />} />
-            <Route path="/admin/careers"            element={<AdminCareerManagement />} />
-            <Route path="/admin/emerald-approvals"  element={<EmeraldApprovals />} />
+            <Route path="/admin/press-articles"     element={<ProtectedRoute requireRoles={['admin', 'content_manager']}><AdminPressArticles /></ProtectedRoute>} />
+            <Route path="/admin/gallery-manager"    element={<ProtectedRoute requireRoles={['admin', 'web_developer', 'content_manager']}><AdminGallery /></ProtectedRoute>} />
+            <Route path="/admin/contact-messages"   element={<ProtectedRoute requireRoles={['admin', 'staff']}><ContactMessages /></ProtectedRoute>} />
+            <Route path="/admin/careers"            element={<ProtectedRoute requireRoles={['admin', 'staff', 'hr']}><AdminCareerManagement /></ProtectedRoute>} />
+            <Route path="/admin/emerald-approvals"  element={<ProtectedRoute requireRoles={['admin', 'staff']}><EmeraldApprovals /></ProtectedRoute>} />
+            <Route path="/admin/analytics"          element={<ProtectedRoute requireRoles={['admin']}><AnalyticsDashboard /></ProtectedRoute>} />
 
             {/* ══════════════════════════════════════════════════════════
                 STAFF
             ══════════════════════════════════════════════════════════ */}
-            <Route path="/staff/dashboard"          element={<StaffDashboard />} />
-            <Route path="/staff/profile"            element={<StaffProfile />} />
-            <Route path="/staff/contact-messages" element={<ContactMessages />} />
+            <Route path="/staff/dashboard"          element={<ProtectedRoute requireRoles={['staff', 'sales', 'technical_support', 'hr', 'web_developer', 'content_manager']}><StaffDashboard /></ProtectedRoute>} />
+            <Route path="/staff/profile"            element={<ProtectedRoute requireRoles={['staff', 'sales', 'technical_support', 'hr', 'web_developer', 'content_manager']}><StaffProfile /></ProtectedRoute>} />
+            <Route path="/staff/contact-messages" element={<ProtectedRoute requireRoles={['staff']}><ContactMessages /></ProtectedRoute>} />
 
             {/* ══════════════════════════════════════════════════════════
                 CLIENT
             ══════════════════════════════════════════════════════════ */}
-            <Route path="/client/dashboard"         element={<ClientDashboard />} />
-            <Route path="/client/profile"           element={<ClientProfile />} />
-            <Route path="/client/subscriptions"     element={<MyServices />} />
-            <Route path="/client/services"          element={<MyServices />} />
-            <Route path="/client/tickets"           element={<MyTickets />} />
+            <Route path="/client/dashboard"         element={<ProtectedRoute requireRoles={['client']}><ClientDashboard /></ProtectedRoute>} />
+            <Route path="/client/profile"           element={<ProtectedRoute requireRoles={['client']}><ClientProfile /></ProtectedRoute>} />
+            <Route path="/client/subscriptions"     element={<ProtectedRoute requireRoles={['client']}><MyServices /></ProtectedRoute>} />
+            <Route path="/client/services"          element={<ProtectedRoute requireRoles={['client']}><MyServices /></ProtectedRoute>} />
+            <Route path="/client/tickets"           element={<ProtectedRoute requireRoles={['client']}><MyTickets /></ProtectedRoute>} />
 
             {/* ── 404 ── */}
             <Route path="*"                         element={<NotFound />} />
@@ -216,6 +224,7 @@ const App = () => (
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
+  </HelmetProvider>
 );
 
 export default App;

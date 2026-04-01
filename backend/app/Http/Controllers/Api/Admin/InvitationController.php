@@ -35,7 +35,7 @@ class InvitationController extends Controller
     {
         $validated = $request->validate([
             'email' => 'required|email|unique:users,email|unique:staff_invitations,email,NULL,id,status,pending',
-            'role' => 'required|in:admin,staff,sales,technical_support',
+            'role' => 'required|in:admin,staff,sales,technical_support,web_developer,content_manager,hr',
             'expires_days' => 'nullable|integer|min:1|max:30',
         ]);
 

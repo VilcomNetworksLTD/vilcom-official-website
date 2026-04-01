@@ -204,12 +204,6 @@ export default function StaffProfile() {
             </div>
           </Section>
 
-          {/* Password change section */}
-          <ChangePasswordSection
-            sectionAccent="text-cyan-400"
-            buttonClass="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-cyan-500/20 border-cyan-500/30"
-          />
-
           {/* Actions */}
           <div className="flex items-center justify-between gap-3 pt-1">
             <p className="text-xs text-slate-600">{dirty ? "You have unsaved changes" : "All changes saved"}</p>
@@ -228,6 +222,13 @@ export default function StaffProfile() {
           </div>
 
         </form>
+
+        {/* Password change section */}
+        <ChangePasswordSection
+          sectionAccent="text-cyan-400"
+          buttonClass="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-cyan-500/20 border-cyan-500/30"
+        />
+
       </div>
     </DashboardLayout>
   );

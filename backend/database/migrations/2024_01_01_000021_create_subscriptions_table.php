@@ -8,17 +8,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // ─── Core Subscriptions Table ──────────────────────────────────────────
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->id();
 
             // ── Ownership ─────────────────────────────────────────────────────
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('subscription_number')->unique(); // SUB-2025-00001
+            $table->string('subscription_number')->unique(); // e.g. SUB-2025-00001
 
             // ── Product / Plan ────────────────────────────────────────────────
             $table->foreignId('product_id')->constrained()->onDelete('restrict');
-            $table->foreignId('product_variant_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('product_variant_id')->nullable()->constrained('product_variants')->onDelete('set null');
             $table->foreignId('coverage_zone_id')->nullable()->constrained()->onDelete('set null');
 
             // ── Billing Cycle ─────────────────────────────────────────────────
@@ -97,9 +96,20 @@ return new class extends Migration
             $table->boolean('is_trial')->default(false);
             $table->integer('trial_days')->nullable();
 
-            // ── Staff & Notes ─────────────────────────────────────────────────
+            // ── Staff & Audit ─────────────────────────────────────────────────
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('managed_by')->nullable()->constrained('users')->onDelete('set null'); // Assigned sales/support
+
+            // Added specific tracking for who cancelled/suspended
+            $table->foreignId('cancelled_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('suspended_by')->nullable()->constrained('users')->onDelete('set null');
+
+            // ── Installation Details (Added to match original Model) ───────────
+            $table->text('installation_address')->nullable();
+            $table->text('installation_notes')->nullable();
+            $table->date('installation_date')->nullable();
+            $table->string('installation_technician')->nullable();
+
             $table->text('internal_notes')->nullable();
 
             // ── Metadata ─────────────────────────────────────────────────────
@@ -125,4 +135,3 @@ return new class extends Migration
         Schema::dropIfExists('subscriptions');
     }
 };
-

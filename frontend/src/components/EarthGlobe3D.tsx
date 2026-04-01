@@ -25,7 +25,6 @@ type GeoMap = {
 } | null;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-/** Convert lat/lon degrees → 3D point on sphere of radius r */
 const ll2xyz = (lat: number, lon: number, r: number): [number, number, number] => {
   const phi = (90 - lat) * (Math.PI / 180);
   const theta = (lon + 180) * (Math.PI / 180);
@@ -36,23 +35,12 @@ const ll2xyz = (lat: number, lon: number, r: number): [number, number, number] =
   ];
 };
 
-/** Remove GeoJSON closing duplicate vertex */
 const cleanRing = (ring: number[][]): number[][] => {
   const r = [...ring];
-  while (
-    r.length > 1 &&
-    r[0][0] === r[r.length - 1][0] &&
-    r[0][1] === r[r.length - 1][1]
-  ) r.pop();
+  while (r.length > 1 && r[0][0] === r[r.length - 1][0] && r[0][1] === r[r.length - 1][1]) r.pop();
   return r;
 };
 
-/**
- * Fix antimeridian (±180°) crossings.
- * GeoJSON sometimes has longitudes > 180 or rings that jump 300° across the
- * date line. earcut needs continuous coordinates — this shifts each vertex so
- * consecutive lons never differ by more than 180°.
- */
 const fixAntimeridian = (ring: number[][]): number[][] => {
   const out = ring.map(([lon, lat]): number[] => {
     while (lon > 180) lon -= 360;
@@ -69,18 +57,7 @@ const fixAntimeridian = (ring: number[][]): number[][] => {
   return out;
 };
 
-// ─── Core fill geometry builder ───────────────────────────────────────────────
-/**
- * Convert GeoJSON (Polygon / MultiPolygon features) into a THREE.BufferGeometry
- * of triangles covering the landmass on a sphere of radius `r`.
- *
- * Algorithm:
- *  1. For each polygon ring: clean closing vertex, fix antimeridian crossing.
- *  2. Build a flat [lon, lat, lon, lat …] array (earcut's input format, dim=2).
- *  3. Run earcut → get triangle indices into the flat array.
- *  4. Map each 2D (lon, lat) vertex → 3D sphere (x, y, z).
- *  5. Accumulate all positions + indices into one BufferGeometry.
- */
+// ─── Core Geometry Builders ───────────────────────────────────────────────────
 const buildFillGeometry = (geoJson: GeoMap, r: number): THREE.BufferGeometry => {
   const positions: number[] = [];
   const indices: number[] = [];
@@ -90,40 +67,33 @@ const buildFillGeometry = (geoJson: GeoMap, r: number): THREE.BufferGeometry => 
   const processPolygon = (rings: number[][][]) => {
     if (!rings?.length) return;
 
-    // --- Step 1: Prepare outer ring ---
     const outer = fixAntimeridian(cleanRing(rings[0]));
     if (outer.length < 3) return;
 
-    // --- Step 2: Prepare holes ---
     const holes = rings
       .slice(1)
       .map(h => fixAntimeridian(cleanRing(h)))
       .filter(h => h.length >= 3);
 
-    // --- Step 3: Build flat coord array for earcut ---
-    // Format: [lon0, lat0, lon1, lat1, …]  (dim=2)
     const flat: number[] = [];
     const holeStarts: number[] = [];
 
     outer.forEach(([lon, lat]) => flat.push(lon, lat));
     holes.forEach(hole => {
-      holeStarts.push(flat.length / 2); // vertex index where this hole starts
+      holeStarts.push(flat.length / 2);
       hole.forEach(([lon, lat]) => flat.push(lon, lat));
     });
 
-    // --- Step 4: Triangulate with earcut ---
     const triIdx = earcut(flat, holeStarts.length ? holeStarts : undefined, 2);
-    if (!triIdx?.length) return; // earcut gave up (degenerate polygon)
+    if (!triIdx?.length) return;
 
-    // --- Step 5: Map 2D vertices → 3D sphere positions ---
     const vertBase = positions.length / 3;
     const numVerts = flat.length / 2;
     for (let i = 0; i < numVerts; i++) {
-      const [x, y, z] = ll2xyz(flat[i * 2 + 1], flat[i * 2], r); // lat=flat[i*2+1], lon=flat[i*2]
+      const [x, y, z] = ll2xyz(flat[i * 2 + 1], flat[i * 2], r);
       positions.push(x, y, z);
     }
 
-    // --- Step 6: Offset triangle indices by vertBase ---
     triIdx.forEach(i => indices.push(vertBase + i));
   };
 
@@ -146,7 +116,6 @@ const buildFillGeometry = (geoJson: GeoMap, r: number): THREE.BufferGeometry => 
   return geo;
 };
 
-// ─── Border lines geometry ────────────────────────────────────────────────────
 const buildBorderGeometry = (geoJson: GeoMap, r: number): Float32Array => {
   const verts: number[] = [];
   if (!geoJson?.features) return new Float32Array();
@@ -157,7 +126,6 @@ const buildBorderGeometry = (geoJson: GeoMap, r: number): Float32Array => {
       const [bx, by, bz] = ll2xyz(ring[i + 1][1], ring[i + 1][0], r);
       verts.push(ax, ay, az, bx, by, bz);
     }
-    // Close the ring
     const first = ring[0], last = ring[ring.length - 1];
     const [ax, ay, az] = ll2xyz(last[1], last[0], r);
     const [bx, by, bz] = ll2xyz(first[1], first[0], r);
@@ -179,7 +147,7 @@ const buildBorderGeometry = (geoJson: GeoMap, r: number): Float32Array => {
   return new Float32Array(verts);
 };
 
-// ─── Data loading ─────────────────────────────────────────────────────────────
+// ─── Data Loading ─────────────────────────────────────────────────────────────
 const loadGeoJSON = async (url: string): Promise<GeoMap | null> => {
   try {
     const res = await fetch(url);
@@ -191,7 +159,7 @@ const loadGeoJSON = async (url: string): Promise<GeoMap | null> => {
   }
 };
 
-// ─── Ocean texture ────────────────────────────────────────────────────────────
+// ─── Ocean Texture ────────────────────────────────────────────────────────────
 const useOceanTexture = () =>
   useMemo(() => {
     const W = 4096, H = 2048;
@@ -224,12 +192,11 @@ const useOceanTexture = () =>
     }
     c.globalAlpha = 1;
 
-    // Equator
+    // Equator & Tropics
     c.strokeStyle = COLORS.equator; c.lineWidth = 2.5;
     const [, eq] = px(0, 0);
     c.beginPath(); c.moveTo(0, eq); c.lineTo(W, eq); c.stroke();
 
-    // Tropics
     c.strokeStyle = COLORS.tropics; c.lineWidth = 1.5;
     [23.5, -23.5].forEach(lat => {
       const [, y] = px(lat, 0);
@@ -243,7 +210,7 @@ const useOceanTexture = () =>
     return t;
   }, []);
 
-// ─── Three.js components ──────────────────────────────────────────────────────
+// ─── Three.js Components ──────────────────────────────────────────────────────
 const StarField = ({ count = 1600 }: { count?: number }) => {
   const pos = useMemo(() => {
     const a = new Float32Array(count * 3);
@@ -295,10 +262,8 @@ const GridLines = () => {
     g.setAttribute("position", new THREE.Float32BufferAttribute(v, 3));
     return g;
   }, []);
-  const ref = useRef<THREE.LineSegments>(null!);
-  useFrame(() => (ref.current.rotation.y += 0.0008));
   return (
-    <lineSegments ref={ref} geometry={geo}>
+    <lineSegments geometry={geo}>
       <lineBasicMaterial color="#ffffff" transparent opacity={0.2} depthWrite={false} />
     </lineSegments>
   );
@@ -327,25 +292,20 @@ const Atmosphere = () => (
   </mesh>
 );
 
-const EarthSphere = ({ tex }: { tex: THREE.Texture }) => {
-  const ref = useRef<THREE.Mesh>(null!);
-  useFrame(() => (ref.current.rotation.y += 0.001));
-  return (
-    <mesh ref={ref}>
-      <sphereGeometry args={[2.75, 128, 128]} />
-      <meshPhongMaterial
-        map={tex}
-        specular="#223344"
-        shininess={12}
-        emissive="#0a0f20"
-        emissiveIntensity={0.15}
-      />
-    </mesh>
-  );
-};
+const EarthSphere = ({ tex }: { tex: THREE.Texture }) => (
+  <mesh>
+    <sphereGeometry args={[2.75, 128, 128]} />
+    <meshPhongMaterial
+      map={tex}
+      specular="#223344"
+      shininess={12}
+      emissive="#0a0f20"
+      emissiveIntensity={0.15}
+    />
+  </mesh>
+);
 
 const EarthDots = ({ count = 18000 }: { count?: number }) => {
-  const ref = useRef<THREE.Points>(null!);
   const pos = useMemo(() => {
     const a = new Float32Array(count * 3);
     let i = 0;
@@ -357,9 +317,8 @@ const EarthDots = ({ count = 18000 }: { count?: number }) => {
     }
     return a;
   }, [count]);
-  useFrame(() => (ref.current.rotation.y += 0.0011));
   return (
-    <points ref={ref}>
+    <points>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" count={count} array={pos} itemSize={3} />
       </bufferGeometry>
@@ -368,22 +327,14 @@ const EarthDots = ({ count = 18000 }: { count?: number }) => {
   );
 };
 
-// ─── Land fill ────────────────────────────────────────────────────────────────
-const LandFill = ({
-  geoData, color = "#ffffff", visible = true,
-}: {
+// ─── Land & Presence Components ───────────────────────────────────────────────
+const LandFill = ({ geoData, color = "#ffffff", visible = true }: {
   geoData: GeoMap | null; color?: string; visible?: boolean;
 }) => {
-  const ref = useRef<THREE.Mesh>(null!);
-  // r=2.005: fills sit 0.005 units above the sphere (r=2), no z-fighting
-  const geo = useMemo(
-    () => geoData ? buildFillGeometry(geoData, 2.756875) : new THREE.BufferGeometry(),
-    [geoData]
-  );
-  useFrame(() => { if (ref.current) ref.current.rotation.y += 0.001; });
+  const geo = useMemo(() => geoData ? buildFillGeometry(geoData, 2.756875) : new THREE.BufferGeometry(), [geoData]);
   if (!geoData) return null;
   return (
-    <mesh ref={ref} geometry={geo} visible={visible}>
+    <mesh geometry={geo} visible={visible}>
       <meshBasicMaterial
         color={color}
         side={THREE.DoubleSide}
@@ -395,22 +346,13 @@ const LandFill = ({
   );
 };
 
-// ─── Borders ──────────────────────────────────────────────────────────────────
-const LandBorders = ({
-  geoData, color, opacity = 1, visible = true,
-}: {
+const LandBorders = ({ geoData, color, opacity = 1, visible = true }: {
   geoData: GeoMap | null; color: string; opacity?: number; visible?: boolean;
 }) => {
-  const ref = useRef<THREE.LineSegments>(null!);
-  // r=2.015: borders sit above fills (2.005)
-  const verts = useMemo(
-    () => geoData ? buildBorderGeometry(geoData, 2.770625) : new Float32Array(),
-    [geoData]
-  );
-  useFrame(() => { if (ref.current) ref.current.rotation.y += 0.001; });
+  const verts = useMemo(() => geoData ? buildBorderGeometry(geoData, 2.770625) : new Float32Array(), [geoData]);
   if (!geoData || !verts.length) return null;
   return (
-    <lineSegments ref={ref} visible={visible}>
+    <lineSegments visible={visible}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" array={verts} count={verts.length / 3} itemSize={3} />
       </bufferGeometry>
@@ -419,52 +361,165 @@ const LandBorders = ({
   );
 };
 
+const PresenceFill = ({ geoData }: { geoData: any }) => {
+  const geo = useMemo(() => geoData ? buildFillGeometry(geoData, 2.766875) : new THREE.BufferGeometry(), [geoData]);
+  if (!geoData) return null;
+  return (
+    <mesh geometry={geo}>
+      <meshBasicMaterial
+        color="#60a5fa"
+        side={THREE.DoubleSide}
+        polygonOffset
+        polygonOffsetFactor={-2}
+        polygonOffsetUnits={-2}
+      />
+    </mesh>
+  );
+};
+
+const NetworkPath = ({ centers }: { centers: {name: string, lat: number, lon: number}[] }) => {
+  const pathGeo = useMemo(() => {
+    if (!centers || centers.length < 2) return new THREE.BufferGeometry();
+    const verts: number[] = [];
+    
+    for (let i = 0; i < centers.length - 1; i++) {
+      const p1 = centers[i];
+      const p2 = centers[i+1];
+      const [x1, y1, z1] = ll2xyz(p1.lat, p1.lon, 2.78);
+      const [x2, y2, z2] = ll2xyz(p2.lat, p2.lon, 2.78);
+      
+      const v1 = new THREE.Vector3(x1, y1, z1);
+      const v2 = new THREE.Vector3(x2, y2, z2);
+      const mid = v1.clone().lerp(v2, 0.5).normalize().multiplyScalar(2.78 + v1.distanceTo(v2) * 0.15);
+      
+      const curve = new THREE.QuadraticBezierCurve3(v1, mid, v2);
+      const points = curve.getPoints(12);
+      for (let j = 0; j < points.length - 1; j++) {
+        verts.push(points[j].x, points[j].y, points[j].z);
+        verts.push(points[j+1].x, points[j+1].y, points[j+1].z);
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
+    return geo;
+  }, [centers]);
+
+  if (!centers?.length) return null;
+
+  return (
+    <group>
+      <lineSegments geometry={pathGeo}>
+        <lineBasicMaterial color="#2563eb" transparent opacity={0.9} linewidth={2} />
+      </lineSegments>
+      {centers.map((p, i) => {
+        const [x, y, z] = ll2xyz(p.lat, p.lon, 2.78);
+        return (
+          <mesh key={i} position={[x, y, z]}>
+            <sphereGeometry args={[0.025, 8, 8]} />
+            <meshBasicMaterial color="#eab308" />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+};
+
 // ─── Scene ────────────────────────────────────────────────────────────────────
 const Scene = ({
-  tex, worldGeo, kenyaGeo, showCountries, showCounties,
+  tex, worldGeo, kenyaGeo, presenceGeo, showCountries, showCounties,
 }: {
   tex: THREE.Texture;
   worldGeo: GeoMap | null;
   kenyaGeo: GeoMap | null;
+  presenceGeo: any | null;
   showCountries: boolean;
   showCounties: boolean;
-}) => (
-  <>
-    <ambientLight intensity={0.8} />
-    <directionalLight position={[6, 4, 6]} intensity={1.4} />
-    <pointLight position={[-6, -4, -6]} intensity={0.6} color="#60a5fa" />
+}) => {
+  const groupRef = useRef<THREE.Group>(null!);
 
-    <StarField />
-    <EarthSphere tex={tex} />
-    <EarthDots />
+  useFrame(() => {
+    if (!groupRef.current) return;
+    let rot = groupRef.current.rotation.y % (Math.PI * 2);
+    if (rot < 0) rot += Math.PI * 2;
+    
+    const factor = (Math.cos(rot - 4.05) + 1) / 2;
+    const speed = 0.003 - factor * 0.0025;
+    
+    groupRef.current.rotation.y += speed;
+  });
 
-    {/* White landmass — earcut triangulated, r=2.005 */}
-    <LandFill geoData={worldGeo} color="#ffffff" visible={showCountries} />
-    <LandFill geoData={kenyaGeo} color="#ffffff" visible={showCounties} />
+  return (
+    <>
+      <ambientLight intensity={0.8} />
+      <directionalLight position={[6, 4, 6]} intensity={1.4} />
+      <pointLight position={[-6, -4, -6]} intensity={0.6} color="#60a5fa" />
 
-    {/* Country/county borders — r=2.015 */}
-    <LandBorders geoData={worldGeo} color={COLORS.countryBorders} opacity={0.7} visible={showCountries} />
-    <LandBorders geoData={kenyaGeo} color={COLORS.countryBordersKe} opacity={0.9} visible={showCounties} />
+      <StarField />
+      <Atmosphere />
 
-    <GridLines />
-    <Atmosphere />
-  </>
-);
+      <group ref={groupRef}>
+        <EarthSphere tex={tex} />
+        <EarthDots />
 
-// ─── Root ─────────────────────────────────────────────────────────────────────
+        <LandFill geoData={worldGeo} color="#ffffff" visible={showCountries} />
+        <LandFill geoData={kenyaGeo} color="#ffffff" visible={showCounties} />
+
+        <PresenceFill geoData={presenceGeo} />
+        <LandBorders geoData={presenceGeo} color="#2563eb" opacity={0.8} />
+
+        <LandBorders geoData={worldGeo} color={COLORS.countryBorders} opacity={0.7} visible={showCountries} />
+        <LandBorders geoData={kenyaGeo} color={COLORS.countryBordersKe} opacity={0.9} visible={showCounties} />
+
+        <NetworkPath centers={presenceGeo?.centers || []} />
+
+        <GridLines />
+      </group>
+    </>
+  );
+};
+
+// ─── Root Component (Cleaned) ─────────────────────────────────────────────────
 const EarthGlobe3D = () => {
   const [mobile, setMobile] = useState(false);
   const [worldGeo, setWorldGeo] = useState<GeoMap | null>(null);
   const [kenyaGeo, setKenyaGeo] = useState<GeoMap | null>(null);
+  const [presenceGeo, setPresenceGeo] = useState<any | null>(null);
   const [showCountries, setShowCountries] = useState(true);
   const [showCounties, setShowCounties] = useState(false);
+
   const tex = useOceanTexture();
 
   useEffect(() => {
     Promise.all([
       loadGeoJSON("/world-countries.json"),
       loadGeoJSON("/kenya-counties-highres.geojson"),
-    ]).then(([w, k]) => { setWorldGeo(w); setKenyaGeo(k); });
+      loadGeoJSON("/vilcom_presences.json"),
+    ]).then(([w, k, p]) => {
+      setWorldGeo(w);
+      setKenyaGeo(k);
+      
+      if (k && p) {
+        const kenyaPresenceNames = [
+          "BUNGOMA", "UASIN GISHU", "ISIOLO", "KAJIADO", "KAKAMEGA", 
+          "KIAMBU", "KILIFI", "KISUMU", "TRANS NZOIA", "KWALE", 
+          "LAMU", "MACHAKOS", "MERU", "MOMBASA", "NAIROBI", 
+          "NAKURU", "TURKANA"
+        ];
+        
+        const missingFeatures = k.features.filter(f => {
+          const countyName = f.properties?.shapeName?.toUpperCase() || "";
+          return kenyaPresenceNames.includes(countyName);
+        });
+        
+        const enhancedPresence = {
+          ...p,
+          features: [...(p.features || []), ...missingFeatures]
+        };
+        setPresenceGeo(enhancedPresence);
+      } else {
+        setPresenceGeo(p);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -489,43 +544,12 @@ const EarthGlobe3D = () => {
             tex={tex}
             worldGeo={worldGeo}
             kenyaGeo={kenyaGeo}
+            presenceGeo={presenceGeo}
             showCountries={showCountries}
             showCounties={showCounties}
           />
         </group>
       </Canvas>
-
-      <div style={{
-        position: "absolute", top: 20, right: 20, zIndex: 10,
-        background: "rgba(0,0,0,0.65)", padding: "14px 18px", borderRadius: 10,
-        color: "#fff", fontFamily: "system-ui, sans-serif", fontSize: 14,
-        backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.1)",
-      }}>
-        <div style={{ marginBottom: 10, fontWeight: 700, fontSize: 12, color: "#94a3b8", letterSpacing: "0.08em" }}>
-          MAP LAYERS
-        </div>
-        {[
-          { label: "Countries", val: showCountries, set: setShowCountries },
-          { label: "Kenya Counties", val: showCounties, set: setShowCounties },
-        ].map(({ label, val, set }) => (
-          <label
-            key={label}
-            style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, cursor: "pointer" }}
-            onClick={() => set(!val)}
-          >
-            <div style={{
-              width: 18, height: 18, borderRadius: 4,
-              border: "2px solid #4a90d9",
-              background: val ? "#4a90d9" : "transparent",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              transition: "background 0.15s", flexShrink: 0,
-            }}>
-              {val && <span style={{ color: "#fff", fontSize: 11 }}>✓</span>}
-            </div>
-            <span style={{ color: val ? "#fff" : "#94a3b8", transition: "color 0.15s" }}>{label}</span>
-          </label>
-        ))}
-      </div>
     </div>
   );
 };

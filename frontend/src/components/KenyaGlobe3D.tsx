@@ -200,10 +200,10 @@ const useOceanTexture = () =>
     const c = cv.getContext("2d", { alpha: false })!;
 
     const g = c.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0,    "#0a1729");
+    g.addColorStop(0, "#0a1729");
     g.addColorStop(0.35, "#1e3a5f");
     g.addColorStop(0.65, "#1e40af");
-    g.addColorStop(1,    "#132e5e");
+    g.addColorStop(1, "#132e5e");
     c.fillStyle = g;
     c.fillRect(0, 0, W, H);
 
@@ -251,9 +251,9 @@ const StarField = ({ count = 1600 }: { count?: number }) => {
       const th = Math.random() * Math.PI * 2;
       const ph = Math.acos(2 * Math.random() - 1);
       const r = 28 + Math.random() * 25;
-      a[i*3]   = r * Math.sin(ph) * Math.cos(th);
-      a[i*3+1] = r * Math.sin(ph) * Math.sin(th);
-      a[i*3+2] = r * Math.cos(ph);
+      a[i * 3] = r * Math.sin(ph) * Math.cos(th);
+      a[i * 3 + 1] = r * Math.sin(ph) * Math.sin(th);
+      a[i * 3 + 2] = r * Math.cos(ph);
     }
     return a;
   }, [count]);
@@ -272,22 +272,22 @@ const StarField = ({ count = 1600 }: { count?: number }) => {
 const GridLines = () => {
   const geo = useMemo(() => {
     const v: number[] = [];
-    const r = 2.05, ls = 12, lns = 24, seg = 64;
+    const r = 2.81875, ls = 12, lns = 24, seg = 64;
     for (let i = 0; i <= ls; i++) {
       const lat = (i / ls) * Math.PI - Math.PI / 2;
       const y = r * Math.sin(lat), rl = r * Math.cos(lat);
       for (let j = 0; j < seg; j++) {
-        const t1 = (j/seg)*Math.PI*2, t2 = ((j+1)/seg)*Math.PI*2;
-        v.push(rl*Math.cos(t1),y,rl*Math.sin(t1), rl*Math.cos(t2),y,rl*Math.sin(t2));
+        const t1 = (j / seg) * Math.PI * 2, t2 = ((j + 1) / seg) * Math.PI * 2;
+        v.push(rl * Math.cos(t1), y, rl * Math.sin(t1), rl * Math.cos(t2), y, rl * Math.sin(t2));
       }
     }
     for (let i = 0; i < lns; i++) {
-      const lon = (i/lns)*Math.PI*2;
+      const lon = (i / lns) * Math.PI * 2;
       for (let j = 0; j < seg; j++) {
-        const p1=(j/seg)*Math.PI-Math.PI/2, p2=((j+1)/seg)*Math.PI-Math.PI/2;
+        const p1 = (j / seg) * Math.PI - Math.PI / 2, p2 = ((j + 1) / seg) * Math.PI - Math.PI / 2;
         v.push(
-          r*Math.cos(p1)*Math.cos(lon),r*Math.sin(p1),r*Math.cos(p1)*Math.sin(lon),
-          r*Math.cos(p2)*Math.cos(lon),r*Math.sin(p2),r*Math.cos(p2)*Math.sin(lon)
+          r * Math.cos(p1) * Math.cos(lon), r * Math.sin(p1), r * Math.cos(p1) * Math.sin(lon),
+          r * Math.cos(p2) * Math.cos(lon), r * Math.sin(p2), r * Math.cos(p2) * Math.sin(lon)
         );
       }
     }
@@ -296,7 +296,6 @@ const GridLines = () => {
     return g;
   }, []);
   const ref = useRef<THREE.LineSegments>(null!);
-  useFrame(() => (ref.current.rotation.y += 0.0008));
   return (
     <lineSegments ref={ref} geometry={geo}>
       <lineBasicMaterial color="#ffffff" transparent opacity={0.2} depthWrite={false} />
@@ -306,7 +305,7 @@ const GridLines = () => {
 
 const Atmosphere = () => (
   <mesh>
-    <sphereGeometry args={[2.2, 64, 64]} />
+    <sphereGeometry args={[3.025, 64, 64]} />
     <shaderMaterial
       transparent side={THREE.BackSide} depthWrite={false}
       vertexShader={`
@@ -329,10 +328,9 @@ const Atmosphere = () => (
 
 const EarthSphere = ({ tex }: { tex: THREE.Texture }) => {
   const ref = useRef<THREE.Mesh>(null!);
-  useFrame(() => (ref.current.rotation.y += 0.001));
   return (
     <mesh ref={ref}>
-      <sphereGeometry args={[2, 128, 128]} />
+      <sphereGeometry args={[2.75, 128, 128]} />
       <meshPhongMaterial
         map={tex}
         specular="#223344"
@@ -352,12 +350,11 @@ const EarthDots = ({ count = 18000 }: { count?: number }) => {
     while (i < count * 3) {
       const lat = (Math.random() - 0.5) * 160;
       const lon = (Math.random() - 0.5) * 360;
-      const [x, y, z] = ll2xyz(lat, lon, 2.01);
+      const [x, y, z] = ll2xyz(lat, lon, 2.76375);
       a[i++] = x; a[i++] = y; a[i++] = z;
     }
     return a;
   }, [count]);
-  useFrame(() => (ref.current.rotation.y += 0.0011));
   return (
     <points ref={ref}>
       <bufferGeometry>
@@ -377,10 +374,9 @@ const LandFill = ({
   const ref = useRef<THREE.Mesh>(null!);
   // r=2.005: fills sit 0.005 units above the sphere (r=2), no z-fighting
   const geo = useMemo(
-    () => geoData ? buildFillGeometry(geoData, 2.005) : new THREE.BufferGeometry(),
+    () => geoData ? buildFillGeometry(geoData, 2.756875) : new THREE.BufferGeometry(),
     [geoData]
   );
-  useFrame(() => { if (ref.current) ref.current.rotation.y += 0.001; });
   if (!geoData) return null;
   return (
     <mesh ref={ref} geometry={geo} visible={visible}>
@@ -404,10 +400,9 @@ const LandBorders = ({
   const ref = useRef<THREE.LineSegments>(null!);
   // r=2.015: borders sit above fills (2.005)
   const verts = useMemo(
-    () => geoData ? buildBorderGeometry(geoData, 2.015) : new Float32Array(),
+    () => geoData ? buildBorderGeometry(geoData, 2.770625) : new Float32Array(),
     [geoData]
   );
-  useFrame(() => { if (ref.current) ref.current.rotation.y += 0.001; });
   if (!geoData || !verts.length) return null;
   return (
     <lineSegments ref={ref} visible={visible}>
@@ -419,43 +414,155 @@ const LandBorders = ({
   );
 };
 
+// ─── Network Path ─────────────────────────────────────────────────────────────
+const NetworkPath = ({ centers }: { centers: {name: string, lat: number, lon: number}[] }) => {
+  const ref = useRef<THREE.Group>(null!);
+
+  const pathGeo = useMemo(() => {
+    if (!centers || centers.length < 2) return new THREE.BufferGeometry();
+    const verts: number[] = [];
+    
+    for (let i = 0; i < centers.length - 1; i++) {
+      const p1 = centers[i];
+      const p2 = centers[i+1];
+      const [x1, y1, z1] = ll2xyz(p1.lat, p1.lon, 2.78);
+      const [x2, y2, z2] = ll2xyz(p2.lat, p2.lon, 2.78);
+      
+      const v1 = new THREE.Vector3(x1, y1, z1);
+      const v2 = new THREE.Vector3(x2, y2, z2);
+      const mid = v1.clone().lerp(v2, 0.5);
+      const dist = v1.distanceTo(v2);
+      mid.normalize().multiplyScalar(2.78 + dist * 0.15);
+      
+      const curve = new THREE.QuadraticBezierCurve3(v1, mid, v2);
+      const points = curve.getPoints(12);
+      for (let j = 0; j < points.length - 1; j++) {
+        verts.push(points[j].x, points[j].y, points[j].z);
+        verts.push(points[j+1].x, points[j+1].y, points[j+1].z);
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
+    return geo;
+  }, [centers]);
+
+  if (!centers || centers.length === 0) return null;
+
+  return (
+    <group ref={ref}>
+      <lineSegments geometry={pathGeo}>
+        <lineBasicMaterial color="#2563eb" transparent opacity={0.9} linewidth={2} />
+      </lineSegments>
+      {centers.map((p, i) => {
+        const [x, y, z] = ll2xyz(p.lat, p.lon, 2.78);
+        return (
+          <mesh key={i} position={[x, y, z]}>
+            <sphereGeometry args={[0.025, 8, 8]} />
+            <meshBasicMaterial color="#eab308" />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+};
+
+// ─── Land Fill For Presences ──────────────────────────────────────────────────
+const PresenceFill = ({ geoData }: { geoData: any }) => {
+  const ref = useRef<THREE.Mesh>(null!);
+  // r=2.766875 gives it precedence over the base LandFill 
+  const geo = useMemo(
+    () => geoData ? buildFillGeometry(geoData, 2.766875) : new THREE.BufferGeometry(),
+    [geoData]
+  );
+  if (!geoData) return null;
+  return (
+    <mesh ref={ref} geometry={geo}>
+      <meshBasicMaterial
+        color="#60a5fa"
+        side={THREE.DoubleSide}
+        polygonOffset
+        polygonOffsetFactor={-2}
+        polygonOffsetUnits={-2}
+      />
+    </mesh>
+  );
+};
+
 // ─── Scene ────────────────────────────────────────────────────────────────────
 const Scene = ({
-  tex, worldGeo, kenyaGeo, showCountries, showCounties,
+  tex, worldGeo, kenyaGeo, presenceGeo, showCountries, showCounties,
 }: {
   tex: THREE.Texture;
   worldGeo: GeoMap | null;
   kenyaGeo: GeoMap | null;
+  presenceGeo: any | null;
   showCountries: boolean;
   showCounties: boolean;
-}) => (
-  <>
-    <ambientLight intensity={0.8} />
-    <directionalLight position={[6, 4, 6]} intensity={1.4} />
-    <pointLight position={[-6, -4, -6]} intensity={0.6} color="#60a5fa" />
+}) => {
+  const groupRef = useRef<THREE.Group>(null!);
 
-    <StarField />
-    <EarthSphere tex={tex} />
-    <EarthDots />
+  useFrame(() => {
+    if (!groupRef.current) return;
+    
+    // rotation.y goes positive.
+    // In our ll2xyz mapping, East Africa (lon ~38) faces the camera 
+    // when rotation.y is approx 232 degrees or 4.05 rad.
+    // mod to get value between 0 and 2PI
+    let rot = groupRef.current.rotation.y % (Math.PI * 2);
+    if (rot < 0) rot += Math.PI * 2;
+    
+    // We want it to be slowest when East Africa is centered (rot approx 4.05).
+    // Math.cos(rot - 4.05) is 1 when facing East Africa, -1 when facing Pacific.
+    const factor = (Math.cos(rot - 4.05) + 1) / 2;
+    
+    // Fast speed = 0.003, Slow speed = 0.0005
+    const speed = 0.003 - factor * 0.0025;
+    
+    groupRef.current.rotation.y += speed;
+  });
 
-    {/* White landmass — earcut triangulated, r=2.005 */}
-    <LandFill geoData={worldGeo} color="#ffffff" visible={showCountries} />
-    <LandFill geoData={kenyaGeo} color="#ffffff" visible={showCounties} />
+  return (
+    <>
+      <ambientLight intensity={0.8} />
+      <directionalLight position={[6, 4, 6]} intensity={1.4} />
+      <pointLight position={[-6, -4, -6]} intensity={0.6} color="#60a5fa" />
 
-    {/* Country/county borders — r=2.015 */}
-    <LandBorders geoData={worldGeo} color={COLORS.countryBorders} opacity={0.7} visible={showCountries} />
-    <LandBorders geoData={kenyaGeo} color={COLORS.countryBordersKe} opacity={0.9} visible={showCounties} />
+      {/* Static objects (StarField runs its own useFrame) */}
+      <StarField />
+      <Atmosphere />
 
-    <GridLines />
-    <Atmosphere />
-  </>
-);
+      {/* Rotating Earth */}
+      <group ref={groupRef}>
+        <EarthSphere tex={tex} />
+        <EarthDots />
+
+        {/* White landmass base */}
+        <LandFill geoData={worldGeo} color="#ffffff" visible={showCountries} />
+        <LandFill geoData={kenyaGeo} color="#ffffff" visible={showCounties} />
+
+        {/* Blue Vilcom Presences */}
+        <PresenceFill geoData={presenceGeo} />
+        <LandBorders geoData={presenceGeo} color="#2563eb" opacity={0.8} />
+
+        {/* White landmass borders */}
+        <LandBorders geoData={worldGeo} color={COLORS.countryBorders} opacity={0.7} visible={showCountries} />
+        <LandBorders geoData={kenyaGeo} color={COLORS.countryBordersKe} opacity={0.9} visible={showCounties} />
+
+        {/* Continuous path with yellow nodes */}
+        <NetworkPath centers={presenceGeo?.centers || []} />
+
+        <GridLines />
+      </group>
+    </>
+  );
+};
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
 const EarthGlobe3D = () => {
   const [mobile, setMobile] = useState(false);
   const [worldGeo, setWorldGeo] = useState<GeoMap | null>(null);
   const [kenyaGeo, setKenyaGeo] = useState<GeoMap | null>(null);
+  const [presenceGeo, setPresenceGeo] = useState<any | null>(null);
   const [showCountries, setShowCountries] = useState(true);
   const [showCounties, setShowCounties] = useState(false);
   const tex = useOceanTexture();
@@ -464,7 +571,33 @@ const EarthGlobe3D = () => {
     Promise.all([
       loadGeoJSON("/world-countries.json"),
       loadGeoJSON("/kenya-counties-highres.geojson"),
-    ]).then(([w, k]) => { setWorldGeo(w); setKenyaGeo(k); });
+      loadGeoJSON("/vilcom_presences.json"),
+    ]).then(([w, k, p]) => {
+      setWorldGeo(w);
+      setKenyaGeo(k);
+      
+      if (k && p) {
+        const kenyaPresenceNames = [
+          "BUNGOMA", "UASIN GISHU", "ISIOLO", "KAJIADO", "KAKAMEGA", 
+          "KIAMBU", "KILIFI", "KISUMU", "TRANS NZOIA", "KWALE", 
+          "LAMU", "MACHAKOS", "MERU", "MOMBASA", "NAIROBI", 
+          "NAKURU", "TURKANA"
+        ];
+        
+        const missingFeatures = k.features.filter(f => {
+          const countyName = f.properties?.shapeName?.toUpperCase() || "";
+          return kenyaPresenceNames.includes(countyName);
+        });
+        
+        const enhancedPresence = {
+          ...p,
+          features: [...(p.features || []), ...missingFeatures]
+        };
+        setPresenceGeo(enhancedPresence);
+      } else {
+        setPresenceGeo(p);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -484,13 +617,16 @@ const EarthGlobe3D = () => {
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
         dpr={mobile ? [1, 1.5] : [1, 2]}
       >
-        <Scene
-          tex={tex}
-          worldGeo={worldGeo}
-          kenyaGeo={kenyaGeo}
-          showCountries={showCountries}
-          showCounties={showCounties}
-        />
+        <group scale={mobile ? 0.60 : 0.70}>
+          <Scene
+            tex={tex}
+            worldGeo={worldGeo}
+            kenyaGeo={kenyaGeo}
+            presenceGeo={presenceGeo}
+            showCountries={showCountries}
+            showCounties={showCounties}
+          />
+        </group>
       </Canvas>
 
       <div style={{

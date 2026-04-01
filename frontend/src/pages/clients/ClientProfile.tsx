@@ -201,12 +201,6 @@ export default function ClientProfile() {
             </Section>
           )}
 
-          {/* Password change section */}
-          <ChangePasswordSection
-            sectionAccent="text-amber-400"
-            buttonClass="bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-slate-900 shadow-amber-500/20 border-amber-400/30"
-          />
-
           {/* Actions */}
           <div className="flex items-center justify-between gap-3 pt-1">
             <p className="text-xs text-slate-600">{dirty ? "You have unsaved changes" : "All changes saved"}</p>
@@ -225,6 +219,13 @@ export default function ClientProfile() {
           </div>
 
         </form>
+
+        {/* Password change section */}
+        <ChangePasswordSection
+          sectionAccent="text-amber-400"
+          buttonClass="bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-slate-900 shadow-amber-500/20 border-amber-400/30"
+        />
+
       </div>
     </DashboardLayout>
   );

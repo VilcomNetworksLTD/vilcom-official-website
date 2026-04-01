@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { login, getDashboardUrl } = useAuth();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,8 +29,10 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      await login(loginForm.email, loginForm.password);
-      const dashboardUrl = getDashboardUrl();
+      // login() now returns the correct dashboard URL derived from the
+      // fresh API response \u2014 avoids the race condition where getDashboardUrl()
+      // was called before React had re-rendered with the new user state.
+      const dashboardUrl = await login(loginForm.email, loginForm.password);
       navigate(dashboardUrl);
     } catch (err: any) {
       if (err.message === '2FA_REQUIRED') {

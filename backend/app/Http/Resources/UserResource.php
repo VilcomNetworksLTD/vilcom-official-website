@@ -16,14 +16,14 @@ class UserResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            
+
             // Basic Information
             'name' => $this->name,
             'display_name' => $this->display_name,
             'email' => $this->email,
             'phone' => $this->formatted_phone,
             'secondary_phone' => $this->secondary_phone,
-            
+
             // Address
             'address' => $this->when($this->shouldShowDetails(), [
                 'street' => $this->address,
@@ -32,7 +32,7 @@ class UserResource extends JsonResource
                 'postal_code' => $this->postal_code,
                 'country' => $this->country,
             ]),
-            
+
             // Business Information
             'customer_type' => $this->customer_type,
             'company_info' => $this->when($this->customer_type === 'business', [
@@ -40,19 +40,19 @@ class UserResource extends JsonResource
                 'registration' => $this->company_registration,
                 'tax_pin' => $this->when($this->shouldShowSensitiveData(), $this->tax_pin),
             ]),
-            
+
             // Profile
             'avatar' => $this->avatar_url,
             'bio' => $this->bio,
             'date_of_birth' => $this->when($this->shouldShowDetails(), $this->date_of_birth?->format('Y-m-d')),
             'gender' => $this->when($this->shouldShowDetails(), $this->gender),
-            
+
             // Account Status
             'status' => $this->status,
             'is_verified' => $this->is_verified,
             'verified_at' => $this->email_verified_at?->toIso8601String(),
             'emerald_mbr_id' => $this->emerald_mbr_id,
-            
+
             // Roles & Permissions
             'roles' => $this->whenLoaded('roles', function () {
                 return $this->roles->map(function ($role) {
@@ -63,16 +63,27 @@ class UserResource extends JsonResource
                     ];
                 });
             }),
-            'permissions' => $this->whenLoaded('permissions', function () {
-                return $this->getAllPermissions()->map(function ($permission) {
-                    return [
-                        'id' => $permission->id,
-                        'name' => $permission->name,
-                        'guard_name' => $permission->guard_name,
-                    ];
-                });
-            }),
-            
+
+
+            'permissions' => $this->whenLoaded('permissions',
+                // When eager-loaded — use the cached relation
+                function () {
+                    return $this->getAllPermissions()->map(fn($p) => [
+                        'id'         => $p->id,
+                        'name'       => $p->name,
+                        'guard_name' => $p->guard_name,
+                    ]);
+                },
+                // Fallback — relation not loaded, query directly (1 extra query, always safe)
+                function () {
+                    return $this->getAllPermissions()->map(fn($p) => [
+                        'id'         => $p->id,
+                        'name'       => $p->name,
+                        'guard_name' => $p->guard_name,
+                    ]);
+                }
+            ),
+
             // Staff Information (only for staff/admin)
             'staff_info' => $this->when($this->isStaffOrAdmin(), [
                 'employee_id' => $this->employee_id,
@@ -87,21 +98,21 @@ class UserResource extends JsonResource
                     ];
                 }),
             ]),
-            
+
             // Preferences
             'preferences' => $this->when($this->shouldShowDetails(), [
                 'timezone' => $this->timezone,
                 'language' => $this->language,
                 'notifications' => $this->getNotificationPreferences(),
             ]),
-            
+
             // Security
             'security' => $this->when($this->shouldShowDetails(), [
                 'two_factor_enabled' => $this->has_2fa_enabled,
                 'last_login' => $this->last_login_at?->toIso8601String(),
                 'last_login_ip' => $this->last_login_ip,
             ]),
-            
+
             // Statistics (only for own profile or admin)
             'stats' => $this->when($this->shouldShowStats(), [
                 'active_subscriptions' => $this->whenLoaded('activeSubscriptions', function () {
@@ -117,7 +128,7 @@ class UserResource extends JsonResource
                     return $this->getOpenTicketsCount();
                 }),
             ]),
-            
+
             // Timestamps
             'created_at' => $this->created_at->toIso8601String(),
             'updated_at' => $this->updated_at->toIso8601String(),

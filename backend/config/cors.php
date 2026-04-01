@@ -38,6 +38,8 @@ return [
 'allowed_origins_patterns' => [
         // Allow any subdomain of vilcom-net.co.ke
         '/^https:\/\/.*\.vilcom-net\.co\.ke$/',
+        // Allow any subdomain of vilcom.co.ke (e.g. apisafetika.vilcom.co.ke)
+        '/^https:\/\/.*\.vilcom\.co\.ke$/',
     ],
 
     'allowed_headers' => ['*'],

@@ -44,6 +44,7 @@ interface SidebarItem {
   label: string;
   href: string;
   badge?: number;
+  requiredRole?: string | string[];
 }
 
 interface SidebarSection {
@@ -130,111 +131,129 @@ const getThemeConfig = (userType: 'client' | 'staff' | 'admin') => {
 // ─── Sidebar sections (client / staff / admin) ────────────────────────────────
 
 const clientSections: SidebarSection[] = [
-  { title: 'Main', items: [
-    { icon: Home, label: 'Home', href: '/' },
-{ icon: LayoutDashboard, label: 'Dashboard', href: '/client/dashboard' },
-    { icon: User, label: 'Profile', href: '/client/profile' },
-  ]},
-  { title: 'Services', items: [
-    { icon: Wifi, label: 'My Services', href: '/client/services' },
-    { icon: Package, label: 'Upgrade Plan', href: '/client/services#available-services' },
-  ]},
-  { title: 'Billing', items: [
-    { icon: Receipt, label: 'Invoices', href: '/client/invoices' },
-    { icon: DollarSign, label: 'Payment History', href: '/client/payments' },
-  ]},
-  { title: 'Support', items: [
-    { icon: LifeBuoy, label: 'My Tickets', href: '/client/tickets' },
-    { icon: HeadphonesIcon, label: 'Support', href: '/support' },
-  ]},
+  { 
+    title: 'Main', 
+    items: [
+      { icon: Home, label: 'Home', href: '/' },
+      { icon: LayoutDashboard, label: 'Dashboard', href: '/client/dashboard' },
+      { icon: User, label: 'Profile', href: '/client/profile' },
+    ]
+  },
+  { 
+    title: 'Services', 
+    items: [
+      { icon: Wifi, label: 'My Services', href: '/client/services' },
+      { icon: Package, label: 'Upgrade Plan', href: '/client/services#available-services' },
+    ]
+  },
+  { 
+    title: 'Billing', 
+    items: [
+      { icon: Receipt, label: 'Invoices', href: '/client/invoices' },
+      { icon: DollarSign, label: 'Payment History', href: '/client/payments' },
+    ]
+  },
+  { 
+    title: 'Support', 
+    items: [
+      { icon: LifeBuoy, label: 'My Tickets', href: '/client/tickets' },
+      { icon: HeadphonesIcon, label: 'Support', href: '/support' },
+    ]
+  },
 ];
 
 const staffSections: SidebarSection[] = [
-  { title: 'Main', items: [
-    { icon: Home, label: 'Home', href: '/' },
-{ icon: LayoutDashboard, label: 'Dashboard', href: '/staff/dashboard' },
-{ icon: Mail, label: 'Contact Messages', href: '/staff/contact-messages' },
-    { icon: User, label: 'Profile', href: '/staff/profile' },
-  ]},
-  { title: 'Management', items: [
-    { icon: Users, label: 'Clients', href: '/admin/clients' },
-    { icon: Wifi, label: 'Subscriptions', href: '/admin/subscriptions' },
-    { icon: FileText, label: 'Quotes', href: '/admin/quotes' },
-    { icon: LifeBuoy, label: 'Tickets', href: '/admin/tickets' },
-    { icon: Users2, label: 'Leads', href: '/admin/leads' },
-    { icon: Briefcase, label: 'Careers', href: '/admin/careers' },
-    { icon: Shield, label: 'Emerald Approvals', href: '/admin/emerald-approvals' },
-  ]},
-  //{ title: 'Billing', items: [
-  //  { icon: Receipt, label: 'Invoices', href: '/admin/invoices' },
-  //  { icon: DollarSign, label: 'Payments', href: '/admin/payments' },
- // ]},
-  { title: 'Content', items: [
-    { icon: Package, label: 'Plans', href: '/admin/plans' },
-    { icon: Building2, label: 'Coverage', href: '/admin/coverage' },
-  ]},
+  { 
+    title: 'Main', 
+    items: [
+      { icon: Home, label: 'Home', href: '/' },
+      { icon: LayoutDashboard, label: 'Dashboard', href: '/staff/dashboard' },
+      { icon: Mail, label: 'Contact Messages', href: '/staff/contact-messages' },
+      { icon: User, label: 'Profile', href: '/staff/profile' },
+    ]
+  },
+  { 
+    title: 'Management', 
+    items: [
+      { icon: Users, label: 'Clients', href: '/admin/clients' },
+      { icon: Wifi, label: 'Subscriptions', href: '/admin/subscriptions' },
+      { icon: FileText, label: 'Quotes', href: '/admin/quotes' },
+      { icon: LifeBuoy, label: 'Tickets', href: '/admin/tickets' },
+      { icon: Users2, label: 'Leads', href: '/admin/leads' },
+      { icon: Briefcase, label: 'Careers', href: '/admin/careers' },
+      { icon: Shield, label: 'Emerald Approvals', href: '/admin/emerald-approvals' },
+    ]
+  },
+  { 
+    title: 'Content', 
+    items: [
+      { icon: Package, label: 'Plans', href: '/admin/plans' },
+      { icon: Building2, label: 'Coverage', href: '/admin/coverage' },
+    ]
+  },
 ];
 
 const adminSections: SidebarSection[] = [
-  { title: 'Main', items: [
-    { icon: Home, label: 'Home', href: '/' },
-{ icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
-    { icon: User, label: 'Profile', href: '/admin/profile' },
-  ]},
-  { title: 'Users', items: [
-    { icon: Users, label: 'All Users', href: '/admin/users' },
-    { icon: UserCheck, label: 'Clients', href: '/admin/clients' },
-    { icon: Shield, label: 'Staff', href: '/admin/staff' },
-    { icon: Layers, label: 'Roles & Permissions', href: '/admin/roles' },
-    { icon: Briefcase, label: 'Career Management', href: '/admin/careers' },
-    { icon: Shield, label: 'Emerald Approvals', href: '/admin/emerald-approvals' },
-  ]},
-  { title: 'Services', items: [
-    { icon: Folder, label: 'Categories', href: '/admin/categories' },
-    { icon: ShoppingCart, label: 'Products', href: '/admin/products' },
-    { icon: Package, label: 'Plans & Pricing', href: '/admin/plans' },
-    { icon: Wifi, label: 'Subscriptions', href: '/admin/subscriptions' },
-    { icon: Building2, label: 'Coverage Areas', href: '/admin/coverage' },
-    //{ icon: Globe, label: 'Domains', href: '/admin/domains' },
-    { icon: FileText, label: 'Quote Requests', href: '/admin/quotes' },
-    { icon: Users2, label: 'Leads', href: '/admin/leads' },
-  ]},
-  { title: 'Content', items: [
-    { icon: Image, label: 'Media Library', href: '/admin/media' },
-    { icon: Layout, label: 'Banners', href: '/admin/banners' },
-    { icon: FileText, label: 'Press Articles', href: '/admin/press-articles' },
-    { icon: Image, label: 'Gallery', href: '/admin/gallery-manager' },
-    { icon: Folder, label: 'Portfolio', href: '/admin/portfolio-manager' },
-    { icon: MessageSquare, label: 'Testimonials', href: '/admin/testimonials' },
-    { icon: HelpCircle, label: 'FAQs', href: '/admin/faqs' },
-  ]},
-    // { title: 'Billing', items: [
-   //  { icon: Receipt, label: 'Invoices', href: '/admin/invoices' },
-   // { icon: DollarSign, label: 'Payments', href: '/admin/payments' },
-   // { icon: TrendingUp, label: 'Revenue', href: '/admin/revenue' },
-  // ]},
-  { title: 'Support', items: [
-    { icon: LifeBuoy, label: 'Tickets', href: '/admin/tickets' },
-    {
-  icon: Mail,
-  label: 'Contact Messages',
-  href: '/admin/contact-messages',
-},
-
-   {
-  icon: Mail,
-  label: 'WhatsApp Messages',
-  href: '/admin/whatsapp-messages',
-},
-
-    { icon: HeadphonesIcon, label: 'Support', href: '/admin/support' },
-  ]},
-  { title: 'System', items: [
-   // { icon: BarChart3, label: 'Reports', href: '/admin/reports' },
-   // { icon: Database, label: 'Backups', href: '/admin/backups' },
-    //{ icon: Settings, label: 'Settings', href: '/admin/settings' },
-    { icon: Mail, label: 'Email Templates', href: '/admin/emails' },
-  ]},
+  { 
+    title: 'Main', 
+    items: [
+      { icon: Home, label: 'Home', href: '/' },
+      { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
+      { icon: User, label: 'Profile', href: '/admin/profile' },
+    ]
+  },
+  { 
+    title: 'Users', 
+    items: [
+      { icon: Users, label: 'All Users', href: '/admin/users' },
+      { icon: UserCheck, label: 'Clients', href: '/admin/clients' },
+      { icon: Shield, label: 'Staff', href: '/admin/staff' },
+      { icon: Layers, label: 'Roles & Permissions', href: '/admin/roles' },
+      { icon: Briefcase, label: 'Career Management', href: '/admin/careers' },
+      { icon: Shield, label: 'Emerald Approvals', href: '/admin/emerald-approvals' },
+    ]
+  },
+  { 
+    title: 'Services', 
+    items: [
+      { icon: Folder, label: 'Categories', href: '/admin/categories' },
+      { icon: ShoppingCart, label: 'Products', href: '/admin/products' },
+      { icon: Package, label: 'Plans & Pricing', href: '/admin/plans' },
+      { icon: Wifi, label: 'Subscriptions', href: '/admin/subscriptions' },
+      { icon: Building2, label: 'Coverage Areas', href: '/admin/coverage' },
+      { icon: FileText, label: 'Quote Requests', href: '/admin/quotes' },
+      { icon: Users2, label: 'Leads', href: '/admin/leads' },
+    ]
+  },
+  { 
+    title: 'Content', 
+    items: [
+      { icon: Image, label: 'Media Library', href: '/admin/media' },
+      { icon: Layout, label: 'Banners', href: '/admin/banners' },
+      { icon: FileText, label: 'Press Articles', href: '/admin/press-articles' },
+      { icon: Image, label: 'Gallery', href: '/admin/gallery-manager' },
+      { icon: Folder, label: 'Portfolio', href: '/admin/portfolio-manager' },
+      { icon: MessageSquare, label: 'Testimonials', href: '/admin/testimonials' },
+      { icon: HelpCircle, label: 'FAQs', href: '/admin/faqs' },
+    ]
+  },
+  { 
+    title: 'Support', 
+    items: [
+      { icon: LifeBuoy, label: 'Tickets', href: '/admin/tickets' },
+      { icon: Mail, label: 'Contact Messages', href: '/admin/contact-messages' },
+      { icon: Mail, label: 'WhatsApp Messages', href: '/admin/whatsapp-messages' },
+    ]
+  },
+  { 
+    title: 'System', 
+    items: [
+      { icon: BarChart3, label: 'Analytics', href: '/admin/analytics' },
+      // { icon: Database, label: 'Backups', href: '/admin/backups' },
+      // { icon: Settings, label: 'Settings', href: '/admin/settings' },
+      // { icon: Mail, label: 'Email Templates', href: '/admin/emails' },
+    ]
+  },
 ];
 
 // ─── Mesh background ──────────────────────────────────────────────────────────
@@ -259,7 +278,7 @@ const MeshGradientBackground = ({ colors }: { colors: string[] }) => (
 const DashboardLayout = ({ children, userType }: DashboardLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, hasRole } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -319,8 +338,6 @@ const DashboardLayout = ({ children, userType }: DashboardLayoutProps) => {
                   alt="VILCOM Signature"
                   className="h-8 w-auto object-contain"
                 />
-                {/* Uncomment if you want text too */}
-                {/* <span className={`font-bold text-lg ${theme.textPrimary}`}>VILCOM</span> */}
               </div>
             )}
           </Link>
@@ -346,42 +363,53 @@ const DashboardLayout = ({ children, userType }: DashboardLayoutProps) => {
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-4">
-          {sections.map((section, si) => (
-            <div key={si} className="mb-4">
-              {!collapsed && (
-                <h3 className={`px-4 mb-2 text-xs font-semibold uppercase tracking-wider ${theme.textMuted}`}>
-                  {section.title}
-                </h3>
-              )}
-              <ul className="space-y-1 px-2">
-                {section.items.map((item, ii) => (
-                  <li key={ii}>
-                    <Link
-                      to={item.href}
-                      onClick={() => setMobileOpen(false)}
-                      className={`
-                        flex items-center gap-3 px-3 py-2 rounded-lg transition-colors
-                        ${isActive(item.href) ? theme.sidebarActive : `${theme.sidebarText} ${theme.sidebarHover}`}
-                        ${collapsed ? 'justify-center' : ''}
-                      `}
-                    >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
-                      {!collapsed && (
-                        <>
-                          <span className="flex-1 text-sm">{item.label}</span>
-                          {item.badge && (
-                            <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                              {item.badge}
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {sections.map((section, si) => {
+            const visibleItems = section.items.filter((item: SidebarItem) => {
+              if (hasRole('admin')) return true;
+              if (!item.requiredRole) return true;
+              const roleList = Array.isArray(item.requiredRole) ? item.requiredRole : [item.requiredRole];
+              return roleList.some((role) => hasRole(role));
+            });
+            
+            if (visibleItems.length === 0) return null;
+
+            return (
+              <div key={si} className="mb-4">
+                {!collapsed && (
+                  <h3 className={`px-4 mb-2 text-xs font-semibold uppercase tracking-wider ${theme.textMuted}`}>
+                    {section.title}
+                  </h3>
+                )}
+                <ul className="space-y-1 px-2">
+                  {visibleItems.map((item, ii) => (
+                    <li key={ii}>
+                      <Link
+                        to={item.href}
+                        onClick={() => setMobileOpen(false)}
+                        className={`
+                          flex items-center gap-3 px-3 py-2 rounded-lg transition-colors
+                          ${isActive(item.href) ? theme.sidebarActive : `${theme.sidebarText} ${theme.sidebarHover}`}
+                          ${collapsed ? 'justify-center' : ''}
+                        `}
+                      >
+                        <item.icon className="w-5 h-5 flex-shrink-0" />
+                        {!collapsed && (
+                          <>
+                            <span className="flex-1 text-sm">{item.label}</span>
+                            {item.badge && (
+                              <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                {item.badge}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </nav>
 
         {/* User & Logout */}

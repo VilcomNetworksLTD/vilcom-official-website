@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import SEO from "@/components/SEO";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import ServicesSection from "@/components/ServicesSection";
@@ -8,11 +8,13 @@ import PricingSection from "@/components/PricingSection";
 import FooterSection from "@/components/FooterSection";
 
 const Index = () => {
-  useEffect(() => {
-    document.title = "Home | Vilcom Networks Ltd";
-  }, []);
   return (
     <div className="min-h-screen relative overflow-hidden">
+      <SEO 
+        title="Home" 
+        description="Experience lightning-fast unlimited fiber internet with Vilcom Networks in Kenya. Reliable home and business connectivity with 24/7 support."
+        keywords="fiber internet, fast internet, vilcom networks, kenya internet provider, unlimited internet"
+      />
       {/* Royal Blue Background #153aee with orange radiance */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#02066F] via-[#021a5e] to-[#030d4f]">
         {/* Animated fluid shapes - orange radiance splash */}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Trash2,
   Search,
@@ -14,22 +14,42 @@ import {
   Shield,
   Users,
   Briefcase,
+  Settings,
+  Lock,
+  CheckCircle2,
+  ChevronDown,
+  Edit2,
+  Save,
 } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import invitationsService, { StaffInvitation, InvitationStats } from '@/services/invitations';
 import { usersApi, User } from '@/services/users';
+import rolesService, { PermissionGroup, UserPermissionsData } from '@/services/roles';
 
-// All internal roles that count as "staff" (everyone except admin)
-const STAFF_ROLES = ['staff', 'sales', 'technical_support'] as const;
-type StaffRole = typeof STAFF_ROLES[number];
+// ─────────────────────────────────────────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────────────────────────────────────────
 
+const ALL_STAFF_ROLES = [
+  'staff',
+  'sales',
+  'technical_support',
+  'web_developer',
+  'content_manager',
+  'hr',
+] as const;
+
+type StaffRole = typeof ALL_STAFF_ROLES[number];
 type Tab = 'staff' | 'invitations';
 
-const ROLE_COLORS: Record<string, string> = {
-  admin:             'bg-purple-500/20 text-purple-300 border-purple-500/30',
-  staff:             'bg-blue-500/20 text-blue-300 border-blue-500/30',
-  sales:             'bg-green-500/20 text-green-300 border-green-500/30',
-  technical_support: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+const ROLE_META: Record<string, { label: string; color: string; description: string }> = {
+  admin:             { label: 'Admin',           color: 'bg-purple-500/20 text-purple-300 border-purple-500/30',  description: 'Full system access' },
+  staff:             { label: 'Staff',            color: 'bg-blue-500/20 text-blue-300 border-blue-500/30',        description: 'General operations' },
+  sales:             { label: 'Sales',            color: 'bg-green-500/20 text-green-300 border-green-500/30',     description: 'Client acquisition' },
+  technical_support: { label: 'Tech Support',     color: 'bg-orange-500/20 text-orange-300 border-orange-500/30', description: 'Tickets & hosting' },
+  web_developer:     { label: 'Web Developer',    color: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',       description: 'Portfolio & hosting' },
+  content_manager:   { label: 'Content Manager',  color: 'bg-pink-500/20 text-pink-300 border-pink-500/30',       description: 'CMS & media' },
+  hr:                { label: 'HR',               color: 'bg-rose-500/20 text-rose-300 border-rose-500/30',        description: 'Staff management' },
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -39,13 +59,13 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const getRoleBadge = (role: string) => (
-  <span className={`px-2 py-1 rounded-lg text-xs border ${ROLE_COLORS[role] || ROLE_COLORS.staff}`}>
-    {role.replace('_', ' ')}
+  <span className={`px-2 py-1 rounded-lg text-xs border ${ROLE_META[role]?.color ?? ROLE_META.staff.color}`}>
+    {ROLE_META[role]?.label ?? role.replace('_', ' ')}
   </span>
 );
 
 const getStatusBadge = (status: string) => (
-  <span className={`px-2 py-1 rounded-lg text-xs border ${STATUS_COLORS[status] || STATUS_COLORS.inactive}`}>
+  <span className={`px-2 py-1 rounded-lg text-xs border ${STATUS_COLORS[status] ?? STATUS_COLORS.inactive}`}>
     {status}
   </span>
 );
@@ -59,6 +79,251 @@ const getStatusIcon = (status: string) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// User Permissions Modal
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface UserPermissionsModalProps {
+  user: User;
+  onClose: () => void;
+  onUpdated: () => void;
+}
+
+const UserPermissionsModal = ({ user, onClose, onUpdated }: UserPermissionsModalProps) => {
+  const [loading, setLoading]       = useState(true);
+  const [saving, setSaving]         = useState(false);
+  const [data, setData]             = useState<UserPermissionsData | null>(null);
+  const [permGroups, setPermGroups] = useState<PermissionGroup[]>([]);
+  const [directPerms, setDirectPerms] = useState<string[]>([]);
+  const [activeRole, setActiveRole]   = useState('');
+  const [roleChanging, setRoleChanging] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [permsData, groupsData] = await Promise.all([
+        rolesService.getUserPermissions(user.id),
+        rolesService.getPermissions(),
+      ]);
+      setData(permsData);
+      setDirectPerms(permsData.direct_permissions);
+      setActiveRole(permsData.user.roles[0] ?? '');
+      setPermGroups(groupsData);
+    } catch (e) {
+      console.error('Failed to load user permissions:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [user.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const toggleDirect = (name: string) => {
+    setDirectPerms((prev) =>
+      prev.includes(name) ? prev.filter((p) => p !== name) : [...prev, name]
+    );
+  };
+
+  const isViaRole = (name: string) => data?.role_permissions.includes(name) ?? false;
+
+  const handleSavePermissions = async () => {
+    setSaving(true);
+    try {
+      await rolesService.syncUserPermissions(user.id, directPerms);
+      onUpdated();
+      onClose();
+    } catch (e: any) {
+      alert(e.response?.data?.message ?? 'Failed to save permissions');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRoleChange = async (newRole: string) => {
+    if (newRole === activeRole) return;
+    if (!confirm(`Change ${user.name}'s role to "${ROLE_META[newRole]?.label ?? newRole}"?`)) return;
+    setRoleChanging(true);
+    try {
+      await rolesService.updateUserRole(user.id, newRole);
+      setActiveRole(newRole);
+      await load(); // reload permissions after role change
+      onUpdated();
+    } catch (e: any) {
+      alert(e.response?.data?.message ?? 'Failed to change role');
+    } finally {
+      setRoleChanging(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-slate-900/95 backdrop-blur-xl border border-white/20 rounded-xl w-full max-w-3xl max-h-[92vh] flex flex-col">
+
+        {/* Header */}
+        <div className="p-6 border-b border-white/10 flex items-start justify-between flex-shrink-0">
+          <div>
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Shield className="w-5 h-5 text-blue-400" />
+              Manage Permissions — {user.name}
+            </h3>
+            <p className="text-sm text-slate-400 mt-1">{user.email}</p>
+          </div>
+          <button onClick={onClose} className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {loading ? (
+            <div className="flex items-center justify-center h-48">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500" />
+            </div>
+          ) : (
+            <>
+              {/* Role selector */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
+                  <Edit2 className="w-4 h-4 text-blue-400" />
+                  Role
+                  {roleChanging && <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-400" />}
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {ALL_STAFF_ROLES.map((r) => (
+                    <button
+                      key={r}
+                      disabled={roleChanging}
+                      onClick={() => handleRoleChange(r)}
+                      className={`px-3 py-1.5 text-xs rounded-full border transition-all ${
+                        activeRole === r
+                          ? ROLE_META[r]?.color ?? 'bg-blue-500/20 border-blue-500/30 text-blue-300'
+                          : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20'
+                      } ${roleChanging ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {ROLE_META[r]?.label ?? r}
+                    </button>
+                  ))}
+                </div>
+                {activeRole && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    Current: <span className="text-slate-300">{ROLE_META[activeRole]?.label ?? activeRole}</span>
+                    {' — '}{ROLE_META[activeRole]?.description}
+                  </p>
+                )}
+              </div>
+
+              {/* Legend */}
+              <div className="flex gap-4 text-xs">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-green-500/50 border border-green-500/50" />
+                  <span className="text-slate-400">Direct (extra)</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-blue-500/30 border border-blue-500/30" />
+                  <span className="text-slate-400">Via role (inherited)</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-white/5 border border-white/10" />
+                  <span className="text-slate-400">Not granted</span>
+                </span>
+              </div>
+
+              {/* Permissions grid */}
+              <div className="space-y-4">
+                {permGroups.map((group) => (
+                  <div key={group.category} className="bg-white/5 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-semibold text-white capitalize">{group.category}</h4>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const names = group.permissions.map((p) => p.name);
+                          const allDirect = names.every((n) => directPerms.includes(n));
+                          setDirectPerms((prev) =>
+                            allDirect
+                              ? prev.filter((p) => !names.includes(p))
+                              : [...new Set([...prev, ...names])]
+                          );
+                        }}
+                        className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                      >
+                        {group.permissions.every((p) => directPerms.includes(p.name)) ? 'Remove All' : 'Add All'}
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {group.permissions.map((perm) => {
+                        const isDirect = directPerms.includes(perm.name);
+                        const viaRole  = isViaRole(perm.name);
+                        return (
+                          <button
+                            key={perm.id}
+                            type="button"
+                            onClick={() => toggleDirect(perm.name)}
+                            title={viaRole ? 'Inherited via role' : perm.name}
+                            className={`px-3 py-1.5 text-xs rounded-full border transition-all flex items-center gap-1.5 ${
+                              isDirect
+                                ? 'bg-green-500/20 border-green-500/30 text-green-300'
+                                : viaRole
+                                ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                                : 'bg-white/5 border-white/10 text-slate-500 hover:border-white/20 hover:text-slate-300'
+                            }`}
+                          >
+                            {isDirect && <CheckCircle2 className="w-3 h-3" />}
+                            {!isDirect && viaRole && <Lock className="w-3 h-3" />}
+                            {perm.name.split('.').slice(1).join('.') || perm.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-6 border-t border-white/10 flex-shrink-0 flex items-center justify-between">
+          <div className="text-sm text-slate-400">
+            <span className="text-green-400 font-medium">{directPerms.length}</span> direct permission{directPerms.length !== 1 ? 's' : ''}
+            {data && (
+              <span className="ml-2 text-slate-500">
+                ({data.role_permissions.length} via role)
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border border-white/20 rounded-lg text-slate-300 hover:bg-white/10 transition-all text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              disabled={saving || loading}
+              onClick={handleSavePermissions}
+              className="px-4 py-2 bg-blue-500/20 border border-blue-500/30 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-all flex items-center gap-2 text-sm disabled:opacity-50"
+            >
+              {saving ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Save Permissions
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main Component
 // ─────────────────────────────────────────────────────────────────────────────
 
 const StaffManagement = () => {
@@ -76,10 +341,11 @@ const StaffManagement = () => {
   const [statusFilter, setStatusFilter]             = useState('');
 
   // ── UI ───────────────────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState<Tab>('staff');
-  const [showModal, setShowModal] = useState(false);
-  const [sending, setSending]     = useState(false);
-  const [formData, setFormData]   = useState({
+  const [activeTab, setActiveTab]       = useState<Tab>('staff');
+  const [showModal, setShowModal]       = useState(false);
+  const [sending, setSending]           = useState(false);
+  const [permTarget, setPermTarget]     = useState<User | null>(null);
+  const [formData, setFormData]         = useState({
     email:        '',
     role:         'staff' as StaffRole,
     expires_days: 7,
@@ -90,10 +356,7 @@ const StaffManagement = () => {
   const loadStaffUsers = async () => {
     setStaffLoading(true);
     try {
-      const response = await usersApi.list({
-        roles: [...STAFF_ROLES],
-      });
-      // Safely resolve array regardless of nesting depth
+      const response = await usersApi.list({ roles: [...ALL_STAFF_ROLES] });
       const arr = Array.isArray(response.data)
         ? response.data
         : Array.isArray((response.data as any)?.data)
@@ -111,9 +374,7 @@ const StaffManagement = () => {
   const loadInvitations = async () => {
     setInvitationsLoading(true);
     try {
-      const response = await invitationsService.getAll({
-        status: statusFilter || undefined,
-      });
+      const response = await invitationsService.getAll({ status: statusFilter || undefined });
       setInvitations(response.data || []);
     } catch (error) {
       console.error('Failed to load invitations:', error);
@@ -187,9 +448,7 @@ const StaffManagement = () => {
     const matchesSearch =
       u.name.toLowerCase().includes(staffSearch.toLowerCase()) ||
       u.email.toLowerCase().includes(staffSearch.toLowerCase());
-    const matchesRole = roleFilter
-      ? u.roles.some((r) => r.name === roleFilter)
-      : true;
+    const matchesRole = roleFilter ? u.roles.some((r) => r.name === roleFilter) : true;
     return matchesSearch && matchesRole;
   });
 
@@ -197,8 +456,8 @@ const StaffManagement = () => {
     inv.email.toLowerCase().includes(inviteSearch.toLowerCase())
   );
 
-  // ── Role counts for stat cards ────────────────────────────────────────────────
-  const roleCounts = STAFF_ROLES.reduce<Record<string, number>>((acc, role) => {
+  // ── Role counts ───────────────────────────────────────────────────────────────
+  const roleCounts = ALL_STAFF_ROLES.reduce<Record<string, number>>((acc, role) => {
     acc[role] = staffUsers.filter((u) => u.roles.some((r) => r.name === role)).length;
     return acc;
   }, {});
@@ -212,9 +471,7 @@ const StaffManagement = () => {
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-white">Staff Management</h1>
-          <p className="text-slate-400">
-            Manage staff, sales &amp; technical support members
-          </p>
+          <p className="text-slate-400">Manage all internal staff roles & permissions</p>
         </div>
         <button
           onClick={() => { resetForm(); setShowModal(true); }}
@@ -225,47 +482,35 @@ const StaffManagement = () => {
         </button>
       </div>
 
-      {/* Stats cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+      {/* Stats grid — all 6 roles + pending invites */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 mb-6">
+        <div className="col-span-2 sm:col-span-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-slate-400 text-sm">Total Staff</p>
+              <p className="text-slate-400 text-xs">Total Staff</p>
               <p className="text-2xl font-bold text-white">{staffUsers.length}</p>
             </div>
-            <Users className="w-8 h-8 text-blue-400" />
+            <Users className="w-7 h-7 text-blue-400" />
           </div>
         </div>
+        {ALL_STAFF_ROLES.map((role) => (
+          <div key={role} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+            <p className="text-slate-400 text-xs truncate">{ROLE_META[role]?.label}</p>
+            <p className="text-xl font-bold text-white mt-1">{roleCounts[role] ?? 0}</p>
+          </div>
+        ))}
         <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-slate-400 text-sm">Sales</p>
-              <p className="text-2xl font-bold text-green-400">{roleCounts.sales ?? 0}</p>
+              <p className="text-slate-400 text-xs">Pending Invites</p>
+              <p className="text-xl font-bold text-yellow-400">{stats?.pending ?? 0}</p>
             </div>
-            <Briefcase className="w-8 h-8 text-green-400" />
-          </div>
-        </div>
-        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 text-sm">Tech Support</p>
-              <p className="text-2xl font-bold text-orange-400">{roleCounts.technical_support ?? 0}</p>
-            </div>
-            <Shield className="w-8 h-8 text-orange-400" />
-          </div>
-        </div>
-        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 text-sm">Pending Invites</p>
-              <p className="text-2xl font-bold text-yellow-400">{stats?.pending ?? 0}</p>
-            </div>
-            <Clock className="w-8 h-8 text-yellow-400" />
+            <Clock className="w-7 h-7 text-yellow-400" />
           </div>
         </div>
       </div>
 
-      {/* Main tabs */}
+      {/* Tabs */}
       <div className="flex gap-1 mb-4 bg-white/5 border border-white/10 rounded-xl p-1 w-fit">
         <button
           onClick={() => setActiveTab('staff')}
@@ -295,7 +540,7 @@ const StaffManagement = () => {
         </button>
       </div>
 
-      {/* ── STAFF TAB ─────────────────────────────────────────────────────────── */}
+      {/* ── STAFF TAB ──────────────────────────────────────────────────────────── */}
       {activeTab === 'staff' && (
         <>
           {/* Search + role filter */}
@@ -316,10 +561,10 @@ const StaffManagement = () => {
                 onChange={(e) => setRoleFilter(e.target.value as StaffRole | '')}
                 className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
               >
-                <option value=""                  className="bg-slate-900">All Roles</option>
-                <option value="staff"             className="bg-slate-900">Staff</option>
-                <option value="sales"             className="bg-slate-900">Sales</option>
-                <option value="technical_support" className="bg-slate-900">Technical Support</option>
+                <option value="" className="bg-slate-900">All Roles</option>
+                {ALL_STAFF_ROLES.map((r) => (
+                  <option key={r} value={r} className="bg-slate-900">{ROLE_META[r]?.label}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -348,7 +593,7 @@ const StaffManagement = () => {
                     className="flex items-center gap-4 p-5 hover:bg-white/5 transition-colors"
                   >
                     {/* Avatar */}
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl flex items-center justify-center border border-blue-500/20 flex-shrink-0 text-sm font-bold text-white">
+                    <div className="w-11 h-11 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl flex items-center justify-center border border-blue-500/20 flex-shrink-0 text-sm font-bold text-white">
                       {user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}
                     </div>
 
@@ -373,6 +618,16 @@ const StaffManagement = () => {
                         </span>
                       </div>
                     </div>
+
+                    {/* Actions */}
+                    <button
+                      onClick={() => setPermTarget(user)}
+                      className="flex-shrink-0 flex items-center gap-2 px-3 py-1.5 text-xs bg-blue-500/10 border border-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/20 transition-all"
+                      title="Manage permissions"
+                    >
+                      <Shield className="w-3.5 h-3.5" />
+                      Permissions
+                    </button>
                   </div>
                 ))}
               </div>
@@ -381,10 +636,9 @@ const StaffManagement = () => {
         </>
       )}
 
-      {/* ── INVITATIONS TAB ───────────────────────────────────────────────────── */}
+      {/* ── INVITATIONS TAB ─────────────────────────────────────────────────────── */}
       {activeTab === 'invitations' && (
         <>
-          {/* Filters */}
           <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 mb-4">
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
@@ -410,7 +664,6 @@ const StaffManagement = () => {
             </div>
           </div>
 
-          {/* Invitations list */}
           <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl">
             {invitationsLoading ? (
               <div className="flex items-center justify-center h-64">
@@ -429,8 +682,8 @@ const StaffManagement = () => {
                     key={invitation.id}
                     className="flex items-center gap-4 p-5 hover:bg-white/5 transition-colors"
                   >
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl flex items-center justify-center border border-blue-500/20 flex-shrink-0">
-                      <Mail className="w-6 h-6 text-blue-400" />
+                    <div className="w-11 h-11 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl flex items-center justify-center border border-blue-500/20 flex-shrink-0">
+                      <Mail className="w-5 h-5 text-blue-400" />
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -514,9 +767,7 @@ const StaffManagement = () => {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
-                  Email Address *
-                </label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Email Address *</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
@@ -538,19 +789,19 @@ const StaffManagement = () => {
                   className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
                   required
                 >
-                  <option value="staff"             className="bg-slate-900">Staff — General operations</option>
-                  <option value="sales"             className="bg-slate-900">Sales — Client acquisition</option>
-                  <option value="technical_support" className="bg-slate-900">Technical Support — Tickets &amp; hosting</option>
+                  {ALL_STAFF_ROLES.map((r) => (
+                    <option key={r} value={r} className="bg-slate-900">
+                      {ROLE_META[r]?.label} — {ROLE_META[r]?.description}
+                    </option>
+                  ))}
                 </select>
                 <p className="text-xs text-slate-400 mt-1">
-                  The role determines what permissions the staff member will have
+                  The role determines the default permissions. You can fine-tune later.
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
-                  Invitation Expires In (days)
-                </label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Expires In</label>
                 <select
                   value={formData.expires_days}
                   onChange={(e) => setFormData({ ...formData, expires_days: Number(e.target.value) })}
@@ -563,15 +814,13 @@ const StaffManagement = () => {
                 </select>
               </div>
 
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <Mail className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-blue-300 font-medium">Invitation will be sent via email</p>
-                    <p className="text-xs text-slate-400 mt-1">
-                      The invited person will receive a link to create their account and set their password.
-                    </p>
-                  </div>
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 flex items-start gap-3">
+                <Mail className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm text-blue-300 font-medium">Invitation will be sent via email</p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    The invited person will receive a link to create their account and set their password.
+                  </p>
                 </div>
               </div>
 
@@ -604,6 +853,15 @@ const StaffManagement = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* ── USER PERMISSIONS MODAL ────────────────────────────────────────────── */}
+      {permTarget && (
+        <UserPermissionsModal
+          user={permTarget}
+          onClose={() => setPermTarget(null)}
+          onUpdated={loadStaffUsers}
+        />
       )}
     </DashboardLayout>
   );

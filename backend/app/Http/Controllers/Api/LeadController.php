@@ -305,6 +305,25 @@ class LeadController extends Controller
             $lead->calculateScore();
         }
 
+        // Auto-assign lead to staff (so it shows in lead management properly assigned)
+        if (!$lead->assigned_staff_id) {
+            $lead->autoAssign();
+        }
+
+        // Send welcome email to the subscriber and notify admin
+        try {
+            // To the subscriber
+            \Illuminate\Support\Facades\Notification::route('mail', $data['email'])
+                ->notify(new \App\Notifications\NewsletterSubscriptionNotification());
+                
+            // To the admin/subscription management
+            $adminEmail = config('mail.from.address', 'customercare@vilcom.co.ke');
+            \Illuminate\Support\Facades\Notification::route('mail', $adminEmail)
+                ->notify(new \App\Notifications\NewNewsletterSubscriptionAdminNotification($data['email'], $lead->id));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to send newsletter emails: ' . $e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Thank you for subscribing to our newsletter!',

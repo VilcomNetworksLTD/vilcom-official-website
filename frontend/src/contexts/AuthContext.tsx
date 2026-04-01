@@ -40,15 +40,34 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<string>;
   logout: () => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
+  register: (data: RegisterData) => Promise<string>;
   hasRole: (roles: string | string[]) => boolean;
   hasPermission: (permissions: string | string[]) => boolean;
   isAdmin: boolean;
   isStaff: boolean;
   isClient: boolean;
   getDashboardUrl: () => string;
+}
+
+// ============================================
+// PURE HELPER — no React state dependency
+// ============================================
+
+/**
+ * Compute the correct dashboard URL for a given user object.
+ * Call this synchronously with the API response data so you
+ * never read stale React state after setUser().
+ */
+export function getDashboardUrlForUser(user: User | null): string {
+  if (!user) return '/auth';
+  const roleNames = user.roles?.map((r) => r.name) ?? [];
+  if (roleNames.includes('admin')) return '/admin/dashboard';
+  if (roleNames.some((r) => ['staff','sales','technical_support','web_developer','content_manager'].includes(r))) {
+    return '/staff/dashboard';
+  }
+  return '/client/dashboard';
 }
 
 interface RegisterData {
@@ -125,7 +144,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // AUTH FUNCTIONS
   // ============================================
 
-  const login = async (email: string, password: string): Promise<void> => {
+  const login = async (email: string, password: string): Promise<string> => {
     const response = await api.post('/auth/login', { email, password });
     const data = response.data;
 
@@ -142,6 +161,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('auth_user', JSON.stringify(userData));
       setToken(authToken);
       setUser(userData);
+      // Return the URL computed from the fresh API response — not from stale React state
+      return getDashboardUrlForUser(userData);
     } else {
       throw new Error(data.message || 'Login failed');
     }
@@ -161,7 +182,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     handleLogout();
   };
 
-  const register = async (data: RegisterData): Promise<void> => {
+  const register = async (data: RegisterData): Promise<string> => {
     const response = await api.post('/auth/register', data);
     const result = response.data;
 
@@ -182,6 +203,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('auth_user', JSON.stringify(userData));
       setToken(authToken);
       setUser(userData);
+      // Return the URL computed from the fresh API response — not from stale React state
+      return getDashboardUrlForUser(userData);
     } else {
       throw new Error(result.message || 'Registration failed');
     }

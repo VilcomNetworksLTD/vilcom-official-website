@@ -89,6 +89,15 @@ class User extends Authenticatable
         'emerald_approval_reviewed_by',
         'emerald_approval_reviewed_at',
         'emerald_approval_notes',
+
+        // Vilcom Safetika production API provisioning
+        'vilcom_safetika_customer_id',
+        'vilcom_safetika_record_id',
+        'vilcom_safetika_address_id',
+        'vilcom_safetika_service_acc_id',
+        'vilcom_safetika_assignment_id',
+        'vilcom_safetika_serial_number',
+        'vilcom_safetika_provisioned_at',
     ];
 
     /**
@@ -125,6 +134,7 @@ class User extends Authenticatable
             'is_team_leader' => 'boolean',
             'password_reset_expires_at' => 'datetime',
             'emerald_approval_reviewed_at' => 'datetime',
+            'vilcom_safetika_provisioned_at' => 'datetime',
         ];
     }
 

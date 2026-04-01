@@ -133,7 +133,7 @@ class UserController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Profile updated successfully.',
-            'data'    => new UserResource($user->load('roles')),
+            'data'    => new UserResource($user->load('roles.permissions')),
         ]);
     }
 
@@ -219,7 +219,7 @@ class UserController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'User created successfully.',
-            'data'    => new UserResource($newUser->load('roles')),
+            'data'    => new UserResource($newUser->load('roles.permissions')),
         ], 201);
     }
 
@@ -247,7 +247,7 @@ class UserController extends Controller
             ], 403);
         }
 
-        $user->load(['roles', 'subscriptions', 'invoices', 'tickets']);
+        $user->load(['roles.permissions', 'subscriptions', 'invoices', 'tickets']);
 
         return response()->json([
             'success' => true,
@@ -331,7 +331,7 @@ class UserController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'User updated successfully.',
-            'data'    => new UserResource($user->load('roles')),
+            'data'    => new UserResource($user->load('roles.permissions')),
         ]);
     }
 

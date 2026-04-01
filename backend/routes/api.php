@@ -671,6 +671,24 @@ Route::prefix('press-articles')->group(function () {
     });
 
     // ============================================
+    // VILCOM SAFETIKA PROVISIONING ROUTES (Admin/Staff Only)
+    // Monitor & re-trigger the new production API provisioning flow
+    // ============================================
+    Route::prefix('admin/vilcom-safetika')->middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+        Route::get('/', [App\Http\Controllers\Api\Admin\VilcomSafetikaController::class, 'index'])
+            ->name('api.admin.vilcom-safetika.index');
+
+        Route::get('/statistics', [App\Http\Controllers\Api\Admin\VilcomSafetikaController::class, 'statistics'])
+            ->name('api.admin.vilcom-safetika.statistics');
+
+        Route::get('/{user}', [App\Http\Controllers\Api\Admin\VilcomSafetikaController::class, 'show'])
+            ->name('api.admin.vilcom-safetika.show');
+
+        Route::post('/{user}/reprovision', [App\Http\Controllers\Api\Admin\VilcomSafetikaController::class, 'reprovision'])
+            ->name('api.admin.vilcom-safetika.reprovision');
+    });
+
+    // ============================================
     // STAFF INVITATION ROUTES (Admin Only)
     // ============================================
     Route::prefix('admin/staff-invitations')->middleware(['auth:sanctum', 'role:admin'])->group(function () {
@@ -736,6 +754,38 @@ Route::prefix('press-articles')->group(function () {
         Route::get('/{role}/users', [App\Http\Controllers\Api\Admin\RoleController::class, 'users'])
             ->name('api.admin.roles.users')
             ->middleware('permission:users.view.all');
+    });
+
+    // ============================================
+    // USER-LEVEL PERMISSIONS (Admin Only)
+    // Lets admin grant/revoke individual permissions on a specific staff user
+    // on top of what their role already gives them.
+    // ============================================
+    Route::prefix('admin/users/{user}/permissions')->middleware(['auth:sanctum', 'role:admin'])->group(function () {
+        Route::get('/', [App\Http\Controllers\Api\Admin\RoleController::class, 'userPermissions'])
+            ->name('api.admin.users.permissions.index')
+            ->middleware('permission:permissions.view');
+
+        Route::post('/', [App\Http\Controllers\Api\Admin\RoleController::class, 'assignUserPermissions'])
+            ->name('api.admin.users.permissions.assign')
+            ->middleware('permission:permissions.assign');
+
+        Route::delete('/', [App\Http\Controllers\Api\Admin\RoleController::class, 'revokeUserPermissions'])
+            ->name('api.admin.users.permissions.revoke')
+            ->middleware('permission:permissions.assign');
+
+        Route::post('/sync', [App\Http\Controllers\Api\Admin\RoleController::class, 'syncUserPermissions'])
+            ->name('api.admin.users.permissions.sync')
+            ->middleware('permission:permissions.assign');
+    });
+
+    // ============================================
+    // USER ROLE MANAGEMENT (Admin Only)
+    // ============================================
+    Route::prefix('admin/users/{user}/role')->middleware(['auth:sanctum', 'role:admin'])->group(function () {
+        Route::put('/', [App\Http\Controllers\Api\Admin\RoleController::class, 'updateUserRole'])
+            ->name('api.admin.users.role.update')
+            ->middleware('permission:roles.edit');
     });
 
 // ✅ CORRECT STRUCTURE
@@ -1465,6 +1515,21 @@ Route::prefix('admin/portfolio')
 
         Route::post('/{portfolio}/toggle-publish', [AdminPortfolioController::class, 'togglePublish'])
             ->name('api.admin.portfolio.toggle-publish');
+    });
+
+    // ============================================
+    // ANALYTICS ROUTES
+    // ============================================
+    Route::prefix('analytics')->group(function () {
+        // Public route for tracking visits
+        Route::post('/track', [App\Http\Controllers\Api\AnalyticsController::class, 'track'])
+            ->name('api.analytics.track');
+    });
+
+    // Admin analytics viewer
+    Route::prefix('admin/analytics')->middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+        Route::get('/visitors', [App\Http\Controllers\Api\AnalyticsController::class, 'getAdminAnalytics'])
+            ->name('api.admin.analytics.visitors');
     });
 
 }); // END Route::prefix('v1')

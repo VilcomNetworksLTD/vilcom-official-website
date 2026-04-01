@@ -50,6 +50,11 @@ const ClientDashboard = () => {
   if (hasRole(['staff', 'sales', 'technical_support', 'web_developer', 'content_manager'])) {
     return <Navigate to="/staff/dashboard" replace />;
   }
+  
+  // Explicit client check - prevent role mismatches
+  if (!user?.roles?.some((role: any) => role.name === 'client') && !hasRole('client')) {
+    return <Navigate to="/unauthorized" replace />;
+  }
 
   // ── Live data from API ────────────────────────────────────────────────
   const { data, loading, error } = useDashboard(60_000);

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
+import SEO from "@/components/SEO";
 import {
   Briefcase, 
   Images, 
@@ -38,7 +39,6 @@ const About = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    document.title = "About Us | Vilcom Networks Ltd";
     pressArticleService.getAll({ is_published: true, per_page: 2 })
       .then((res) => {
         const dataArr = res?.data?.data || (Array.isArray(res?.data) ? res.data : []);
@@ -52,6 +52,11 @@ const About = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
+      <SEO 
+        title="About Us" 
+        description="Learn about Vilcom Networks Limited, a leading fiber internet provider in Kenya committed to connecting homes and businesses with reliable high-speed internet."
+        keywords="about vilcom, vilcom networks history, best isp kenya, reliable internet, fiber coverage"
+      />
       {/* Lighter blue gradient background per user request */}
       <div className="absolute inset-0 bg-gradient-to-br from-[hsl(215,70%,30%)] via-[hsl(220,75%,40%)] to-[hsl(225,80%,48%)]" />
       

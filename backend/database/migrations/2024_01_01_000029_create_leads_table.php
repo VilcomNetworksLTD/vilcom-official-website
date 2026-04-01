@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
 
             // Unique visitor identifier (UUID)
-            $table->uuid('vlc_vid')->unique()->nullable()->index();
+            $table->string('vlc_vid', 255)->nullable()->index();
 
             // Link to user (optional - can be guest lead)
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();

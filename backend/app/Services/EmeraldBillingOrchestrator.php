@@ -5,12 +5,14 @@ namespace App\Services;
 
 use App\Models\EmeraldProductMapping;
 use App\Models\User;
+use App\Services\VilcomProvisionOrchestrator;
 use Illuminate\Support\Facades\Log;
 
 class EmeraldBillingOrchestrator
 {
     public function __construct(
-        protected EmeraldService $emerald
+        protected EmeraldService            $emerald,
+        protected VilcomProvisionOrchestrator $vilcomOrchestrator
     ) {}
 
     // ── Provisioning ──────────────────────────────────────────────────────
@@ -88,10 +90,17 @@ class EmeraldBillingOrchestrator
                 'mbr_is_mpesa_account' => true,
             ]);
 
+            // ── 6. Vilcom Safetika: create MBR + add service + assign Homes_Tracker ──
+            // Runs synchronously. A failure here does NOT roll back Emerald —
+            // the emerald_mbr_id is already committed. Staff can re-trigger if needed.
+            $user->refresh(); // ensure model has the updated emerald_mbr_id
+            $this->runVilcomProvisioning($user);
+
             return ProvisionResult::success(
                 (int) $result['CustomerID'],
                 isset($result['AccountID']) ? (int) $result['AccountID'] : null
             );
+
 
         } catch (\Exception $e) {
             Log::error('Emerald provisioning failed', [
@@ -101,6 +110,43 @@ class EmeraldBillingOrchestrator
             ]);
 
             return ProvisionResult::failed($e->getMessage());
+        }
+    }
+
+    // ── Vilcom Safetika Provisioning (called automatically after Emerald) ──
+
+    /**
+     * Run the full Vilcom Safetika provisioning chain synchronously.
+     * Called internally after a successful Emerald account_add.
+     * Non-blocking at the top level: failures are logged but do not roll back
+     * the Emerald provisioning that already succeeded.
+     *
+     * @param User   $user    The freshly provisioned user (already has emerald_mbr_id)
+     * @param string $accountType     e.g. "FTTH Home"
+     * @param string $serviceCategory e.g. "Internet"
+     */
+    private function runVilcomProvisioning(
+        User   $user,
+        string $accountType     = 'FTTH Home',
+        string $serviceCategory = 'Internet'
+    ): void {
+        $result = $this->vilcomOrchestrator->provision($user, $accountType, $serviceCategory);
+
+        if ($result->isSuccess()) {
+            Log::info('VilcomSafetika full provision succeeded', [
+                'user_id'            => $user->id,
+                'customer_id'        => $result->customerId,
+                'service_account_id' => $result->serviceAccountId,
+                'assignment_id'      => $result->assignmentId,
+                'serial_number'      => $result->serialNumber,
+            ]);
+        } else {
+            // Log failure but do NOT throw — Emerald provisioning has already committed.
+            // Staff can manually re-trigger Vilcom Safetika provisioning if needed.
+            Log::error('VilcomSafetika provision failed after Emerald success', [
+                'user_id' => $user->id,
+                'reason'  => $result->message,
+            ]);
         }
     }
 
