@@ -55,6 +55,9 @@ class QuoteRequestController extends Controller
         // Create quote request
         $quoteRequest = QuoteRequest::create($data);
 
+        // Dispatch QuoteRequested event to log activity
+        \App\Events\QuoteRequested::dispatch($quoteRequest);
+
         // Send notification to all admin/staff users
         $this->notifyStaffOfNewQuote($quoteRequest);
 
@@ -207,6 +210,9 @@ class QuoteRequestController extends Controller
 
         if ($response === 'accepted') {
             $quote->accept($notes);
+
+            // Dispatch QuoteAccepted event to log activity
+            \App\Events\QuoteAccepted::dispatch($quote);
 
             return response()->json([
                 'success' => true,

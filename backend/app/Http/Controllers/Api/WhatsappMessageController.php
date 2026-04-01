@@ -65,6 +65,12 @@ class WhatsappMessageController extends Controller
             'user_id'     => $userId,
         ]);
 
+        \App\Models\Activity::create([
+            'action' => 'WhatsApp Message',
+            'description' => 'New WhatsApp message received from ' . ($data['name'] ?? $data['phone'] ?? 'a visitor'),
+            'type' => 'info',
+        ]);
+
         // 3. Save to Leads Table (Secondary Source for CRM Logic)
         try {
             // Check for duplicate lead by email or phone

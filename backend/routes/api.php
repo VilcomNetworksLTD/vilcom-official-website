@@ -689,6 +689,14 @@ Route::prefix('press-articles')->group(function () {
     });
 
     // ============================================
+    // RECENT ACTIVITIES (Admin/Staff)
+    // ============================================
+    Route::prefix('admin/activities')->middleware(['auth:sanctum', 'role:admin|staff'])->group(function () {
+        Route::get('/', [App\Http\Controllers\Api\Admin\ActivityController::class, 'index'])
+            ->name('api.admin.activities.index');
+    });
+
+    // ============================================
     // STAFF INVITATION ROUTES (Admin Only)
     // ============================================
     Route::prefix('admin/staff-invitations')->middleware(['auth:sanctum', 'role:admin'])->group(function () {

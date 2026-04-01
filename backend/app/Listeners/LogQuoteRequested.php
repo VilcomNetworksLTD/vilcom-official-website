@@ -2,24 +2,17 @@
 
 namespace App\Listeners;
 
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
+use App\Events\QuoteRequested;
+use App\Models\Activity;
 
 class LogQuoteRequested
 {
-    /**
-     * Create the event listener.
-     */
-    public function __construct()
+    public function handle(QuoteRequested $event)
     {
-        //
-    }
-
-    /**
-     * Handle the event.
-     */
-    public function handle(object $event): void
-    {
-        //
+        Activity::create([
+            'action' => 'New Quote Request',
+            'description' => 'A new quote request was submitted for ' . $event->quoteRequest->service_type,
+            'type' => 'info',
+        ]);
     }
 }

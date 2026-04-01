@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { activitiesApi, Activity as RecentActivity } from '@/services/activities';
 import { Link, Navigate } from 'react-router-dom';
 import { 
   Users, 
@@ -144,6 +145,20 @@ const StaffDashboard = () => {
     completedToday: 12,
     avgResponseTime: '18 min'
   });
+  
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const data = await activitiesApi.getRecent(5);
+        setRecentActivities(data);
+      } catch (err) {
+        console.error('Failed to fetch activities:', err);
+      }
+    };
+    fetchActivities();
+  }, []);
 
   // Quick actions for staff dashboard with blue/moroccan theme
   const quickActions = [
@@ -178,14 +193,6 @@ const StaffDashboard = () => {
     { name: 'Fiber 100Mbps', subscribers: 42, revenue: 630000 },
     { name: 'Fiber 200Mbps', subscribers: 18, revenue: 360000 },
     { name: 'Home Basic 10Mbps', subscribers: 34, revenue: 102000 },
-  ];
-
-  // Recent activities
-  const recentActivities = [
-    { id: 1, action: 'Ticket Resolved', description: 'Completed #TKT-455 installation', time: '10 min ago', type: 'success' },
-    { id: 2, action: 'Payment Collected', description: 'KES 15,000 from Jane Smith', time: '1 hour ago', type: 'success' },
-    { id: 3, action: 'New Ticket', description: 'Created #TKT-460 for Runda client', time: '2 hours ago', type: 'warning' },
-    { id: 4, action: 'Client Meeting', description: 'Follow-up with Tech Solutions Ltd', time: '3 hours ago', type: 'info' },
   ];
 
   return (
@@ -394,11 +401,12 @@ const StaffDashboard = () => {
           <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6">
             <h2 className="text-lg font-semibold text-white mb-4">Recent Activity</h2>
             <div className="space-y-4">
-              {recentActivities.map((activity) => (
+              {recentActivities.length > 0 ? recentActivities.map((activity) => (
                 <div key={activity.id} className="flex gap-3 pb-4 border-b border-white/10 last:border-0">
                   <div className={`w-2 h-2 mt-2 rounded-full ${
                     activity.type === 'success' ? 'bg-green-500' : 
-                    activity.type === 'warning' ? 'bg-orange-500' : 'bg-blue-500'
+                    activity.type === 'warning' ? 'bg-orange-500' : 
+                    activity.type === 'error' ? 'bg-red-500' : 'bg-blue-500'
                   }`}></div>
                   <div className="flex-1">
                     <p className="font-medium text-white text-sm">{activity.action}</p>
@@ -406,7 +414,9 @@ const StaffDashboard = () => {
                     <p className="text-xs text-slate-500 mt-1">{activity.time}</p>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="text-slate-400 text-sm text-center py-4">No recent activities</div>
+              )}
             </div>
             <Link to="/admin/activity" className="block text-center text-sm text-blue-400 hover:underline mt-4">
               View All Activity

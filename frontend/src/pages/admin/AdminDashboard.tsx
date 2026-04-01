@@ -3,6 +3,7 @@ import api from '@/lib/axios';
 import { clientsApi } from '@/services/clients';
 import { usersApi } from '@/services/users';
 import { adminCoverageApi } from '@/services/coverage';
+import { activitiesApi, Activity as RecentActivity } from '@/services/activities';
 import { Link, Navigate } from 'react-router-dom';
 import { 
   Users, 
@@ -171,6 +172,7 @@ const AdminDashboard = () => {
     activeClients: 0
   });
   const [coverageStats, setCoverageStats] = useState<CoverageAnalytics | null>(null);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -180,18 +182,21 @@ const AdminDashboard = () => {
         setLoading(true);
         setError(null);
 
-        const [userRes, clientRes, coverageRes] = await Promise.allSettled([
+        const [userRes, clientRes, coverageRes, activitiesRes] = await Promise.allSettled([
           usersApi.statistics(),
           clientsApi.statistics(),
           adminCoverageApi.getAnalytics(),
+          activitiesApi.getRecent(5),
         ]);
 
         const userStats   = userRes.status   === 'fulfilled' ? userRes.value.data   : null;
         const clientStats = clientRes.status  === 'fulfilled' ? clientRes.value.data  : null;
         const coverageData: CoverageAnalytics | null =
           coverageRes.status === 'fulfilled' ? (coverageRes.value as CoverageAnalytics) : null;
+        const activitiesData = activitiesRes.status === 'fulfilled' ? activitiesRes.value : [];
 
         if (coverageData) setCoverageStats(coverageData);
+        if (activitiesData) setRecentActivities(activitiesData);
 
         setStats({
           totalClients: clientStats?.total_clients || userStats?.clients || 0,
@@ -236,14 +241,6 @@ const AdminDashboard = () => {
     { icon: MapPin, label: 'Testimonials', href: '/admin/testimonials', color: 'from-amber-500 to-yellow-500', bgColor: 'bg-amber-500/20' },
     { icon: Mail, label: 'FAQs', href: '/admin/faqs', color: 'from-teal-500 to-cyan-500', bgColor: 'bg-teal-500/20' },
     { icon: Globe, label: 'WhatsApp Messages', href: '/admin/whatsapp-messages', color: 'from-green-500 to-emerald-500', bgColor: 'bg-green-500/20' },
-  ];
-
-  const recentActivities = [
-    { id: 1, action: 'New Subscription', description: 'John Doe subscribed to Fiber 100Mbps', time: '5 minutes ago', type: 'success' },
-    { id: 2, action: 'Payment Received', description: 'KES 15,000 payment from Jane Smith', time: '1 hour ago', type: 'success' },
-    { id: 3, action: 'Ticket Created', description: 'New support ticket #TKT-456 from corporate client', time: '2 hours ago', type: 'warning' },
-    { id: 4, action: 'Account Activated', description: 'Business account for Tech Solutions Ltd activated', time: '3 hours ago', type: 'info' },
-    { id: 5, action: 'Plan Updated', description: 'Fiber 200Mbps plan pricing updated', time: '5 hours ago', type: 'info' },
   ];
 
   const revenueByPlan = [
@@ -480,11 +477,12 @@ const AdminDashboard = () => {
               <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
                 <h2 className="text-lg font-semibold text-white mb-4">Recent Activity</h2>
                 <div className="space-y-4">
-                  {recentActivities.map((activity) => (
+                  {recentActivities.length > 0 ? recentActivities.map((activity) => (
                     <div key={activity.id} className="flex gap-3 pb-4 border-b border-white/10 last:border-0">
                       <div className={`w-2 h-2 mt-2 rounded-full ${
                         activity.type === 'success' ? 'bg-green-500' : 
-                        activity.type === 'warning' ? 'bg-orange-500' : 'bg-blue-500'
+                        activity.type === 'warning' ? 'bg-orange-500' : 
+                        activity.type === 'error' ? 'bg-red-500' : 'bg-blue-500'
                       }`} />
                       <div className="flex-1">
                         <p className="font-medium text-white text-sm">{activity.action}</p>
@@ -492,7 +490,9 @@ const AdminDashboard = () => {
                         <p className="text-xs text-slate-500 mt-1">{activity.time}</p>
                       </div>
                     </div>
-                  ))}
+                  )) : (
+                    <div className="text-slate-400 text-sm text-center py-4">No recent activities</div>
+                  )}
                 </div>
                 <Link to="/admin/activity" className="block text-center text-sm text-blue-400 hover:underline mt-4">
                   View All Activity

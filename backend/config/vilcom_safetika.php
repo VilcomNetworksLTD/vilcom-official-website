@@ -19,9 +19,9 @@ return [
         'service_category' => env('VILCOM_SAFETIKA_SERVICE_CATEGORY', 'Internet'),
         'domain'           => 'Vilcom',          // Non-editable per API docs
         'setup_charge'     => '0',
-        'sales_person'     => env('VILCOM_SAFETIKA_SALES_PERSON', 'John Sales'),
+        'sales_person'     => env('VILCOM_SAFETIKA_SALES_PERSON', 'Yvonne Nyarangi'),
         'customer_type'    => env('VILCOM_SAFETIKA_CUSTOMER_TYPE', 'Residential'),
-        'region'           => env('VILCOM_SAFETIKA_REGION', 'Nairobi_CBD'),
+        'region'           => env('VILCOM_SAFETIKA_REGION', 'Nairobi_Westlands (Area 1)'),
         'group_name'       => 'Vilcom',
     ],
 

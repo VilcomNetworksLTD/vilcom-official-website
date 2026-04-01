@@ -94,6 +94,8 @@ class SubscriptionService
             // Schedule welcome / first reminder
             $this->scheduleReminder($subscription, 'renewal_upcoming', now()->subDay()); // fire "soon"
 
+            \App\Events\SubscriptionCreated::dispatch($subscription);
+
             return $subscription;
         });
     }

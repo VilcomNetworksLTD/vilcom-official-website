@@ -1,0 +1,402 @@
+{
+    "success": true,
+    "message": "Regions retrieved successfully",
+    "data": [
+        {
+            "id": 66,
+            "name": "Eldoret_Roadblock (Area 2)",
+            "created_at": "2026-03-02T07:34:09.000000Z",
+            "updated_at": "2026-03-02T07:34:09.000000Z"
+        },
+        {
+            "id": 65,
+            "name": "Eldoret_Roadblock (Area 1)",
+            "created_at": "2026-03-02T07:34:03.000000Z",
+            "updated_at": "2026-03-02T07:34:03.000000Z"
+        },
+        {
+            "id": 64,
+            "name": "Eldoret_Midlands (Area 1)",
+            "created_at": "2026-03-02T07:33:56.000000Z",
+            "updated_at": "2026-03-02T07:33:56.000000Z"
+        },
+        {
+            "id": 63,
+            "name": "Eldoret_Kuinet (Area 1)",
+            "created_at": "2026-03-02T07:33:49.000000Z",
+            "updated_at": "2026-03-02T07:33:49.000000Z"
+        },
+        {
+            "id": 62,
+            "name": "Eldoret_Kimumu_Block 10 (Area 3)",
+            "created_at": "2026-03-02T07:33:40.000000Z",
+            "updated_at": "2026-03-02T07:33:40.000000Z"
+        },
+        {
+            "id": 61,
+            "name": "Eldoret_Kimumu Hawaai Area (1)",
+            "created_at": "2026-03-02T07:33:34.000000Z",
+            "updated_at": "2026-03-02T07:33:34.000000Z"
+        },
+        {
+            "id": 60,
+            "name": "Eldoret_Kimumu California Area (2)",
+            "created_at": "2026-03-02T07:33:28.000000Z",
+            "updated_at": "2026-03-02T07:33:28.000000Z"
+        },
+        {
+            "id": 59,
+            "name": "Eldoret_Kapsoya",
+            "created_at": "2026-03-02T07:33:19.000000Z",
+            "updated_at": "2026-03-02T07:33:19.000000Z"
+        },
+        {
+            "id": 58,
+            "name": "Eldoret_Kapseret",
+            "created_at": "2026-03-02T07:33:13.000000Z",
+            "updated_at": "2026-03-02T07:33:13.000000Z"
+        },
+        {
+            "id": 57,
+            "name": "Eldoret_Industrial_Area (Area 10)",
+            "created_at": "2026-03-02T07:33:07.000000Z",
+            "updated_at": "2026-03-02T07:33:07.000000Z"
+        },
+        {
+            "id": 56,
+            "name": "Eldoret_Elgonview (Area 1, 2, 3, 5 & 7)",
+            "created_at": "2026-03-02T07:33:01.000000Z",
+            "updated_at": "2026-03-02T07:33:01.000000Z"
+        },
+        {
+            "id": 55,
+            "name": "Eldoret_Annex (Area 6)",
+            "created_at": "2026-03-02T07:32:55.000000Z",
+            "updated_at": "2026-03-02T07:32:55.000000Z"
+        },
+        {
+            "id": 54,
+            "name": "Nakuru_Section 58_Lions (Area 1)",
+            "created_at": "2026-03-02T07:32:47.000000Z",
+            "updated_at": "2026-03-02T07:32:47.000000Z"
+        },
+        {
+            "id": 53,
+            "name": "Nakuru_Pipeline (Area 2 & 4)",
+            "created_at": "2026-03-02T07:32:41.000000Z",
+            "updated_at": "2026-03-02T07:32:41.000000Z"
+        },
+        {
+            "id": 52,
+            "name": "Nakuru_Ngata",
+            "created_at": "2026-03-02T07:32:34.000000Z",
+            "updated_at": "2026-03-02T07:32:34.000000Z"
+        },
+        {
+            "id": 51,
+            "name": "Nakuru_Naka_Centre_Deliverance (Area 7)",
+            "created_at": "2026-03-02T07:32:28.000000Z",
+            "updated_at": "2026-03-02T07:32:28.000000Z"
+        },
+        {
+            "id": 50,
+            "name": "Nakuru_Mzee_Wa_Nyama (Area 5)",
+            "created_at": "2026-03-02T07:32:22.000000Z",
+            "updated_at": "2026-03-02T07:32:22.000000Z"
+        },
+        {
+            "id": 49,
+            "name": "Nakuru_Mwariki (Area 8)",
+            "created_at": "2026-03-02T07:32:14.000000Z",
+            "updated_at": "2026-03-02T07:32:14.000000Z"
+        },
+        {
+            "id": 48,
+            "name": "Nakuru_Milimani (Area 1)",
+            "created_at": "2026-03-02T07:32:08.000000Z",
+            "updated_at": "2026-03-02T07:32:08.000000Z"
+        },
+        {
+            "id": 47,
+            "name": "Nakuru_Mawanga",
+            "created_at": "2026-03-02T07:31:53.000000Z",
+            "updated_at": "2026-03-02T07:31:53.000000Z"
+        },
+        {
+            "id": 46,
+            "name": "Nakuru_Lanet (Area 1 & 3)",
+            "created_at": "2026-03-02T07:29:33.000000Z",
+            "updated_at": "2026-03-02T07:29:33.000000Z"
+        },
+        {
+            "id": 45,
+            "name": "Nakuru_Kiamunyi_Olive (Area 1)",
+            "created_at": "2026-03-02T07:29:27.000000Z",
+            "updated_at": "2026-03-02T07:29:27.000000Z"
+        },
+        {
+            "id": 44,
+            "name": "Nakuru_Kiamunyi_Eden (Area 2)",
+            "created_at": "2026-03-02T07:29:21.000000Z",
+            "updated_at": "2026-03-02T07:29:21.000000Z"
+        },
+        {
+            "id": 43,
+            "name": "Nakuru_Hyrax_(Area 1)",
+            "created_at": "2026-03-02T07:29:14.000000Z",
+            "updated_at": "2026-03-02T07:29:14.000000Z"
+        },
+        {
+            "id": 42,
+            "name": "Westlands",
+            "created_at": "2026-03-02T07:29:05.000000Z",
+            "updated_at": "2026-03-02T07:29:05.000000Z"
+        },
+        {
+            "id": 41,
+            "name": "Ruiru_Karuguru (Area 2)",
+            "created_at": "2026-03-02T07:28:45.000000Z",
+            "updated_at": "2026-03-02T07:28:45.000000Z"
+        },
+        {
+            "id": 40,
+            "name": "Ruiru_Mitikenda (Area 1)",
+            "created_at": "2026-03-02T07:28:39.000000Z",
+            "updated_at": "2026-03-02T07:28:39.000000Z"
+        },
+        {
+            "id": 39,
+            "name": "Ruiru_Kamakis (Area 4)",
+            "created_at": "2026-03-02T07:28:33.000000Z",
+            "updated_at": "2026-03-02T07:28:33.000000Z"
+        },
+        {
+            "id": 38,
+            "name": "Ruiru_Greenspot (Area 5)",
+            "created_at": "2026-03-02T07:28:27.000000Z",
+            "updated_at": "2026-03-02T07:28:27.000000Z"
+        },
+        {
+            "id": 37,
+            "name": "Ruiru_Corner (Area 3)",
+            "created_at": "2026-03-02T07:28:20.000000Z",
+            "updated_at": "2026-03-02T07:28:20.000000Z"
+        },
+        {
+            "id": 36,
+            "name": "Ruiru Area 6",
+            "created_at": "2026-03-02T07:28:13.000000Z",
+            "updated_at": "2026-03-02T07:28:13.000000Z"
+        },
+        {
+            "id": 35,
+            "name": "Kiambu Runda (Area 1)",
+            "created_at": "2026-03-02T07:28:08.000000Z",
+            "updated_at": "2026-03-02T07:28:08.000000Z"
+        },
+        {
+            "id": 34,
+            "name": "Nairobi_Westlands (Area 1)",
+            "created_at": "2026-03-02T07:28:02.000000Z",
+            "updated_at": "2026-03-02T07:28:02.000000Z"
+        },
+        {
+            "id": 33,
+            "name": "Nairobi_South_C (Area 5)",
+            "created_at": "2026-03-02T07:27:55.000000Z",
+            "updated_at": "2026-03-02T07:27:55.000000Z"
+        },
+        {
+            "id": 32,
+            "name": "Nairobi_Ruaraka (Area 1)",
+            "created_at": "2026-03-02T07:27:48.000000Z",
+            "updated_at": "2026-03-02T07:27:48.000000Z"
+        },
+        {
+            "id": 31,
+            "name": "Nairobi_Muthangari",
+            "created_at": "2026-03-02T07:27:23.000000Z",
+            "updated_at": "2026-03-02T07:27:23.000000Z"
+        },
+        {
+            "id": 30,
+            "name": "Nairobi_Kilimani",
+            "created_at": "2026-03-02T07:27:17.000000Z",
+            "updated_at": "2026-03-02T07:27:17.000000Z"
+        },
+        {
+            "id": 29,
+            "name": "Nairobi_Kileleshwa",
+            "created_at": "2026-03-02T07:27:10.000000Z",
+            "updated_at": "2026-03-02T07:27:10.000000Z"
+        },
+        {
+            "id": 28,
+            "name": "Nairobi_Industrial_Area",
+            "created_at": "2026-03-02T07:27:04.000000Z",
+            "updated_at": "2026-03-02T07:27:04.000000Z"
+        },
+        {
+            "id": 27,
+            "name": "Nairobi_Buruburu (Area 1)",
+            "created_at": "2026-03-02T07:25:59.000000Z",
+            "updated_at": "2026-03-02T07:25:59.000000Z"
+        },
+        {
+            "id": 26,
+            "name": "Mombasa_Tudor (Area 2)",
+            "created_at": "2026-03-02T07:25:53.000000Z",
+            "updated_at": "2026-03-02T07:25:53.000000Z"
+        },
+        {
+            "id": 25,
+            "name": "Mombasa_Buxton (Area 1)",
+            "created_at": "2026-03-02T07:25:46.000000Z",
+            "updated_at": "2026-03-02T07:25:46.000000Z"
+        },
+        {
+            "id": 24,
+            "name": "Meru_Milimani (Area 2)",
+            "created_at": "2026-03-02T07:25:39.000000Z",
+            "updated_at": "2026-03-02T07:25:39.000000Z"
+        },
+        {
+            "id": 23,
+            "name": "Meru_Kambakia (Area 1)",
+            "created_at": "2026-03-02T07:25:33.000000Z",
+            "updated_at": "2026-03-02T07:25:33.000000Z"
+        },
+        {
+            "id": 22,
+            "name": "Isiolo Area 1",
+            "created_at": "2026-03-02T07:25:27.000000Z",
+            "updated_at": "2026-03-02T07:25:27.000000Z"
+        },
+        {
+            "id": 21,
+            "name": "Athiriver (Area 1)",
+            "created_at": "2026-03-02T07:25:19.000000Z",
+            "updated_at": "2026-03-02T07:25:19.000000Z"
+        },
+        {
+            "id": 20,
+            "name": "Katani",
+            "created_at": "2026-03-02T07:25:12.000000Z",
+            "updated_at": "2026-03-02T07:25:12.000000Z"
+        },
+        {
+            "id": 19,
+            "name": "Rongai_Tumaini (Area 2 & 4)",
+            "created_at": "2026-03-02T07:25:04.000000Z",
+            "updated_at": "2026-03-02T07:25:04.000000Z"
+        },
+        {
+            "id": 18,
+            "name": "Rongai_Siron (Area 5)",
+            "created_at": "2026-03-02T07:24:57.000000Z",
+            "updated_at": "2026-03-02T07:24:57.000000Z"
+        },
+        {
+            "id": 17,
+            "name": "Rongai_Rimpa (Area 11)",
+            "created_at": "2026-03-02T07:24:50.000000Z",
+            "updated_at": "2026-03-02T07:24:50.000000Z"
+        },
+        {
+            "id": 16,
+            "name": "Rongai_Nkoroi (Area 12)",
+            "created_at": "2026-03-02T07:24:43.000000Z",
+            "updated_at": "2026-03-02T07:24:43.000000Z"
+        },
+        {
+            "id": 15,
+            "name": "Rongai_Maiyan (Area 6)",
+            "created_at": "2026-03-02T07:24:34.000000Z",
+            "updated_at": "2026-03-02T07:24:34.000000Z"
+        },
+        {
+            "id": 14,
+            "name": "Rongai_Laiser_Hill (Area 9)",
+            "created_at": "2026-03-02T07:24:22.000000Z",
+            "updated_at": "2026-03-02T07:24:22.000000Z"
+        },
+        {
+            "id": 13,
+            "name": "Rongai_Kandisi (Area 10)",
+            "created_at": "2026-03-02T07:24:16.000000Z",
+            "updated_at": "2026-03-02T07:24:16.000000Z"
+        },
+        {
+            "id": 12,
+            "name": "Rongai_Exciting (Area 7)",
+            "created_at": "2026-03-02T07:24:03.000000Z",
+            "updated_at": "2026-03-02T07:24:03.000000Z"
+        },
+        {
+            "id": 11,
+            "name": "Rongai_Cleanshelf (Area 1 & 3)",
+            "created_at": "2026-03-02T07:23:56.000000Z",
+            "updated_at": "2026-03-02T07:23:56.000000Z"
+        },
+        {
+            "id": 10,
+            "name": "Rongai_Maasai_Lodge (Area 8)",
+            "created_at": "2026-03-02T07:23:48.000000Z",
+            "updated_at": "2026-03-02T07:23:48.000000Z"
+        },
+        {
+            "id": 9,
+            "name": "Karen (Area 1)",
+            "created_at": "2026-03-02T07:23:42.000000Z",
+            "updated_at": "2026-03-02T07:23:42.000000Z"
+        },
+        {
+            "id": 8,
+            "name": "Lodwar_Town (Area 1)",
+            "created_at": "2026-03-02T07:23:23.000000Z",
+            "updated_at": "2026-03-02T07:23:23.000000Z"
+        },
+        {
+            "id": 7,
+            "name": "Lodwar_Kanamkemer (Area 2)",
+            "created_at": "2026-03-02T07:23:16.000000Z",
+            "updated_at": "2026-03-02T07:23:16.000000Z"
+        },
+        {
+            "id": 6,
+            "name": "Kitale_Area_2",
+            "created_at": "2026-03-02T07:23:10.000000Z",
+            "updated_at": "2026-03-02T07:23:10.000000Z"
+        },
+        {
+            "id": 5,
+            "name": "Kitale_Area_1",
+            "created_at": "2026-03-02T07:23:01.000000Z",
+            "updated_at": "2026-03-02T07:23:01.000000Z"
+        },
+        {
+            "id": 4,
+            "name": "Kakamega_Naivas (Area 1)",
+            "created_at": "2026-03-02T07:22:53.000000Z",
+            "updated_at": "2026-03-02T07:22:53.000000Z"
+        },
+        {
+            "id": 3,
+            "name": "Kakamega_Mumias Rd (Area 2)",
+            "created_at": "2026-03-02T07:22:45.000000Z",
+            "updated_at": "2026-03-02T07:22:45.000000Z"
+        },
+        {
+            "id": 2,
+            "name": "Bungoma_Town (Area 2)",
+            "created_at": "2026-03-02T07:22:36.000000Z",
+            "updated_at": "2026-03-02T07:22:36.000000Z"
+        },
+        {
+            "id": 1,
+            "name": "Bungoma_Kanduyi (Area 1)",
+            "created_at": "2026-03-02T07:22:26.000000Z",
+            "updated_at": "2026-03-02T07:22:26.000000Z"
+        }
+    ]
+}

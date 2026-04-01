@@ -3,7 +3,7 @@
 
 namespace App\Services;
 
-use App\Models\EmeraldProductMapping;
+use App\Models\SafetikaProductMapping;
 use App\Models\User;
 use App\Services\VilcomProvisionOrchestrator;
 use Illuminate\Support\Facades\Log;
@@ -18,137 +18,85 @@ class EmeraldBillingOrchestrator
     // ── Provisioning ──────────────────────────────────────────────────────
 
     /**
-     * Full provisioning flow after signup.
+     * Full provisioning flow — 100% Vilcom Safetika (production API).
      *
-     * 1. Looks up EmeraldProductMapping for the selected product
-     * 2. Applies any per-product overrides (pay period, billing cycle)
-     * 3. Calls Emerald account_add API
-     * 4. Stores CustomerID (MBR ID = M-Pesa account number) on user
+     * 1. Looks up SafetikaProductMapping for account_type & customer_type
+     * 2. Falls back to config defaults if no mapping exists
+     * 3. Calls VilcomProvisionOrchestrator (MBR → Service → Inventory)
+     * 4. All Safetika IDs are stored on the user by the orchestrator
      *
-     * Called from: RegisterController, UserController::store
+     * Called from: EmeraldApprovalController::approve
      */
     public function provisionNewSubscriber(User $user, int $productId): ProvisionResult
     {
-        // ── 1. Find the mapping ──────────────────────────────────────────
-        $mapping = EmeraldProductMapping::where('product_id', $productId)
+        // ── 1. Look up Safetika product mapping ──────────────────────────
+        $mapping = SafetikaProductMapping::where('product_id', $productId)
             ->active()
             ->autoProvision()
             ->first();
 
-        if (!$mapping) {
-            Log::warning('No Emerald mapping found for product', [
-                'product_id' => $productId,
-                'user_id'    => $user->id,
+        if ($mapping) {
+            $accountType     = $mapping->account_type;
+            $serviceCategory = $mapping->service_category;
+            $customerType    = $mapping->customer_type;
+            $mapping->update(['last_provisioned_at' => now()]);
+        } else {
+            // Graceful fallback — use config defaults so provisioning
+            // always works even for products not yet mapped.
+            $accountType     = config('vilcom_safetika.defaults.account_type',     'FTTH Home');
+            $serviceCategory = config('vilcom_safetika.defaults.service_category', 'Internet');
+            $customerType    = config('vilcom_safetika.defaults.customer_type',    'Residential');
+
+            Log::warning('No Safetika mapping found for product — using config defaults', [
+                'product_id'     => $productId,
+                'user_id'        => $user->id,
+                'account_type'   => $accountType,
+                'customer_type'  => $customerType,
             ]);
-            return ProvisionResult::skipped('No Emerald mapping configured for this product');
         }
 
-        // ── 2. Apply per-mapping overrides ───────────────────────────────
-        // Service category — required, comes from mapping
-        config(['emerald.service_category_id' => $mapping->emerald_service_category_id]);
-
-        // Billing cycle name — mapping can override global default
-        config(['emerald.billing_cycle_name' => $mapping->getBillingCycleName()]);
-
-        // Pay period — mapping can override global default (Monthly)
-        config(['emerald.pay_period_name' => $mapping->getResolvedPayPeriodName()]);
-
-        Log::info('Emerald provisioning starting', [
-            'user_id'              => $user->id,
-            'product_id'           => $productId,
-            'service_type_id'      => $mapping->emerald_service_type_id,
-            'service_category_id'  => $mapping->emerald_service_category_id,
-            'billing_cycle'        => $mapping->getBillingCycleName(),
-            'pay_period_name'      => $mapping->getResolvedPayPeriodName(),
+        Log::info('Safetika provisioning starting', [
+            'user_id'          => $user->id,
+            'product_id'       => $productId,
+            'account_type'     => $accountType,
+            'service_category' => $serviceCategory,
+            'customer_type'    => $customerType,
         ]);
 
-        // ── 3. Call Emerald API ──────────────────────────────────────────
-        try {
-            $result = $this->emerald->createSubscriber(
-                $user->toArray(),
-                $mapping->emerald_service_type_id
-            );
-
-            if (empty($result['CustomerID'])) {
-                throw new \RuntimeException('Emerald returned no CustomerID');
-            }
-
-            // ── 4. Store Emerald IDs ─────────────────────────────────────
-            $user->update([
-                'emerald_mbr_id'     => $result['CustomerID'],
-                'emerald_account_id' => $result['AccountID'] ?? null,
-            ]);
-
-            // ── 5. Update sync timestamp ─────────────────────────────────
-            $mapping->update(['last_synced_at' => now()]);
-
-            Log::info('Emerald provisioning successful', [
-                'user_id'     => $user->id,
-                'customer_id' => $result['CustomerID'],
-                'account_id'  => $result['AccountID'] ?? null,
-                'service_type'=> $mapping->emerald_service_type_id,
-                'mbr_is_mpesa_account' => true,
-            ]);
-
-            // ── 6. Vilcom Safetika: create MBR + add service + assign Homes_Tracker ──
-            // Runs synchronously. A failure here does NOT roll back Emerald —
-            // the emerald_mbr_id is already committed. Staff can re-trigger if needed.
-            $user->refresh(); // ensure model has the updated emerald_mbr_id
-            $this->runVilcomProvisioning($user);
-
-            return ProvisionResult::success(
-                (int) $result['CustomerID'],
-                isset($result['AccountID']) ? (int) $result['AccountID'] : null
-            );
-
-
-        } catch (\Exception $e) {
-            Log::error('Emerald provisioning failed', [
-                'user_id'    => $user->id,
-                'product_id' => $productId,
-                'error'      => $e->getMessage(),
-            ]);
-
-            return ProvisionResult::failed($e->getMessage());
-        }
-    }
-
-    // ── Vilcom Safetika Provisioning (called automatically after Emerald) ──
-
-    /**
-     * Run the full Vilcom Safetika provisioning chain synchronously.
-     * Called internally after a successful Emerald account_add.
-     * Non-blocking at the top level: failures are logged but do not roll back
-     * the Emerald provisioning that already succeeded.
-     *
-     * @param User   $user    The freshly provisioned user (already has emerald_mbr_id)
-     * @param string $accountType     e.g. "FTTH Home"
-     * @param string $serviceCategory e.g. "Internet"
-     */
-    private function runVilcomProvisioning(
-        User   $user,
-        string $accountType     = 'FTTH Home',
-        string $serviceCategory = 'Internet'
-    ): void {
-        $result = $this->vilcomOrchestrator->provision($user, $accountType, $serviceCategory);
+        // ── 2. Run full Safetika chain ───────────────────────────────────
+        $result = $this->vilcomOrchestrator->provision(
+            $user,
+            $accountType,
+            $serviceCategory,
+            $customerType
+        );
 
         if ($result->isSuccess()) {
-            Log::info('VilcomSafetika full provision succeeded', [
+            Log::info('Safetika provisioning completed successfully', [
                 'user_id'            => $user->id,
                 'customer_id'        => $result->customerId,
+                'record_id'          => $result->recordId,
                 'service_account_id' => $result->serviceAccountId,
                 'assignment_id'      => $result->assignmentId,
                 'serial_number'      => $result->serialNumber,
             ]);
-        } else {
-            // Log failure but do NOT throw — Emerald provisioning has already committed.
-            // Staff can manually re-trigger Vilcom Safetika provisioning if needed.
-            Log::error('VilcomSafetika provision failed after Emerald success', [
-                'user_id' => $user->id,
-                'reason'  => $result->message,
-            ]);
+
+            return ProvisionResult::success(
+                (int) $result->customerId,
+                null  // no legacy Emerald AccountID
+            );
         }
+
+        Log::error('Safetika provisioning failed', [
+            'user_id'    => $user->id,
+            'product_id' => $productId,
+            'reason'     => $result->message,
+        ]);
+
+        return ProvisionResult::failed($result->message);
     }
+
+    // ── Internal helpers ──────────────────────────────────────────────────
 
     // ── Payments ──────────────────────────────────────────────────────────
 

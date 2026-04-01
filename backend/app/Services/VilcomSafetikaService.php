@@ -67,8 +67,12 @@ class VilcomSafetikaService
      *
      * Returns: ['customer_id' => '2159259', 'address_id' => '60458', 'record_id' => 123]
      */
-    public function createMbrCustomer(User $user, string $token): array
-    {
+    public function createMbrCustomer(
+        User   $user, 
+        string $token, 
+        string $accountType  = 'FTTH Home', 
+        string $customerType = 'Residential'
+    ): array {
         [$firstName, $lastName] = $this->splitName($user->name);
 
         $defaults = config('vilcom_safetika.defaults', []);
@@ -85,7 +89,8 @@ class VilcomSafetikaService
             'group_name'    => $defaults['group_name'] ?? 'Vilcom',
             'region'        => $this->resolveRegion($user->county ?? ''),
             'comments'      => 'Auto-provisioned via Vilcom Portal',
-            'customer_type' => $this->resolveCustomerType($user->customer_type ?? 'individual'),
+            'customer_type' => $customerType,
+            'account_type'  => $accountType,
             'SalesPerson'   => $defaults['sales_person'] ?? 'John Sales',
         ];
 
@@ -123,18 +128,21 @@ class VilcomSafetikaService
     public function addService(
         int    $localRecordId,
         string $token,
-        string $accountType    = 'FTTH Home',
-        string $serviceCategory = 'Internet'
+        string $accountType     = 'FTTH Home',
+        string $serviceCategory = 'Internet',
+        string $customerType    = 'Residential'
     ): array {
         $defaults = config('vilcom_safetika.defaults', []);
 
         $payload = [
             'emerald_customer_id' => $localRecordId,
             'AccountType'         => $accountType,
+            'account_type'        => $accountType,
+            'customer_type'       => $customerType,
             'ServiceCategory'     => $serviceCategory,
             'Domain'              => $defaults['domain'] ?? 'Vilcom',
             'setupcharge'         => $defaults['setup_charge'] ?? '0',
-            'SalesPerson'         => $defaults['sales_person'] ?? 'John Sales',
+            'SalesPerson'         => $defaults['sales_person'] ?? 'Yvonne Nyarangi',
         ];
 
         $response = Http::timeout($this->timeout)
@@ -308,26 +316,25 @@ class VilcomSafetikaService
         };
     }
 
-    /**
-     * Resolve county/region to Vilcom API region name.
-     * Uses the same logic as EmeraldService but maps to Safetika region names.
-     */
     private function resolveRegion(string $county): string
     {
+        // Live valid regions from /api/dropdowns/regions
         $map = [
-            'nairobi'    => 'Nairobi_CBD',
-            'westlands'  => 'Nairobi_CBD',
-            'karen'      => 'Nairobi_CBD',
-            'kileleshwa' => 'Nairobi_CBD',
-            'kilimani'   => 'Nairobi_CBD',
-            'nakuru'     => 'Nakuru_Pipeline',
+            'nairobi'    => 'Nairobi_Westlands (Area 1)',
+            'westlands'  => 'Westlands',
+            'karen'      => 'Karen (Area 1)',
+            'kileleshwa' => 'Nairobi_Kileleshwa',
+            'kilimani'   => 'Nairobi_Kilimani',
+            'nakuru'     => 'Nakuru_Pipeline (Area 2 & 4)',
             'eldoret'    => 'Eldoret_Roadblock (Area 2)',
-            'mombasa'    => 'Nairobi_CBD',
+            'mombasa'    => 'Mombasa_Buxton (Area 1)',
             'kitale'     => 'Kitale_Area_1',
-            'kiambu'     => 'Nairobi_CBD',
+            'kiambu'     => 'Kiambu Runda (Area 1)',
         ];
 
-        return $map[strtolower(trim($county))]
-            ?? config('vilcom_safetika.defaults.region', 'Nairobi_CBD');
+        $countyKey = strtolower(trim($county));
+
+        return $map[$countyKey]
+            ?? config('vilcom_safetika.defaults.region', 'Nairobi_Westlands (Area 1)');
     }
 }

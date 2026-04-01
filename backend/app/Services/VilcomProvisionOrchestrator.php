@@ -13,7 +13,7 @@
 //   7. Persist all IDs on the User model
 //
 // Called from: EmeraldBillingOrchestrator::provisionNewSubscriber()
-// Does NOT replace old Emerald provisioning — runs AFTER it succeeds.
+// This is now the ONLY provisioning path — no Emerald dev API involved.
 
 namespace App\Services;
 
@@ -29,21 +29,24 @@ class VilcomProvisionOrchestrator
     /**
      * Run the full synchronous provisioning chain.
      *
-     * @param User   $user        The newly provisioned user
-     * @param string $accountType e.g. "FTTH Home" — resolved from product mapping
+     * @param User   $user            The newly provisioned user
+     * @param string $accountType     e.g. "FTTH Home" | "FTTH Business" — from product mapping
      * @param string $serviceCategory e.g. "Internet"
+     * @param string $customerType    e.g. "Residential" | "Business" | "Enterprise"
      * @return VilcomProvisionResult
      */
     public function provision(
         User   $user,
         string $accountType     = 'FTTH Home',
-        string $serviceCategory = 'Internet'
+        string $serviceCategory = 'Internet',
+        string $customerType    = 'Residential'
     ): VilcomProvisionResult {
 
         Log::info('VilcomProvisionOrchestrator: Starting full provision', [
             'user_id'          => $user->id,
             'account_type'     => $accountType,
             'service_category' => $serviceCategory,
+            'customer_type'    => $customerType,
         ]);
 
         try {
@@ -51,7 +54,7 @@ class VilcomProvisionOrchestrator
             $token = $this->safetika->getToken();
 
             // ── Step 2: Create MBR customer ──────────────────────────────────
-            $mbrData   = $this->safetika->createMbrCustomer($user, $token);
+            $mbrData   = $this->safetika->createMbrCustomer($user, $token, $accountType, $customerType);
             $recordId  = (int)   ($mbrData['record_id']   ?? 0);
             $customerId = (string)($mbrData['customer_id'] ?? '');
             $addressId  = (string)($mbrData['address_id']  ?? '');
@@ -70,7 +73,7 @@ class VilcomProvisionOrchestrator
             // ── Step 3: Add service (uses record_id from step 2) ─────────────
             // Fetch a fresh token per API docs
             $token          = $this->safetika->getToken();
-            $serviceData    = $this->safetika->addService($recordId, $token, $accountType, $serviceCategory);
+            $serviceData    = $this->safetika->addService($recordId, $token, $accountType, $serviceCategory, $customerType);
             $serviceAccountId = (string)($serviceData['account_id'] ?? '');
 
             Log::info('VilcomProvisionOrchestrator: Step 3 done — Service added', [

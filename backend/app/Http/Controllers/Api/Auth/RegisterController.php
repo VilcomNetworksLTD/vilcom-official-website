@@ -115,6 +115,8 @@ class RegisterController extends Controller
                 $this->authService->sendWelcomeSms($user);
             }
 
+            event(new \Illuminate\Auth\Events\Registered($user));
+
             DB::commit();
 
             // Store selected product in session for after email verification

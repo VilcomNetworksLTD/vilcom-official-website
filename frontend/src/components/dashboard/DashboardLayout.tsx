@@ -218,7 +218,7 @@ const adminSections: SidebarSection[] = [
     items: [
       { icon: Folder, label: 'Categories', href: '/admin/categories' },
       { icon: ShoppingCart, label: 'Products', href: '/admin/products' },
-      { icon: Package, label: 'Plans & Pricing', href: '/admin/plans' },
+     // { icon: Package, label: 'Plans & Pricing', href: '/admin/plans' },
       { icon: Wifi, label: 'Subscriptions', href: '/admin/subscriptions' },
       { icon: Building2, label: 'Coverage Areas', href: '/admin/coverage' },
       { icon: FileText, label: 'Quote Requests', href: '/admin/quotes' },
