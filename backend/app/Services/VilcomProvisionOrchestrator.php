@@ -39,7 +39,8 @@ class VilcomProvisionOrchestrator
         User   $user,
         string $accountType     = 'FTTH Home',
         string $serviceCategory = 'Internet',
-        string $customerType    = 'Residential'
+        string $customerType    = 'Residential',
+        ?string $salesPerson    = null
     ): VilcomProvisionResult {
 
         Log::info('VilcomProvisionOrchestrator: Starting full provision', [
@@ -70,17 +71,18 @@ class VilcomProvisionOrchestrator
                 'address_id'  => $addressId,
             ]);
 
-            // ── Step 3: Add service (uses record_id from step 2) ─────────────
-            // Fetch a fresh token per API docs
+            // ── Step 3: Add service (uses Emerald customer_id from step 2) ─────
+            // API expects the Emerald customer_id (e.g. "2159261"), NOT our local record_id
             $token          = $this->safetika->getToken();
-            $serviceData    = $this->safetika->addService($recordId, $token, $accountType, $serviceCategory, $customerType);
-            $serviceAccountId = (string)($serviceData['account_id'] ?? '');
+            $serviceData    = $this->safetika->addService($customerId, $token, $accountType, $serviceCategory, $customerType, $salesPerson);
+            // Real response key is service_account_id (not account_id)
+            $serviceAccountId = (string)($serviceData['service_account_id'] ?? $serviceData['account_id'] ?? '');
 
             Log::info('VilcomProvisionOrchestrator: Step 3 done — Service added', [
-                'user_id'           => $user->id,
-                'service_account_id'=> $serviceAccountId,
-                'service_category'  => $serviceData['service_category'] ?? $serviceCategory,
-                'account_type'      => $serviceData['account_type'] ?? $accountType,
+                'user_id'            => $user->id,
+                'service_account_id' => $serviceAccountId,
+                'service_category'   => $serviceData['service_category'] ?? $serviceCategory,
+                'account_type'       => $serviceData['account_type'] ?? $accountType,
             ]);
 
             // ── Step 4: Get first available warehouse ────────────────────────

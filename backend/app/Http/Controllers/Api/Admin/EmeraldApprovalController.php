@@ -98,16 +98,30 @@ class EmeraldApprovalController extends Controller
             ], 422);
         }
 
+        // ── Admin dropdown overrides (optional, take priority over mapping) ──
+        $overrideAccountType     = $request->input('account_type')     ?: null;
+        $overrideServiceCategory = $request->input('service_category') ?: null;
+        $overrideCustomerType    = $request->input('customer_type')    ?: null;
+        $overrideSalesPerson     = $request->input('sales_person')     ?: null;
+
         Log::info('Admin approving Emerald provisioning', [
-            'user_id'    => $user->id,
-            'product_id' => $user->emerald_pending_product_id,
-            'reviewed_by'=> $request->user()->id,
+            'user_id'          => $user->id,
+            'product_id'       => $user->emerald_pending_product_id,
+            'reviewed_by'      => $request->user()->id,
+            'override_account' => $overrideAccountType,
+            'override_cat'     => $overrideServiceCategory,
+            'override_ctype'   => $overrideCustomerType,
+            'sales_person'     => $overrideSalesPerson,
         ]);
 
-        // Provision in Emerald
+        // Provision via Safetika (admin overrides take priority over product mapping)
         $result = $this->orchestrator->provisionNewSubscriber(
             $user,
-            (int) $user->emerald_pending_product_id
+            (int) $user->emerald_pending_product_id,
+            $overrideAccountType,
+            $overrideServiceCategory,
+            $overrideCustomerType,
+            $overrideSalesPerson
         );
 
         if ($result->isSuccess()) {

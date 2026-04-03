@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
         // ─────────────────────────────────────────────────────────────
         $this->call(CategorySeeder::class);
         $this->call(ProductSeeder::class);
+        $this->call(SafetikaProductMappingSeeder::class);
 
         // ─────────────────────────────────────────────────────────────
         // 3. COVERAGE (No User Dependency)

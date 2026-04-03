@@ -2,7 +2,7 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vite build",
+        "build": "vite build && cp public/sitemap.xml ../public/sitemap.xml",
         "dev": "vite"
     },
     "devDependencies": {

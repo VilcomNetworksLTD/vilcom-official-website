@@ -7,41 +7,63 @@ import KenyaGlobe3D from "@/components/KenyaGlobe3D";
 import KenyaCoverageMap2D from "@/components/KenyaCoverageMap2D";
 import EarthGlobe3D from "@/components/EarthGlobe3D";
 
+import api from "@/lib/axios";
+
 interface Region {
+  id: number;
   name: string;
   county: string;
   status: "connected" | "coming_soon";
   lat: number;
   lng: number;
-  speed?: string;
-  type?: string;
+  speed: string;
+  type: string;
 }
 
-const regions: Region[] = [
-  { name: "Westlands",   county: "Nairobi",     status: "connected",   lat: -1.2637, lng: 36.8063, speed: "100Mbps", type: "Fiber" },
-  { name: "Kilimani",    county: "Nairobi",     status: "connected",   lat: -1.2915, lng: 36.7823, speed: "100Mbps", type: "Fiber" },
-  { name: "Karen",       county: "Nairobi",     status: "connected",   lat: -1.3197, lng: 36.7073, speed: "60Mbps",  type: "Fiber" },
-  { name: "Lavington",   county: "Nairobi",     status: "connected",   lat: -1.2769, lng: 36.7693, speed: "100Mbps", type: "Fiber" },
-  { name: "Kileleshwa",  county: "Nairobi",     status: "connected",   lat: -1.2838, lng: 36.7876, speed: "30Mbps",  type: "Wireless" },
-  { name: "Runda",       county: "Nairobi",     status: "coming_soon", lat: -1.2189, lng: 36.8156, speed: "100Mbps", type: "Fiber" },
-  { name: "Nyali",       county: "Mombasa",     status: "connected",   lat: -4.0375, lng: 39.7208, speed: "60Mbps",  type: "Fiber" },
-  { name: "Bamburi",     county: "Mombasa",     status: "coming_soon", lat: -3.9833, lng: 39.7333, speed: "30Mbps",  type: "Wireless" },
-  { name: "Eldoret CBD", county: "Uasin Gishu", status: "coming_soon", lat:  0.5143, lng: 35.2698, speed: "100Mbps", type: "Fiber" },
-  { name: "Kisumu CBD",  county: "Kisumu",      status: "connected",   lat: -0.0917, lng: 34.7680, speed: "60Mbps",  type: "Fiber" },
-  { name: "Parklands",   county: "Nairobi",     status: "connected",   lat: -1.2606, lng: 36.8219, speed: "100Mbps", type: "Fiber" },
-  { name: "Langata",     county: "Nairobi",     status: "coming_soon", lat: -1.3614, lng: 36.7422, speed: "60Mbps",  type: "Wireless" },
-];
+const glass = "bg-slate-900/40 backdrop-blur-xl border border-white/10 shadow-xl";
+const glassCard = "bg-white/5 backdrop-blur-md border border-white/10 shadow-lg hover:bg-white/10 transition-all";
 
 const Coverage = () => {
   useEffect(() => { document.title = "Coverage | Vilcom Networks Ltd"; }, []);
 
   const [search, setSearch]       = useState("");
+  const [regions, setRegions]     = useState<Region[]>([]);
   const [selected, setSelected]   = useState<Region | null>(null);
   const [filterStatus, setFilter] = useState<"all" | "connected" | "coming_soon">("all");
   const [mapView, setMapView]     = useState<"kenya3d" | "kenya2d" | "global">("kenya3d");
   const [selectedCounty, setSelectedCounty] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [locationsOpen, setLocationsOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch live coverage data
+  useEffect(() => {
+    const fetchCoverage = async () => {
+      try {
+        const response = await api.get('/coverage/zones');
+        const apiZones = response.data?.data || [];
+        
+        const mappedRegions: Region[] = apiZones.map((z: any) => ({
+          id: z.id,
+          name: z.name,
+          county: z.county || "Kenya",
+          status: z.status === 'active' ? "connected" : "coming_soon",
+          lat: parseFloat(z.center_lat) || 0,
+          lng: parseFloat(z.center_lng) || 0,
+          speed: z.connectivity_index > 0 ? "Up to 100Mbps" : "TBD",
+          type: z.coverage_type || "Fiber"
+        }));
+        
+        setRegions(mappedRegions);
+      } catch (err) {
+        console.error("Failed to fetch live coverage data", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCoverage();
+  }, []);
 
   const filtered = regions.filter(r => {
     const q = search.toLowerCase();
@@ -84,21 +106,12 @@ const Coverage = () => {
 
       {/*
         ── Page wrapper ──
-        • pt-20 / lg:pt-36 pushes content below the fixed Navbar height.
-        • NO overflow-hidden — that was causing the map to escape and cover the navbar.
       */}
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 pt-20 lg:pt-36">
+      <div className="min-h-screen bg-slate-950 pt-20 lg:pt-36 relative">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black overflow-hidden pointer-events-none" />
 
         {/* ── Sub-header (sticky, below navbar) ─────────────────────────── */}
-        <div style={{
-          position: "sticky",
-          top: "80px",       /* sits just below the ~80px fixed navbar */
-          zIndex: 35,        /* below navbar z-50, above page content   */
-          background: "rgba(255,255,255,0.97)",
-          backdropFilter: "blur(20px)",
-          borderBottom: "1px solid rgba(0,0,0,0.08)",
-          boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-        }}>
+        <div className={`${glass} z-[35] sticky top-[80px]`}>
           {/* Mobile */}
           <div className="flex lg:hidden items-center justify-between px-4 pt-3 pb-2 gap-2">
             <div className="flex items-center gap-2">
@@ -110,19 +123,19 @@ const Coverage = () => {
                 <Globe size={11} color="#3b82f6" style={{ animation: "spin 10s linear infinite" }} />
                 <span style={{ fontSize: 9, color: "#3b82f6", letterSpacing: 1, textTransform: "uppercase", fontFamily: "monospace", fontWeight: 700 }}>Live</span>
               </div>
-              <h1 style={{ fontSize: 15, fontWeight: 900, color: "#1e293b" }}>Coverage Map</h1>
+              <h1 style={{ fontSize: 15, fontWeight: 900, color: "#fff" }}>Coverage Map</h1>
             </div>
             <div className="flex items-center gap-2">
               <span style={{ fontSize: 11, fontWeight: 800, color: "#10b981" }}>{liveCount} live</span>
               <button
                 onClick={() => setSidebarOpen(p => !p)}
                 style={{
-                  padding: 7, borderRadius: 9, border: "1px solid rgba(0,0,0,0.1)",
-                  background: sidebarOpen ? "rgba(59,130,246,0.1)" : "rgba(0,0,0,0.04)",
-                  cursor: "pointer", display: "flex", alignItems: "center",
+                  padding: 7, borderRadius: 9, 
+                  background: sidebarOpen ? "rgba(59,130,246,0.2)" : "rgba(255,255,255,0.05)",
+                  cursor: "pointer", display: "flex", alignItems: "center", border: "1px solid rgba(255,255,255,0.1)"
                 }}
               >
-                <Menu size={17} color={sidebarOpen ? "#3b82f6" : "#64748b"} />
+                <Menu size={17} color={sidebarOpen ? "#3b82f6" : "#cbd5e1"} />
               </button>
             </div>
           </div>
@@ -132,10 +145,10 @@ const Coverage = () => {
             {(["kenya3d", "kenya2d", "global"] as const).map(v => (
               <button key={v} onClick={() => setMapView(v)} style={{
                 display: "flex", alignItems: "center", gap: 5,
-                padding: "5px 12px", borderRadius: 20, border: "none", cursor: "pointer",
+                padding: "5px 12px", borderRadius: 20, border: "1px solid rgba(255,255,255,0.05)", cursor: "pointer",
                 fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0,
-                background: mapView === v ? "rgba(59,130,246,0.15)" : "rgba(0,0,0,0.05)",
-                color: mapView === v ? "#3b82f6" : "rgba(0,0,0,0.55)",
+                background: mapView === v ? "rgba(59,130,246,0.2)" : "rgba(255,255,255,0.05)",
+                color: mapView === v ? "#60a5fa" : "rgba(255,255,255,0.6)",
                 transition: "all 0.2s",
               }}>
                 {{ kenya3d: <Box size={12}/>, kenya2d: <Map size={12}/>, global: <Globe2 size={12}/> }[v]}
@@ -158,17 +171,17 @@ const Coverage = () => {
                 <Globe size={14} color="#3b82f6" style={{ animation: "spin 10s linear infinite" }} />
                 <span style={{ fontSize: 12, color: "#3b82f6", letterSpacing: 1.2, textTransform: "uppercase", fontFamily: "monospace", fontWeight: 600 }}>Live Coverage</span>
               </div>
-              <h1 style={{ fontSize: 24, fontWeight: 900, letterSpacing: -0.5, color: "#1e293b" }}>Network Coverage Map</h1>
+              <h1 style={{ fontSize: 24, fontWeight: 900, letterSpacing: -0.5, color: "#fff" }}>Network Coverage Map</h1>
             </div>
             <div className="flex gap-3 items-center">
-              <div style={{ display: "flex", background: "rgba(0,0,0,0.04)", borderRadius: 12, padding: 4, gap: 4, border: "1px solid rgba(0,0,0,0.06)" }}>
+              <div style={{ display: "flex", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: 4, gap: 4 }}>
                 {(["kenya3d", "kenya2d", "global"] as const).map(v => (
                   <button key={v} onClick={() => setMapView(v)} style={{
                     display: "flex", alignItems: "center", gap: 6,
                     padding: "8px 16px", borderRadius: 10, border: "none", cursor: "pointer",
                     fontSize: 13, fontWeight: 600,
-                    background: mapView === v ? "rgba(59,130,246,0.15)" : "transparent",
-                    color: mapView === v ? "#3b82f6" : "rgba(0,0,0,0.6)",
+                    background: mapView === v ? "rgba(59,130,246,0.2)" : "transparent",
+                    color: mapView === v ? "#60a5fa" : "rgba(255,255,255,0.6)",
                     transition: "all 0.22s",
                   }}>
                     {{ kenya3d: <Box size={15}/>, kenya2d: <Map size={15}/>, global: <Globe2 size={15}/> }[v]}
@@ -178,8 +191,8 @@ const Coverage = () => {
               </div>
               <span style={{ fontSize: 13, fontWeight: 800, color: "#10b981" }}>{liveCount}</span>
               <span style={{ fontSize: 13, fontWeight: 700, color: "#f59e0b" }}>{soonCount}</span>
-              <span style={{ fontSize: 13, color: "#6b7280" }}>locations</span>
-              <Button size="sm" variant="default" className="font-semibold shadow-lg">
+              <span style={{ fontSize: 13, color: "#94a3b8" }}>locations</span>
+              <Button size="sm" variant="default" className="font-semibold shadow-cyan-500/20 shadow-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500">
                 <Zap size={14} className="mr-2" /> Get Connected
               </Button>
             </div>
@@ -192,21 +205,21 @@ const Coverage = () => {
           style={{ height: "calc(100vh - 208px)" }}
           /* 208px ≈ 144px navbar+sub-header + 64px desktop sub-header padding */
         >
-          <aside style={{
-            width: 320, flexShrink: 0,
-            background: "rgba(255,255,255,0.97)",
-            backdropFilter: "blur(20px)",
-            borderRight: "1px solid rgba(0,0,0,0.07)",
-            display: "flex", flexDirection: "column",
-            overflow: "hidden",
-          }}>
-            <SidebarContent
+          <aside className={`${glass} w-[320px] flex-shrink-0 flex flex-col border-y-0 rounded-none border-l-0 overflow-hidden`}>
+            {loading ? (
+              <div className="flex-1 flex flex-col items-center justify-center space-y-3">
+                <div className="w-8 h-8 rounded-full border-t-2 border-r-2 border-cyan-400 animate-spin" />
+                <span className="text-slate-400 text-sm">Fetching locations...</span>
+              </div>
+            ) : (
+              <SidebarContent
               liveCount={liveCount} soonCount={soonCount}
               search={search} setSearch={setSearch}
               filterStatus={filterStatus} setFilter={setFilter}
               filtered={filtered} selected={selected}
               handleSelect={handleSelect} setSelected={setSelected}
             />
+            )}
           </aside>
 
           {/*
@@ -217,7 +230,7 @@ const Coverage = () => {
           <main style={{
             flex: 1, position: "relative", overflow: "hidden",
             isolation: "isolate",
-            background: "linear-gradient(180deg, #f0f5fa 0%, #e2ecf5 50%, #dce6f0 100%)",
+            background: "transparent",
           }}>
             <div style={{ position: "absolute", inset: 0 }}>{renderMap()}</div>
           </main>
@@ -256,15 +269,16 @@ const Coverage = () => {
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
               padding: "16px 16px 12px",
-              borderBottom: "1px solid rgba(0,0,0,0.07)",
-              position: "sticky", top: 0, zIndex: 1, background: "#fff",
+              borderBottom: "1px solid rgba(255,255,255,0.1)",
+              position: "sticky", top: 0, zIndex: 1, 
+              background: "rgba(15,23,42,0.8)", backdropFilter: "blur(20px)",
             }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "#1e293b" }}>Search Locations</span>
+              <span className="text-sm font-bold text-white">Search Locations</span>
               <button
                 onClick={() => setSidebarOpen(false)}
-                style={{ padding: 6, borderRadius: 8, background: "rgba(0,0,0,0.06)", border: "none", cursor: "pointer" }}
+                style={{ padding: 6, borderRadius: 8, background: "rgba(255,255,255,0.1)", border: "none", cursor: "pointer" }}
               >
-                <X size={16} color="#64748b" />
+                <X size={16} color="#cbd5e1" />
               </button>
             </div>
             <SidebarContent
@@ -284,7 +298,7 @@ const Coverage = () => {
             minHeight: 420,
             position: "relative",
             isolation: "isolate",
-            background: "linear-gradient(180deg, #f0f5fa 0%, #e2ecf5 50%, #dce6f0 100%)",
+            background: "transparent",
           }}>
             {renderMap()}
 
@@ -504,24 +518,24 @@ const SidebarContent = ({
 }: SidebarProps) => (
   <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
 
-    <div style={{ padding: "14px 14px 10px", borderBottom: "1px solid rgba(0,0,0,0.06)", flexShrink: 0 }}>
+    <div style={{ padding: "14px 14px 10px", borderBottom: "1px solid rgba(255,255,255,0.1)", flexShrink: 0 }}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9, marginBottom: 12 }}>
-        <div style={{ background: "rgba(37,99,235,0.06)", border: "1px solid rgba(37,99,235,0.13)", borderRadius: 11, padding: "9px 12px" }}>
-          <div style={{ fontSize: 26, fontWeight: 900, color: "#2563eb", lineHeight: 1 }}>{liveCount}</div>
-          <div style={{ fontSize: 9, color: "#93c5fd", marginTop: 3, letterSpacing: 1.2, textTransform: "uppercase", fontFamily: "monospace", fontWeight: 700 }}>Live Zones</div>
+        <div style={{ background: "rgba(56,189,248,0.1)", border: "1px solid rgba(56,189,248,0.2)", borderRadius: 11, padding: "9px 12px" }}>
+          <div style={{ fontSize: 26, fontWeight: 900, color: "#38bdf8", lineHeight: 1 }}>{liveCount}</div>
+          <div style={{ fontSize: 9, color: "#bae6fd", marginTop: 3, letterSpacing: 1.2, textTransform: "uppercase", fontFamily: "monospace", fontWeight: 700 }}>Live Zones</div>
         </div>
-        <div style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.13)", borderRadius: 11, padding: "9px 12px" }}>
-          <div style={{ fontSize: 26, fontWeight: 900, color: "#d97706", lineHeight: 1 }}>{soonCount}</div>
-          <div style={{ fontSize: 9, color: "#fcd34d", marginTop: 3, letterSpacing: 1.2, textTransform: "uppercase", fontFamily: "monospace", fontWeight: 700 }}>Expanding</div>
+        <div style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 11, padding: "9px 12px" }}>
+          <div style={{ fontSize: 26, fontWeight: 900, color: "#fbbf24", lineHeight: 1 }}>{soonCount}</div>
+          <div style={{ fontSize: 9, color: "#fde68a", marginTop: 3, letterSpacing: 1.2, textTransform: "uppercase", fontFamily: "monospace", fontWeight: 700 }}>Expanding</div>
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "8px 11px", marginBottom: 9 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "8px 11px", marginBottom: 9 }}>
         <Search size={13} color="#94a3b8" />
         <input
           type="text" placeholder="Search location or county…" value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ background: "transparent", border: "none", outline: "none", fontSize: 12, color: "#1e293b", flex: 1, fontWeight: 500 }}
+          style={{ background: "transparent", border: "none", outline: "none", fontSize: 12, color: "#fff", flex: 1, fontWeight: 500 }}
         />
         {search && <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", padding: 1 }}><X size={12} color="#94a3b8" /></button>}
       </div>
@@ -530,9 +544,9 @@ const SidebarContent = ({
         {(["all", "connected", "coming_soon"] as const).map(f => {
           const active = filterStatus === f;
           const label  = f === "all" ? "All" : f === "connected" ? "Live" : "Soon";
-          const bg  = active ? (f==="connected" ? "rgba(16,185,129,0.12)" : f==="coming_soon" ? "rgba(245,158,11,0.12)" : "rgba(100,116,139,0.1)") : "#f8fafc";
-          const bdr = active ? (f==="connected" ? "rgba(16,185,129,0.35)" : f==="coming_soon" ? "rgba(245,158,11,0.35)" : "rgba(100,116,139,0.25)") : "#e2e8f0";
-          const clr = active ? (f==="connected" ? "#059669" : f==="coming_soon" ? "#d97706" : "#475569") : "#64748b";
+          const bg  = active ? (f==="connected" ? "rgba(16,185,129,0.2)" : f==="coming_soon" ? "rgba(245,158,11,0.2)" : "rgba(56,189,248,0.2)") : "rgba(255,255,255,0.05)";
+          const bdr = active ? (f==="connected" ? "rgba(16,185,129,0.5)" : f==="coming_soon" ? "rgba(245,158,11,0.5)" : "rgba(56,189,248,0.5)") : "rgba(255,255,255,0.1)";
+          const clr = active ? (f==="connected" ? "#34d399" : f==="coming_soon" ? "#fbbf24" : "#38bdf8") : "#94a3b8";
           return (
             <button key={f} onClick={() => setFilter(f)} style={{ padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${bdr}`, background: bg, color: clr, transition: "all 0.15s" }}>
               {label}
@@ -545,37 +559,31 @@ const SidebarContent = ({
     <div style={{ flex: 1, overflowY: "auto", padding: "9px 11px", paddingBottom: selected ? 6 : 14 }}>
       {filtered.length === 0 ? (
         <div style={{ textAlign: "center", padding: "36px 0" }}>
-          <Search size={30} color="#e2e8f0" style={{ margin: "0 auto 8px", display: "block" }} />
+          <Search size={30} color="rgba(255,255,255,0.2)" style={{ margin: "0 auto 8px", display: "block" }} />
           <div style={{ fontSize: 13, fontWeight: 600, color: "#94a3b8" }}>No matching locations</div>
-          <div style={{ fontSize: 11, color: "#cbd5e1", marginTop: 3 }}>Try another area or county</div>
+          <div style={{ fontSize: 11, color: "#64748b", marginTop: 3 }}>Try another area or county</div>
         </div>
       ) : filtered.map(region => {
         const isSel   = selected?.name === region.name;
         const isLive  = region.status === "connected";
         const accent  = isLive ? "#10b981" : "#f59e0b";
-        const accentBg = isLive ? "rgba(16,185,129,0.08)" : "rgba(245,158,11,0.08)";
+        const accentBg = isLive ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)";
         return (
-          <button key={region.name} onClick={() => handleSelect(region)} style={{
-            width: "100%", textAlign: "left", padding: "9px 11px",
-            borderRadius: 10, marginBottom: 4, cursor: "pointer",
-            border: `2px solid ${isSel ? accent : "transparent"}`,
-            background: isSel ? accentBg : "rgba(255,255,255,0.9)",
-            boxShadow: isSel ? `0 2px 8px ${accentBg}` : "0 1px 3px rgba(0,0,0,0.04)",
-            transition: "all 0.15s",
+          <button key={region.name} onClick={() => handleSelect(region)} className={`w-full text-left p-[9px_11px] rounded-xl mb-1 cursor-pointer transition-all border ${isSel ? (isLive ? 'border-emerald-500/50 bg-emerald-500/10' : 'border-amber-500/50 bg-amber-500/10') : 'border-white/5 bg-white/5 hover:bg-white/10'}`} style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: accent, boxShadow: `0 0 4px ${accent}55` }} />
               <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#1e293b" }}>{region.name}</div>
-                <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 1 }}>{region.county} · {region.type ?? "Fiber"}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>{region.name}</div>
+                <div style={{ fontSize: 10, color: "#cbd5e1", marginTop: 1 }}>{region.county} · {region.type ?? "Fiber"}</div>
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 20, background: accentBg, color: accent, border: `1px solid ${isLive ? "rgba(16,185,129,0.27)" : "rgba(245,158,11,0.27)"}` }}>
+              <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 20, background: accentBg, color: accent, border: `1px solid ${isLive ? "rgba(16,185,129,0.4)" : "rgba(245,158,11,0.4)"}` }}>
                 {isLive ? "LIVE" : "SOON"}
               </span>
-              <ChevronRight size={11} color="#cbd5e1" />
+              <ChevronRight size={11} color="#64748b" />
             </div>
           </button>
         );
@@ -583,20 +591,20 @@ const SidebarContent = ({
     </div>
 
     {selected && (
-      <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", background: "rgba(255,255,255,0.99)", padding: "12px 14px", flexShrink: 0, animation: "slideUp 0.24s cubic-bezier(0.34,1.56,0.64,1)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 9 }}>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 900, color: "#1e293b" }}>{selected.name}</div>
-            <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 1 }}>{selected.county} County, Kenya</div>
+      <div className={`${glassCard} flex-shrink-0 animate-in slide-in-from-bottom-2 p-3 mt-auto mx-2 mb-2 rounded-xl border-t border-white/10`}>
+        <div style={{ display: "flex", justifyItems: "space-between", alignItems: "flex-start", marginBottom: 9 }}>
+          <div className="flex-1">
+            <div style={{ fontSize: 14, fontWeight: 900, color: "#fff" }}>{selected.name}</div>
+            <div style={{ fontSize: 10, color: "#cbd5e1", marginTop: 1 }}>{selected.county} County, Kenya</div>
           </div>
-          <button onClick={() => setSelected(null)} style={{ background: "rgba(0,0,0,0.06)", border: "none", cursor: "pointer", padding: 5, borderRadius: 6 }}>
-            <X size={12} color="#64748b" />
+          <button onClick={() => setSelected(null)} style={{ background: "rgba(255,255,255,0.1)", border: "none", cursor: "pointer", padding: 5, borderRadius: 6 }}>
+            <X size={12} color="#cbd5e1" />
           </button>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 10 }}>
-          {[["Speed", selected.speed ?? "TBD", "#3b82f6"], ["Type", selected.type ?? "Fiber", "#10b981"]].map(([l, v, c]) => (
-            <div key={l} style={{ background: "#f8fafc", borderRadius: 7, padding: "7px 9px", border: "1px solid rgba(0,0,0,0.04)" }}>
-              <div style={{ fontSize: 8, color: "#9ca3af", marginBottom: 2 }}>{l}</div>
+          {[["Speed", selected.speed ?? "TBD", "#38bdf8"], ["Type", selected.type ?? "Fiber", "#34d399"]].map(([l, v, c]) => (
+            <div key={l} style={{ background: "rgba(0,0,0,0.2)", borderRadius: 7, padding: "7px 9px", border: "1px solid rgba(255,255,255,0.05)" }}>
+              <div style={{ fontSize: 8, color: "#94a3b8", marginBottom: 2, textTransform: "uppercase" }}>{l}</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: c }}>{v}</div>
             </div>
           ))}
@@ -604,18 +612,18 @@ const SidebarContent = ({
         <div style={{ display: "flex", gap: 6 }}>
           {selected.status === "connected" ? (
             <>
-              <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 20, background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)" }}>
-                <CheckCircle size={11} color="#10b981" />
-                <span style={{ fontSize: 10, fontWeight: 700, color: "#10b981" }}>Available</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 20, background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)" }}>
+                <CheckCircle size={11} color="#34d399" />
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#34d399" }}>Available</span>
               </div>
-              <Button className="flex-1 h-8 text-xs font-bold" style={{ background: "linear-gradient(135deg,#10b981,#059669)" }}>
+              <Button className="flex-1 h-8 text-xs font-bold" style={{ background: "linear-gradient(135deg,#10b981,#059669)", border: "none" }}>
                 <Wifi size={11} className="mr-1" /> View Plans
               </Button>
             </>
           ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 20, background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)" }}>
-              <Clock size={11} color="#f59e0b" />
-              <span style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b" }}>Coming Soon</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 20, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)" }}>
+              <Clock size={11} color="#fbbf24" />
+              <span style={{ fontSize: 10, fontWeight: 700, color: "#fbbf24" }}>Coming Soon</span>
             </div>
           )}
         </div>

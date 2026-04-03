@@ -1,15 +1,12 @@
 <?php
 // app/Http/Controllers/Api/Admin/VilcomSafetikaController.php
-//
-// Admin/Staff endpoints for monitoring and re-triggering Vilcom Safetika provisioning.
-//
-// Does NOT alter any existing staff/admin functions — this is 100% new functionality.
 
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\VilcomProvisionOrchestrator;
+use App\Services\VilcomSafetikaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -21,9 +18,6 @@ class VilcomSafetikaController extends Controller
     ) {}
 
     // ── GET /api/v1/admin/vilcom-safetika ─────────────────────────────────
-    /**
-     * List clients and their Vilcom Safetika provisioning status.
-     */
     public function index(Request $request): JsonResponse
     {
         $query = User::role('client')
@@ -39,18 +33,15 @@ class VilcomSafetikaController extends Controller
                 'created_at',
             ]);
 
-        // Filter: only show provisioned in Emerald but NOT yet in Safetika
         if ($request->filter === 'pending') {
             $query->whereNotNull('emerald_mbr_id')
                   ->whereNull('vilcom_safetika_provisioned_at');
         }
 
-        // Filter: fully provisioned
         if ($request->filter === 'provisioned') {
             $query->whereNotNull('vilcom_safetika_provisioned_at');
         }
 
-        // Search
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(function ($q) use ($s) {
@@ -72,12 +63,213 @@ class VilcomSafetikaController extends Controller
         $clients = User::role('client');
 
         return response()->json([
-            'emerald_provisioned'        => (clone $clients)->whereNotNull('emerald_mbr_id')->count(),
-            'safetika_provisioned'        => (clone $clients)->whereNotNull('vilcom_safetika_provisioned_at')->count(),
-            'safetika_pending'            => (clone $clients)->whereNotNull('emerald_mbr_id')
-                                                             ->whereNull('vilcom_safetika_provisioned_at')->count(),
-            'not_provisioned_at_all'      => (clone $clients)->whereNull('emerald_mbr_id')->count(),
+            'emerald_provisioned'   => (clone $clients)->whereNotNull('emerald_mbr_id')->count(),
+            'safetika_provisioned'  => (clone $clients)->whereNotNull('vilcom_safetika_provisioned_at')->count(),
+            'safetika_pending'      => (clone $clients)->whereNotNull('emerald_mbr_id')
+                                                       ->whereNull('vilcom_safetika_provisioned_at')->count(),
+            'not_provisioned_at_all'=> (clone $clients)->whereNull('emerald_mbr_id')->count(),
         ]);
+    }
+
+    // ── Dropdown endpoints (proxy to Safetika API) ────────────────────────
+
+    public function salesPersons(VilcomSafetikaService $service): JsonResponse
+    {
+        try {
+            $data = $service->getSalesPersons($service->getToken());
+            return response()->json(['success' => true, 'data' => $data]);
+        } catch (\Exception $e) {
+            Log::error('Safetika salesPersons: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to fetch sales persons.'], 500);
+        }
+    }
+
+    public function serviceCategories(VilcomSafetikaService $service): JsonResponse
+    {
+        try {
+            $data = $service->getServiceCategories($service->getToken());
+            return response()->json(['success' => true, 'data' => $data]);
+        } catch (\Exception $e) {
+            Log::error('Safetika serviceCategories: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to fetch service categories.'], 500);
+        }
+    }
+
+    public function accountTypes(VilcomSafetikaService $service): JsonResponse
+    {
+        try {
+            $data = $service->getAccountTypes($service->getToken());
+            return response()->json(['success' => true, 'data' => $data]);
+        } catch (\Exception $e) {
+            Log::error('Safetika accountTypes: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to fetch account types.'], 500);
+        }
+    }
+
+    public function customerTypes(VilcomSafetikaService $service): JsonResponse
+    {
+        try {
+            $data = $service->getCustomerTypes($service->getToken());
+            return response()->json(['success' => true, 'data' => $data]);
+        } catch (\Exception $e) {
+            Log::error('Safetika customerTypes: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to fetch customer types.'], 500);
+        }
+    }
+
+    public function accountTypesByCategory(Request $request, VilcomSafetikaService $service): JsonResponse
+    {
+        $request->validate(['service_category' => 'required|string']);
+
+        try {
+            $data = $service->getAccountTypesByCategory($service->getToken(), $request->service_category);
+            return response()->json(['success' => true, 'data' => $data]);
+        } catch (\Exception $e) {
+            Log::error('Safetika accountTypesByCategory: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to fetch account types.'], 500);
+        }
+    }
+
+    // ── Portal: MBR customers from Safetika ──────────────────────────────
+
+    /** GET /api/v1/admin/vilcom-safetika/mbr-customers */
+    public function mbrCustomers(Request $request, VilcomSafetikaService $service): JsonResponse
+    {
+        try {
+            $params = $request->only(['status', 'customer_id', 'email', 'per_page']);
+            $data   = $service->getMbrCustomers($service->getToken(), $params);
+            return response()->json($data);
+        } catch (\Exception $e) {
+            Log::error('Safetika getMbrCustomers: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /** GET /api/v1/admin/vilcom-safetika/mbr-customers/{id} */
+    public function mbrCustomer(string $id, VilcomSafetikaService $service): JsonResponse
+    {
+        try {
+            $data = $service->getMbrCustomer($service->getToken(), $id);
+            return response()->json($data);
+        } catch (\Exception $e) {
+            Log::error('Safetika getMbrCustomer: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    // ── Portal: provisioned clients (local DB) for Add Service select ─────
+
+    /** GET /api/v1/admin/vilcom-safetika/provisioned-clients */
+    public function provisionedClients(Request $request): JsonResponse
+    {
+        $clients = User::role('client')
+            ->whereNotNull('vilcom_safetika_customer_id')
+            ->select([
+                'id', 'name', 'email', 'phone', 'customer_type',
+                'vilcom_safetika_customer_id',
+                'vilcom_safetika_service_acc_id',
+                'vilcom_safetika_provisioned_at',
+            ])
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $q->where(function ($q2) use ($request) {
+                    $s = $request->search;
+                    $q2->where('name', 'like', "%{$s}%")
+                       ->orWhere('email', 'like', "%{$s}%")
+                       ->orWhere('vilcom_safetika_customer_id', $s);
+                });
+            })
+            ->latest()
+            ->paginate(50);
+
+        return response()->json($clients);
+    }
+
+    // ── Portal: add service to existing provisioned client ────────────────
+
+    /** POST /api/v1/admin/vilcom-safetika/add-service */
+    public function addService(Request $request, VilcomSafetikaService $service): JsonResponse
+    {
+        $request->validate([
+            'user_id'         => 'required|integer|exists:users,id',
+            'AccountType'     => 'required|string',
+            'ServiceCategory' => 'required|string',
+            'SalesPerson'     => 'nullable|string',
+            'setupcharge'     => 'nullable|string',
+        ]);
+
+        $user = User::find($request->user_id);
+
+        if (!$user->vilcom_safetika_customer_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Client is not yet provisioned in Safetika (no Safetika Customer ID).',
+            ], 422);
+        }
+
+        try {
+            $token        = $service->getToken();
+            $customerType = match (strtolower($user->customer_type ?? '')) {
+                'business'   => 'Business',
+                'enterprise' => 'Enterprise',
+                default      => 'Residential',
+            };
+
+            $data = $service->addService(
+                $user->vilcom_safetika_customer_id,
+                $token,
+                $request->AccountType,
+                $request->ServiceCategory,
+                $customerType,
+                $request->SalesPerson
+            );
+
+            Log::info('Admin added Safetika service', [
+                'user_id'      => $user->id,
+                'account_type' => $request->AccountType,
+                'service_cat'  => $request->ServiceCategory,
+                'triggered_by' => $request->user()->id,
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Service added successfully.', 'data' => $data]);
+        } catch (\Exception $e) {
+            Log::error('Safetika addService failed', ['user_id' => $request->user_id, 'error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+    }
+
+    // ── Portal: inventory assignments ─────────────────────────────────────
+
+    /** GET /api/v1/admin/vilcom-safetika/inventory-assignments */
+    public function inventoryAssignments(Request $request, VilcomSafetikaService $service): JsonResponse
+    {
+        try {
+            $params = $request->only(['status', 'from_date', 'to_date', 'search']);
+            $data   = $service->getInventoryAssignments($service->getToken(), $params);
+            return response()->json($data);
+        } catch (\Exception $e) {
+            Log::error('Safetika inventoryAssignments: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /** POST /api/v1/admin/vilcom-safetika/unassign-inventory */
+    public function unassignInventory(Request $request, VilcomSafetikaService $service): JsonResponse
+    {
+        $request->validate(['inv_item_id' => 'required|string']);
+
+        try {
+            $data = $service->unassignInventory($service->getToken(), $request->inv_item_id);
+
+            Log::info('Admin unassigned inventory', [
+                'inv_item_id'  => $request->inv_item_id,
+                'triggered_by' => $request->user()->id,
+            ]);
+
+            return response()->json($data);
+        } catch (\Exception $e) {
+            Log::error('Safetika unassignInventory: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
     }
 
     // ── GET /api/v1/admin/vilcom-safetika/{user} ──────────────────────────
@@ -108,14 +300,6 @@ class VilcomSafetikaController extends Controller
     }
 
     // ── POST /api/v1/admin/vilcom-safetika/{user}/reprovision ────────────
-    /**
-     * Re-trigger the full Vilcom Safetika provisioning chain for a user
-     * whose Safetika provisioning failed (but Emerald already succeeded).
-     *
-     * Guards:
-     *   - User must have emerald_mbr_id (Emerald already done)
-     *   - User must NOT already be Safetika-provisioned (idempotency guard)
-     */
     public function reprovision(Request $request, User $user): JsonResponse
     {
         if (!$user->hasRole('client')) {
@@ -131,10 +315,8 @@ class VilcomSafetikaController extends Controller
 
         if ($user->vilcom_safetika_provisioned_at && !$request->boolean('force')) {
             return response()->json([
-                'success'      => false,
-                'message'      => 'User is already provisioned in Vilcom Safetika (provisioned_at: '
-                                  . $user->vilcom_safetika_provisioned_at . '). '
-                                  . 'Pass force=true to re-provision.',
+                'success'        => false,
+                'message'        => 'User is already provisioned in Vilcom Safetika. Pass force=true to re-provision.',
                 'provisioned_at' => $user->vilcom_safetika_provisioned_at,
             ], 422);
         }
@@ -147,8 +329,9 @@ class VilcomSafetikaController extends Controller
 
         $accountType     = $request->input('account_type', config('vilcom_safetika.defaults.account_type', 'FTTH Home'));
         $serviceCategory = $request->input('service_category', config('vilcom_safetika.defaults.service_category', 'Internet'));
+        $salesPerson     = $request->input('sales_person');
 
-        $result = $this->vilcomOrchestrator->provision($user, $accountType, $serviceCategory);
+        $result = $this->vilcomOrchestrator->provision($user, $accountType, $serviceCategory, 'Residential', $salesPerson);
 
         if ($result->isSuccess()) {
             return response()->json([

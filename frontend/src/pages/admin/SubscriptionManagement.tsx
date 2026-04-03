@@ -168,7 +168,8 @@ const SubscriptionManagement = () => {
 
   return (
     <DashboardLayout userType="admin">
-      <div className="px-2 sm:px-4 py-4 sm:py-8 max-w-7xl mx-auto space-y-6">
+      {/* UPDATED CONTAINER: Removed max-w-7xl mx-auto, added w-full and matched padding/spacing from TicketManagement */}
+      <div className="w-full px-2 sm:px-6 py-4 sm:py-8 space-y-6 sm:space-y-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white">Subscription Management</h1>

@@ -27,8 +27,20 @@ class EmeraldBillingOrchestrator
      *
      * Called from: EmeraldApprovalController::approve
      */
-    public function provisionNewSubscriber(User $user, int $productId): ProvisionResult
-    {
+    /**
+     * @param ?string $overrideAccountType     Admin-selected account type (takes priority over mapping)
+     * @param ?string $overrideServiceCategory Admin-selected service category
+     * @param ?string $overrideCustomerType    Admin-selected customer type
+     * @param ?string $overrideSalesPerson     Admin-selected sales person
+     */
+    public function provisionNewSubscriber(
+        User    $user,
+        int     $productId,
+        ?string $overrideAccountType     = null,
+        ?string $overrideServiceCategory = null,
+        ?string $overrideCustomerType    = null,
+        ?string $overrideSalesPerson     = null
+    ): ProvisionResult {
         // ── 1. Look up Safetika product mapping ──────────────────────────
         $mapping = SafetikaProductMapping::where('product_id', $productId)
             ->active()
@@ -48,12 +60,17 @@ class EmeraldBillingOrchestrator
             $customerType    = config('vilcom_safetika.defaults.customer_type',    'Residential');
 
             Log::warning('No Safetika mapping found for product — using config defaults', [
-                'product_id'     => $productId,
-                'user_id'        => $user->id,
-                'account_type'   => $accountType,
-                'customer_type'  => $customerType,
+                'product_id'    => $productId,
+                'user_id'       => $user->id,
+                'account_type'  => $accountType,
+                'customer_type' => $customerType,
             ]);
         }
+
+        // ── 2. Apply admin overrides (take highest priority) ─────────────
+        if ($overrideAccountType)     $accountType     = $overrideAccountType;
+        if ($overrideServiceCategory) $serviceCategory = $overrideServiceCategory;
+        if ($overrideCustomerType)    $customerType    = $overrideCustomerType;
 
         Log::info('Safetika provisioning starting', [
             'user_id'          => $user->id,
@@ -61,14 +78,16 @@ class EmeraldBillingOrchestrator
             'account_type'     => $accountType,
             'service_category' => $serviceCategory,
             'customer_type'    => $customerType,
+            'sales_person'     => $overrideSalesPerson ?? '(default)',
         ]);
 
-        // ── 2. Run full Safetika chain ───────────────────────────────────
+        // ── 3. Run full Safetika chain ───────────────────────────────────
         $result = $this->vilcomOrchestrator->provision(
             $user,
             $accountType,
             $serviceCategory,
-            $customerType
+            $customerType,
+            $overrideSalesPerson   // passed through to addService()
         );
 
         if ($result->isSuccess()) {

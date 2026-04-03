@@ -68,9 +68,9 @@ class VilcomSafetikaService
      * Returns: ['customer_id' => '2159259', 'address_id' => '60458', 'record_id' => 123]
      */
     public function createMbrCustomer(
-        User   $user, 
-        string $token, 
-        string $accountType  = 'FTTH Home', 
+        User   $user,
+        string $token,
+        string $accountType  = 'FTTH Home',
         string $customerType = 'Residential'
     ): array {
         [$firstName, $lastName] = $this->splitName($user->name);
@@ -120,29 +120,31 @@ class VilcomSafetikaService
     /**
      * Step 2 — Add an internet service to an existing MBR customer.
      *
-     * @param int    $localRecordId  The 'record_id' returned by create-mbr (our local ID in their system)
-     * @param string $accountType    e.g. "FTTH Home" — from /dropdowns/account-types
-     * @param string $serviceCategory e.g. "Internet" — from /dropdowns/service-categories
-     * @return array ['account_id' => '123456', 'service_category' => ..., 'account_type' => ...]
+     * @param string $emeraldCustomerId  The 'customer_id' returned by create-mbr (Emerald's own ID, e.g. "2159261")
+     * @param string $accountType        e.g. "Fibre 8Mbps" — from /dropdowns/account-types
+     * @param string $serviceCategory    e.g. "Home Fibre" — from /dropdowns/service-categories
+     * @param string $customerType       e.g. "Residential" — from /dropdowns/customer-types
+     * @return array ['service_account_id' => '159234', ...]
      */
     public function addService(
-        int    $localRecordId,
+        string $emeraldCustomerId,
         string $token,
-        string $accountType     = 'FTTH Home',
-        string $serviceCategory = 'Internet',
-        string $customerType    = 'Residential'
+        string $accountType,
+        string $serviceCategory,
+        string $customerType,
+        ?string $salesPerson = null
     ): array {
-        $defaults = config('vilcom_safetika.defaults', []);
+        $defaults = config('vilcom_safetika.defaults');
 
         $payload = [
-            'emerald_customer_id' => $localRecordId,
+            'emerald_customer_id' => $emeraldCustomerId,
             'AccountType'         => $accountType,
             'account_type'        => $accountType,
             'customer_type'       => $customerType,
             'ServiceCategory'     => $serviceCategory,
             'Domain'              => $defaults['domain'] ?? 'Vilcom',
             'setupcharge'         => $defaults['setup_charge'] ?? '0',
-            'SalesPerson'         => $defaults['sales_person'] ?? 'Yvonne Nyarangi',
+            'SalesPerson'         => $salesPerson ?? $defaults['sales_person'] ?? 'Yvonne Nyarangi',
         ];
 
         $response = Http::timeout($this->timeout)
@@ -152,9 +154,9 @@ class VilcomSafetikaService
         $data = $response->json();
 
         Log::info('VilcomSafetika: add-service response', [
-            'record_id' => $localRecordId,
-            'status'    => $response->status(),
-            'response'  => $data,
+            'emerald_customer_id' => $emeraldCustomerId,
+            'status'              => $response->status(),
+            'response'            => $data,
         ]);
 
         if (!$response->successful() || empty($data['success'])) {
@@ -252,7 +254,7 @@ class VilcomSafetikaService
     {
         $payload = [
             'inv_item_id'    => $item['inv_item_id'],
-            'customer_id'    => $customerId,
+            'customer_id'    => (string) $customerId,
             'inv_product_id' => $item['inv_product_id'] ?? null,
             'title'          => $item['title'] ?? 'Homes_Tracker',
             'serial_number'  => $item['serial_number'] ?? null,
@@ -281,7 +283,124 @@ class VilcomSafetikaService
         return $data['data'] ?? $data;
     }
 
+    /**
+     * Fetch all available sales persons from Safetika.
+     */
+    public function getSalesPersons(string $token): array
+    {
+        $response = Http::timeout($this->timeout)
+            ->withToken($token)
+            ->get("{$this->baseUrl}/dropdowns/sales-persons");
+
+        if (!$response->successful()) {
+            Log::error('VilcomSafetika: getSalesPersons failed', ['status' => $response->status(), 'response' => $response->body()]);
+            return [];
+        }
+
+        $data = $response->json();
+        return $data['data'] ?? [];
+    }
+
+    /**
+     * Fetch all available customer types from Safetika.
+     */
+    public function getCustomerTypes(string $token): array
+    {
+        $response = Http::timeout($this->timeout)
+            ->withToken($token)
+            ->get("{$this->baseUrl}/dropdowns/customer-types");
+
+        return $response->successful() ? ($response->json()['data'] ?? []) : [];
+    }
+
+    /**
+     * Fetch all available regions from Safetika.
+     */
+    public function getRegions(string $token): array
+    {
+        $response = Http::timeout($this->timeout)
+            ->withToken($token)
+            ->get("{$this->baseUrl}/dropdowns/regions");
+
+        return $response->successful() ? ($response->json()['data'] ?? []) : [];
+    }
+
+    // ── MBR Customer Queries ──────────────────────────────────────────────
+
+    /**
+     * List MBR customers from the Safetika API.
+     * Supports query params: status, customer_id, email, per_page
+     */
+    public function getMbrCustomers(string $token, array $params = []): array
+    {
+        $response = Http::timeout($this->timeout)
+            ->withToken($token)
+            ->get("{$this->baseUrl}/vilcom/customers", $params);
+
+        return $response->json() ?? [];
+    }
+
+    /**
+     * Get a single MBR customer by their Safetika record_id.
+     */
+    public function getMbrCustomer(string $token, string $id): array
+    {
+        $response = Http::timeout($this->timeout)
+            ->withToken($token)
+            ->get("{$this->baseUrl}/vilcom/customers/{$id}");
+
+        return $response->json() ?? [];
+    }
+
+    // ── Inventory Queries ─────────────────────────────────────────────────
+
+    /**
+     * List all inventory assignments.
+     * Supports query params: status, from_date, to_date, search
+     */
+    public function getInventoryAssignments(string $token, array $params = []): array
+    {
+        $response = Http::timeout($this->timeout)
+            ->withToken($token)
+            ->get("{$this->baseUrl}/inventory/assignments", $params);
+
+        return $response->json() ?? [];
+    }
+
+    /**
+     * Get all inventory assignments for a specific Safetika customer.
+     */
+    public function getCustomerInventoryAssignments(string $token, string $customerId): array
+    {
+        $response = Http::timeout($this->timeout)
+            ->withToken($token)
+            ->get("{$this->baseUrl}/inventory/assignments/customer/{$customerId}");
+
+        return $response->json() ?? [];
+    }
+
+    /**
+     * Unassign an inventory item and return it to available stock.
+     */
+    public function unassignInventory(string $token, string $invItemId): array
+    {
+        $response = Http::timeout($this->timeout)
+            ->withToken($token)
+            ->post("{$this->baseUrl}/inventory/unassign", ['inv_item_id' => $invItemId]);
+
+        $data = $response->json() ?? [];
+
+        if (!$response->successful() || empty($data['success'])) {
+            throw new \RuntimeException(
+                'VilcomSafetika: unassign failed: ' . ($data['message'] ?? $response->body())
+            );
+        }
+
+        return $data;
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
+
 
     private function splitName(string $name): array
     {
@@ -337,4 +456,34 @@ class VilcomSafetikaService
         return $map[$countyKey]
             ?? config('vilcom_safetika.defaults.region', 'Nairobi_Westlands (Area 1)');
     }
+
+public function getAccountTypes(string $token): array
+{
+    $response = Http::timeout($this->timeout)
+        ->withToken($token)
+        ->get("{$this->baseUrl}/dropdowns/account-types");
+
+    return $response->successful() ? ($response->json()['data'] ?? []) : [];
+}
+
+public function getServiceCategories(string $token): array
+{
+    $response = Http::timeout($this->timeout)
+        ->withToken($token)
+        ->get("{$this->baseUrl}/dropdowns/service-categories");
+
+    return $response->successful() ? ($response->json()['data'] ?? []) : [];
+}
+
+public function getAccountTypesByCategory(string $token, string $serviceCategory): array
+{
+    $response = Http::timeout($this->timeout)
+        ->withToken($token)
+        ->post("{$this->baseUrl}/dropdowns/account-types/by-category", [
+            'service_category' => $serviceCategory,
+        ]);
+
+    return $response->successful() ? ($response->json()['data'] ?? []) : [];
+}
+
 }

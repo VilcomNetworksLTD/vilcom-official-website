@@ -79,7 +79,10 @@ import AdminPressArticles from "./pages/admin/PressArticles";
 import AdminGallery from "./pages/admin/AdminGallery";
 import AdminCareerManagement from "./pages/admin/AdminCareerManagement";
 import EmeraldApprovals from "./pages/admin/EmeraldApprovals";
+import SafetikaPortal from "./pages/admin/SafetikaPortal";
 import AnalyticsDashboard from "./pages/admin/AnalyticsDashboard";
+import ClientInvoices from "./pages/clients/ClientInvoices";
+import ClientPayments from "./pages/clients/ClientPayments";
 
 // ── Role-specific profile pages ───────────────────────────────────────────────
 import AdminProfile  from "./pages/admin/AdminProfile";
@@ -199,6 +202,7 @@ const App = () => (
             <Route path="/admin/contact-messages"   element={<ProtectedRoute requireRoles={['admin', 'staff']}><ContactMessages /></ProtectedRoute>} />
             <Route path="/admin/careers"            element={<ProtectedRoute requireRoles={['admin', 'staff', 'hr']}><AdminCareerManagement /></ProtectedRoute>} />
             <Route path="/admin/emerald-approvals"  element={<ProtectedRoute requireRoles={['admin', 'staff']}><EmeraldApprovals /></ProtectedRoute>} />
+            <Route path="/admin/safetika-portal"    element={<ProtectedRoute requireRoles={['admin', 'staff']}><SafetikaPortal /></ProtectedRoute>} />
             <Route path="/admin/analytics"          element={<ProtectedRoute requireRoles={['admin']}><AnalyticsDashboard /></ProtectedRoute>} />
 
             {/* ══════════════════════════════════════════════════════════
@@ -216,6 +220,8 @@ const App = () => (
             <Route path="/client/subscriptions"     element={<ProtectedRoute requireRoles={['client']}><MyServices /></ProtectedRoute>} />
             <Route path="/client/services"          element={<ProtectedRoute requireRoles={['client']}><MyServices /></ProtectedRoute>} />
             <Route path="/client/tickets"           element={<ProtectedRoute requireRoles={['client']}><MyTickets /></ProtectedRoute>} />
+            <Route path="/client/invoices"          element={<ProtectedRoute requireRoles={['client']}><ClientInvoices /></ProtectedRoute>} />
+            <Route path="/client/payments"          element={<ProtectedRoute requireRoles={['client']}><ClientPayments /></ProtectedRoute>} />
 
             {/* ── 404 ── */}
             <Route path="*"                         element={<NotFound />} />

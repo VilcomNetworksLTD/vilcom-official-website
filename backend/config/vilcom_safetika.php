@@ -15,8 +15,8 @@ return [
     // ── Provisioning Defaults ────────────────────────────────────────────
     // These can be overridden per product via EmeraldProductMapping in future
     'defaults'  => [
-        'account_type'     => env('VILCOM_SAFETIKA_ACCOUNT_TYPE', 'FTTH Home'),
-        'service_category' => env('VILCOM_SAFETIKA_SERVICE_CATEGORY', 'Internet'),
+        'account_type'     => env('VILCOM_SAFETIKA_ACCOUNT_TYPE', 'Fibre 8Mbps'),
+        'service_category' => env('VILCOM_SAFETIKA_SERVICE_CATEGORY', 'Home Fibre'),
         'domain'           => 'Vilcom',          // Non-editable per API docs
         'setup_charge'     => '0',
         'sales_person'     => env('VILCOM_SAFETIKA_SALES_PERSON', 'Yvonne Nyarangi'),
@@ -27,7 +27,7 @@ return [
 
     // ── Inventory ────────────────────────────────────────────────────────
     // Warehouse to search for Homes_Tracker devices
-    'warehouse' => env('VILCOM_SAFETIKA_WAREHOUSE', 'Main Warehouse'),
+    'warehouse' => env('VILCOM_SAFETIKA_WAREHOUSE', 'HG8145V5(Huawei)_White_Routers_WH'),
 
     // ── Timeouts ─────────────────────────────────────────────────────────
     'timeout'   => env('VILCOM_SAFETIKA_TIMEOUT', 30),

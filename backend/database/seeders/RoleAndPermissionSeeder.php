@@ -176,6 +176,8 @@ class RoleAndPermissionSeeder extends Seeder
             'users.create',
             'analytics.view', 'analytics.clients',
             'reports.revenue',
+            'products.view', 'products.create', 'products.edit', 'products.delete',
+            'categories.view', 'categories.create', 'categories.edit', 'categories.delete',
         ])));
         $this->command->info('✓ SALES role created');
 
@@ -216,13 +218,14 @@ class RoleAndPermissionSeeder extends Seeder
         $cmRole = Role::firstOrCreate(['name' => 'content_manager', 'guard_name' => 'web']);
         $cmRole->syncPermissions([
             'users.view.own', 'users.edit.own',
-            'pages.view', 'pages.create', 'pages.edit', 'pages.publish',
-            'blog.view', 'blog.create', 'blog.edit', 'blog.publish',
-            'media.view', 'media.upload', 'media.edit',
-            'banners.view', 'banners.create', 'banners.edit',
-            'testimonials.view', 'testimonials.approve',
-            'faqs.view', 'faqs.create', 'faqs.edit',
-            'kb.view', 'kb.create', 'kb.edit', 'kb.publish',
+            'pages.view', 'pages.create', 'pages.edit', 'pages.delete', 'pages.publish',
+            'blog.view', 'blog.create', 'blog.edit', 'blog.delete', 'blog.publish',
+            'media.view', 'media.upload', 'media.edit', 'media.delete',
+            'banners.view', 'banners.create', 'banners.edit', 'banners.delete',
+            'testimonials.view', 'testimonials.approve', 'testimonials.create', 'testimonials.edit', 'testimonials.delete',
+            'faqs.view', 'faqs.create', 'faqs.edit', 'faqs.delete',
+            'kb.view', 'kb.create', 'kb.edit', 'kb.delete', 'kb.publish',
+            'portfolio.view', 'portfolio.create', 'portfolio.edit', 'portfolio.delete',
             'notifications.view.own',
             'dashboard.staff',
         ]);

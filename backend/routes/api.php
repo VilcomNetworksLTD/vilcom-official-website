@@ -681,6 +681,42 @@ Route::prefix('press-articles')->group(function () {
         Route::get('/statistics', [App\Http\Controllers\Api\Admin\VilcomSafetikaController::class, 'statistics'])
             ->name('api.admin.vilcom-safetika.statistics');
 
+        // ── Dropdown endpoints ──────────────────────────────────────────
+        Route::get('/sales-persons', [App\Http\Controllers\Api\Admin\VilcomSafetikaController::class, 'salesPersons'])
+            ->name('api.admin.vilcom-safetika.sales-persons');
+
+        Route::get('/service-categories', [App\Http\Controllers\Api\Admin\VilcomSafetikaController::class, 'serviceCategories'])
+            ->name('api.admin.vilcom-safetika.service-categories');
+
+        Route::get('/account-types', [App\Http\Controllers\Api\Admin\VilcomSafetikaController::class, 'accountTypes'])
+            ->name('api.admin.vilcom-safetika.account-types');
+
+        Route::get('/customer-types', [App\Http\Controllers\Api\Admin\VilcomSafetikaController::class, 'customerTypes'])
+            ->name('api.admin.vilcom-safetika.customer-types');
+
+        Route::post('/account-types/by-category', [App\Http\Controllers\Api\Admin\VilcomSafetikaController::class, 'accountTypesByCategory'])
+            ->name('api.admin.vilcom-safetika.account-types-by-category');
+
+        // ── Safetika Portal endpoints ───────────────────────────────────
+        Route::get('/mbr-customers', [App\Http\Controllers\Api\Admin\VilcomSafetikaController::class, 'mbrCustomers'])
+            ->name('api.admin.vilcom-safetika.mbr-customers');
+
+        Route::get('/provisioned-clients', [App\Http\Controllers\Api\Admin\VilcomSafetikaController::class, 'provisionedClients'])
+            ->name('api.admin.vilcom-safetika.provisioned-clients');
+
+        Route::post('/add-service', [App\Http\Controllers\Api\Admin\VilcomSafetikaController::class, 'addService'])
+            ->name('api.admin.vilcom-safetika.add-service');
+
+        Route::get('/inventory-assignments', [App\Http\Controllers\Api\Admin\VilcomSafetikaController::class, 'inventoryAssignments'])
+            ->name('api.admin.vilcom-safetika.inventory-assignments');
+
+        Route::post('/unassign-inventory', [App\Http\Controllers\Api\Admin\VilcomSafetikaController::class, 'unassignInventory'])
+            ->name('api.admin.vilcom-safetika.unassign-inventory');
+
+        // ── Wildcard routes (must be last) ──────────────────────────────
+        Route::get('/mbr-customers/{id}', [App\Http\Controllers\Api\Admin\VilcomSafetikaController::class, 'mbrCustomer'])
+            ->name('api.admin.vilcom-safetika.mbr-customer');
+
         Route::get('/{user}', [App\Http\Controllers\Api\Admin\VilcomSafetikaController::class, 'show'])
             ->name('api.admin.vilcom-safetika.show');
 

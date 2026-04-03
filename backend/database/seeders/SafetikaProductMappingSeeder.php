@@ -1,9 +1,14 @@
 <?php
 // database/seeders/SafetikaProductMappingSeeder.php
 //
-// Maps every internet/fibre product → Safetika account_type, customer_type,
-// and service_category so the provisioning chain knows what to send
-// to apisafetika.vilcom.co.ke.
+// Maps Vilcom portal products → Safetika API (apisafetika.vilcom.co.ke) values.
+//
+// IMPORTANT — account_type and service_category MUST match the live dropdown
+// values from:
+//   GET /dropdowns/account-types
+//   GET /dropdowns/service-categories
+//
+// Last synced against API: 2026-04-01
 
 namespace Database\Seeders;
 
@@ -16,79 +21,83 @@ class SafetikaProductMappingSeeder extends Seeder
     /**
      * SKU → Safetika mapping.
      *
-     * account_type  — sent to create-mbr  (Safetika field: account_type)
-     * customer_type — sent to create-mbr  (Safetika field: customer_type)
-     * service_category — sent to add-service (Safetika field: service_category)
+     * account_type     — must match /dropdowns/account-types  (name field)
+     * customer_type    — must match /dropdowns/customer-types (name field)
+     * service_category — must match /dropdowns/service-categories (name field)
      */
     private array $mappings = [
 
         // ── HOME FIBER PLANS ─────────────────────────────────────────────
+        // Service category = "Home Fibre" (from /dropdowns/service-categories)
+        // Account types    = real package names (from /dropdowns/account-types)
         'HOME-STARTER-8'    => [
-            'account_type'     => 'FTTH Home',
+            'account_type'     => 'Fibre 8Mbps',
             'customer_type'    => 'Residential',
-            'service_category' => 'Internet',
+            'service_category' => 'Home Fibre',
             'label'            => 'Home Starter 8 Mbps',
         ],
         'HOME-STARTER-18'   => [
-            'account_type'     => 'FTTH Home',
+            'account_type'     => 'Fibre 18Mbps',
             'customer_type'    => 'Residential',
-            'service_category' => 'Internet',
+            'service_category' => 'Home Fibre',
             'label'            => 'Home Starter 18 Mbps',
         ],
         'HOME-BASIC-30'     => [
-            'account_type'     => 'FTTH Home',
+            'account_type'     => 'Fibre 30Mbps',
             'customer_type'    => 'Residential',
-            'service_category' => 'Internet',
+            'service_category' => 'Home Fibre',
             'label'            => 'Home Basic 30 Mbps',
         ],
         'HOME-BASIC-60'     => [
-            'account_type'     => 'FTTH Home',
+            'account_type'     => 'Fibre 60Mbps',
             'customer_type'    => 'Residential',
-            'service_category' => 'Internet',
+            'service_category' => 'Home Fibre',
             'label'            => 'Home Basic 60 Mbps',
         ],
         'HOME-STANDARD-100' => [
-            'account_type'     => 'FTTH Home',
+            'account_type'     => 'Fibre 100Mbps',
             'customer_type'    => 'Residential',
-            'service_category' => 'Internet',
+            'service_category' => 'Home Fibre',
             'label'            => 'Home Standard 100 Mbps',
         ],
 
         // ── BUSINESS FIBER PLANS ─────────────────────────────────────────
+        // Service category = "Micro, Small & Medium Enterprises Packages"
+        //   (or "Business Fibre(Inc. Tax)" for larger tiers)
         'BIZ-FIBER-40'  => [
-            'account_type'     => 'FTTH Business',
+            'account_type'     => 'MSME Fibre 40Mbps',
             'customer_type'    => 'Business',
-            'service_category' => 'Internet',
+            'service_category' => 'Micro, Small & Medium Enterprises Packages',
             'label'            => 'Business Fiber 40 Mbps',
         ],
         'BIZ-FIBER-80'  => [
-            'account_type'     => 'FTTH Business',
+            'account_type'     => 'MSME Fibre 80Mbps',
             'customer_type'    => 'Business',
-            'service_category' => 'Internet',
+            'service_category' => 'Micro, Small & Medium Enterprises Packages',
             'label'            => 'Business Fiber 80 Mbps',
         ],
         'BIZ-FIBER-120' => [
-            'account_type'     => 'FTTH Business',
+            'account_type'     => 'MSME Fibre 120Mbps',
             'customer_type'    => 'Business',
-            'service_category' => 'Internet',
+            'service_category' => 'Micro, Small & Medium Enterprises Packages',
             'label'            => 'Business Fiber 120 Mbps',
         ],
         'BIZ-FIBER-200' => [
-            'account_type'     => 'FTTH Business',
+            'account_type'     => 'MSME Fibre 200Mbps',
             'customer_type'    => 'Business',
-            'service_category' => 'Internet',
+            'service_category' => 'Micro, Small & Medium Enterprises Packages',
             'label'            => 'Business Fiber 200 Mbps',
         ],
         'BIZ-FIBER-300' => [
-            'account_type'     => 'FTTH Business',
+            'account_type'     => 'MSME Fibre 300Mbps',
             'customer_type'    => 'Enterprise',
-            'service_category' => 'Internet',
+            'service_category' => 'Micro, Small & Medium Enterprises Packages',
             'label'            => 'Business Fiber 300 Mbps',
         ],
         'BIZ-FIBER-500' => [
-            'account_type'     => 'FTTH Business',
+            'account_type'     => 'MSME Fibre 500Mbps',
             'customer_type'    => 'Enterprise',
-            'service_category' => 'Internet',
+            'service_category' => 'Micro, Small & Medium Enterprises Packages',
             'label'            => 'Business Fiber 500 Mbps',
         ],
     ];
@@ -119,7 +128,7 @@ class SafetikaProductMappingSeeder extends Seeder
                 ]
             );
 
-            $this->command->info("  ✅  Mapped [{$sku}] → {$map['account_type']} / {$map['customer_type']}");
+            $this->command->info("  ✅  [{$sku}] → {$map['account_type']} / {$map['service_category']}");
             $created++;
         }
 

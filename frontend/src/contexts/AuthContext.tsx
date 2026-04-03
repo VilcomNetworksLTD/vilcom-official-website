@@ -145,26 +145,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // ============================================
 
   const login = async (email: string, password: string): Promise<string> => {
-    const response = await api.post('/auth/login', { email, password });
-    const data = response.data;
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      const data = response.data;
 
-    if (response.status >= 300) {
       if (data.requires_2fa) {
         throw new Error('2FA_REQUIRED');
       }
-      throw new Error(data.message || 'Login failed');
-    }
 
-    if (data.success && data.data) {
-      const { user: userData, token: authToken } = data.data;
-      localStorage.setItem('auth_token', authToken);
-      localStorage.setItem('auth_user', JSON.stringify(userData));
-      setToken(authToken);
-      setUser(userData);
-      // Return the URL computed from the fresh API response — not from stale React state
-      return getDashboardUrlForUser(userData);
-    } else {
-      throw new Error(data.message || 'Login failed');
+      if (data.success && data.data) {
+        const { user: userData, token: authToken } = data.data;
+        localStorage.setItem('auth_token', authToken);
+        localStorage.setItem('auth_user', JSON.stringify(userData));
+        setToken(authToken);
+        setUser(userData);
+        return getDashboardUrlForUser(userData);
+      } else {
+        throw new Error(data.message || 'Login failed');
+      }
+    } catch (error: any) {
+      if (error.message === '2FA_REQUIRED') throw error;
+      
+      // Override 401/422 credential errors with safe, generic message
+      if (error.response?.status === 401 || error.response?.status === 422) {
+        throw new Error('Please confirm your credentials.');
+      }
+      
+      throw new Error(error.response?.data?.message || 'Login failed. Please check your credentials.');
     }
   };
 
@@ -183,30 +190,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const register = async (data: RegisterData): Promise<string> => {
-    const response = await api.post('/auth/register', data);
-    const result = response.data;
+    try {
+      const response = await api.post('/auth/register', data);
+      const result = response.data;
 
-    if (response.status >= 300) {
-      // Surface Laravel field-level validation errors
-      if (result.errors) {
-        const messages = Object.values(result.errors as Record<string, string[]>)
-          .flat()
-          .join(' ');
-        throw new Error(messages);
+      if (result.success && result.data) {
+        const { user: userData, token: authToken } = result.data;
+        localStorage.setItem('auth_token', authToken);
+        localStorage.setItem('auth_user', JSON.stringify(userData));
+        setToken(authToken);
+        setUser(userData);
+        return getDashboardUrlForUser(userData);
+      } else {
+        throw new Error(result.message || 'Registration failed');
       }
-      throw new Error(result.message || 'Registration failed');
-    }
-
-    if (result.success && result.data) {
-      const { user: userData, token: authToken } = result.data;
-      localStorage.setItem('auth_token', authToken);
-      localStorage.setItem('auth_user', JSON.stringify(userData));
-      setToken(authToken);
-      setUser(userData);
-      // Return the URL computed from the fresh API response — not from stale React state
-      return getDashboardUrlForUser(userData);
-    } else {
-      throw new Error(result.message || 'Registration failed');
+    } catch (error: any) {
+      if (error.response?.status === 422) {
+        // Registration validation errors - show clean messages instead of 422
+        const result = error.response.data;
+        if (result.errors) {
+          const messages = Object.values(result.errors as Record<string, string[]>).flat().join(' ');
+          throw new Error(messages);
+        }
+      }
+      throw new Error(error.response?.data?.message || 'Registration failed. Please confirm your details.');
     }
   };
 

@@ -20,18 +20,20 @@ import {
   ArrowUpRight,
   TrendingUp,
   UserPlus,
+  Loader2
 } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import whatsappService, { WhatsAppMessage } from '@/services/whatsapp';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 // ─── Config ────────────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG = {
-  pending:   { label: 'Pending',   color: 'text-amber-400',  bg: 'bg-amber-500/20',  border: 'border-amber-500/30',  icon: Clock },
-  contacted: { label: 'Contacted', color: 'text-blue-400',   bg: 'bg-blue-500/20',   border: 'border-blue-500/30',   icon: PhoneCall },
-  converted: { label: 'Converted', color: 'text-green-400',  bg: 'bg-green-500/20',  border: 'border-green-500/30',  icon: CheckCircle2 },
-  failed:    { label: 'Failed',    color: 'text-red-400',    bg: 'bg-red-500/20',    border: 'border-red-500/30',    icon: Ban },
+  pending:   { label: 'Pending',   color: 'text-amber-300',  bg: 'bg-amber-500/20',  border: 'border-amber-500/30',  icon: Clock },
+  contacted: { label: 'Contacted', color: 'text-blue-300',   bg: 'bg-blue-500/20',   border: 'border-blue-500/30',   icon: PhoneCall },
+  converted: { label: 'Converted', color: 'text-green-300',  bg: 'bg-green-500/20',  border: 'border-green-500/30',  icon: CheckCircle2 },
+  failed:    { label: 'Failed',    color: 'text-red-300',    bg: 'bg-red-500/20',    border: 'border-red-500/30',    icon: Ban },
 };
 
 const TYPE_CONFIG = {
@@ -57,6 +59,8 @@ const tryPathname = (url: string | null) => {
   try { return new URL(url).pathname; } catch { return url; }
 };
 
+const makeGlassCard = 'bg-white/10 backdrop-blur-md border border-white/20 rounded-xl';
+
 // ─── WhatsApp SVG icon ─────────────────────────────────────────────────────────
 
 const WaIcon = ({ className = 'w-4 h-4' }: { className?: string }) => (
@@ -71,9 +75,9 @@ const StatusBadge = ({ status }: { status: WhatsAppMessage['status'] }) => {
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
   const Icon = cfg.icon;
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${cfg.bg} ${cfg.color} ${cfg.border}`}>
-      <Icon className="w-3 h-3" />
-      {cfg.label}
+    <span className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium border ${cfg.bg} ${cfg.color} ${cfg.border}`}>
+      <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+      <span className="hidden xs:inline">{cfg.label}</span>
     </span>
   );
 };
@@ -81,7 +85,7 @@ const StatusBadge = ({ status }: { status: WhatsAppMessage['status'] }) => {
 const TypeBadge = ({ type }: { type: WhatsAppMessage['message_type'] }) => {
   const cfg = TYPE_CONFIG[type] ?? TYPE_CONFIG.custom;
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${cfg.bg} ${cfg.color}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 sm:py-1 rounded text-[10px] sm:text-xs font-medium ${cfg.bg} ${cfg.color}`}>
       {cfg.label}
     </span>
   );
@@ -92,14 +96,14 @@ const TypeBadge = ({ type }: { type: WhatsAppMessage['message_type'] }) => {
 const StatCard = ({
   label, value, color, sub, icon: Icon
 }: { label: string; value: string | number; color: string; sub?: string; icon: any }) => (
-  <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 hover:bg-white/15 transition-all">
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-slate-400 text-xs mb-1">{label}</p>
-        <p className="text-2xl font-bold text-white">{value}</p>
-        {sub && <p className="text-xs text-slate-500 mt-1">{sub}</p>}
+  <div className={`${makeGlassCard} p-3 sm:p-4`}>
+    <div className="flex items-center justify-between gap-2">
+      <div className="min-w-0 flex-1">
+        <p className="text-slate-400 text-[10px] sm:text-xs mb-0.5 truncate">{label}</p>
+        <p className="text-lg sm:text-2xl font-bold text-white truncate">{value}</p>
+        {sub && <p className="text-[9px] sm:text-xs text-slate-500 mt-0.5 truncate">{sub}</p>}
       </div>
-      <Icon className={`w-8 h-8 ${color} opacity-70`} />
+      <Icon className={`w-5 h-5 sm:w-8 sm:h-8 ${color} opacity-70 shrink-0`} />
     </div>
   </div>
 );
@@ -117,87 +121,96 @@ const DetailDrawer = ({
   const [acting, setActing] = useState(false);
   const [convertMsg, setConvertMsg] = useState<{ type: 'success'|'error'; text: string } | null>(null);
   const [convertingClient, setConvertingClient] = useState(false);
+  const { toast } = useToast();
 
   const act = async (fn: () => Promise<unknown>) => {
     setActing(true);
-    try { await fn(); onUpdate(); onClose(); }
-    finally { setActing(false); }
+    try {
+      await fn();
+      toast({ title: 'Success', description: 'Action completed.' });
+      onUpdate();
+      onClose();
+    } catch {
+      toast({ title: 'Error', description: 'Failed to complete action.', variant: 'destructive' });
+    } finally {
+      setActing(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="w-full max-w-2xl bg-slate-900/95 backdrop-blur-xl border border-white/20 rounded-xl flex flex-col overflow-hidden max-h-[90vh] shadow-2xl relative">
-        <div className="px-6 py-4 border-b border-white/10 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs text-slate-500 mb-1">WhatsApp Lead #{msg.id}</p>
+      <div className={`${makeGlassCard} w-full max-w-2xl bg-slate-900/95 flex flex-col overflow-hidden max-h-[95vh] sm:max-h-[90vh] shadow-2xl relative my-4 sm:my-8`}>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-white/10 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-slate-500 mb-1">WhatsApp Lead #{msg.id}</p>
             <div className="flex items-center gap-2 flex-wrap mt-1">
               <StatusBadge status={msg.status} />
               <TypeBadge type={msg.message_type} />
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+          <button onClick={onClose} className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors shrink-0">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
           <div className="bg-white/5 rounded-xl border border-white/10 p-3 sm:p-4 space-y-3">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Contact</p>
+            <p className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Contact Details</p>
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center flex-shrink-0">
-                <WaIcon className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-md">
+                <WaIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
-              <div>
-                <p className="text-white font-medium text-sm">{msg.name || 'Anonymous'}</p>
-                {msg.user && <p className="text-xs text-blue-400">Registered user #{msg.user.id}</p>}
+              <div className="min-w-0 flex-1">
+                <p className="text-white font-medium text-sm truncate">{msg.name || 'Anonymous'}</p>
+                {msg.user && <p className="text-xs text-blue-400 mt-0.5">Registered user #{msg.user.id}</p>}
               </div>
             </div>
-            <div className="space-y-2 text-sm">
+            <div className="grid grid-cols-1 gap-2 sm:gap-3 text-sm mt-3">
               {msg.phone && (
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-slate-300 text-xs sm:text-sm">
+                <div className="flex items-center justify-between gap-2 overflow-hidden">
+                  <div className="flex items-center gap-2 text-slate-300 text-xs sm:text-sm truncate flex-1">
                     <Phone className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                    <span className="break-all">{msg.phone}</span>
+                    <span className="truncate">{msg.phone}</span>
                   </div>
                   <a
                     href={waUrl(msg.phone)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-1 bg-green-500/20 border border-green-500/30 text-green-400 rounded-lg text-xs hover:bg-green-500/30 transition-all flex-shrink-0"
+                    className="flex items-center gap-1.5 px-2 sm:px-3 py-1 bg-green-500/20 border border-green-500/30 text-green-400 rounded-lg text-[10px] sm:text-xs hover:bg-green-500/30 transition-all flex-shrink-0"
                   >
                     <WaIcon className="w-3 h-3" />
-                    <span className="hidden sm:inline">Chat</span>
+                    <span>Chat</span>
                   </a>
                 </div>
               )}
               {msg.email && (
-                <a href={`mailto:${msg.email}`} className="flex items-center gap-2 text-slate-300 hover:text-blue-400 transition-colors text-xs sm:text-sm break-all">
+                <a href={`mailto:${msg.email}`} className="flex items-center gap-2 text-slate-300 hover:text-blue-400 transition-colors text-xs sm:text-sm truncate">
                   <AtSign className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                  {msg.email}
+                  <span className="truncate">{msg.email}</span>
                 </a>
               )}
               <div className="flex items-center gap-2 text-slate-400 text-xs sm:text-sm">
                 <Calendar className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                <span className="break-all">{fmtDateTime(msg.created_at)}</span>
+                <span>{fmtDateTime(msg.created_at)}</span>
               </div>
             </div>
           </div>
 
           <div className="bg-white/5 rounded-xl border border-white/10 p-3 sm:p-4">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Message Sent</p>
+            <p className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 sm:mb-3">Message Preview</p>
             <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
               <p className="text-slate-200 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.message}</p>
             </div>
           </div>
 
-          <div className="bg-white/5 rounded-xl border border-white/10 p-3 sm:p-4 space-y-3">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Technical Info</p>
+          <div className="bg-white/5 rounded-xl border border-white/10 p-3 sm:p-4 space-y-2 sm:space-y-3">
+            <p className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Source Information</p>
             {msg.page_url && (
               <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2 text-slate-400 text-xs sm:text-sm">
+                <div className="flex items-center gap-2 text-slate-400 text-xs sm:text-sm overflow-hidden">
                   <Globe className="w-4 h-4 flex-shrink-0 text-slate-500" />
-                  <span className="break-all">{tryPathname(msg.page_url)}</span>
+                  <span className="truncate">{tryPathname(msg.page_url)}</span>
                 </div>
                 <a href={msg.page_url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 text-blue-400 hover:text-blue-300">
                   <ExternalLink className="w-3.5 h-3.5" />
@@ -205,92 +218,96 @@ const DetailDrawer = ({
               </div>
             )}
             {msg.ip_address && (
-              <div className="flex items-center gap-2 text-slate-400 text-xs sm:text-sm">
+              <div className="flex items-center gap-2 text-slate-400 text-xs sm:text-sm truncate">
                 <Monitor className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                <span className="font-mono break-all">{msg.ip_address}</span>
+                <span className="font-mono truncate">{msg.ip_address}</span>
               </div>
             )}
             {msg.source && (
-              <div className="flex items-center gap-2 text-slate-400 text-xs sm:text-sm">
+              <div className="flex items-center gap-2 text-slate-400 text-xs sm:text-sm truncate">
                 <ArrowUpRight className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                Source: <span className="text-slate-300">{msg.source}</span>
+                <span>Source: <span className="text-slate-300">{msg.source}</span></span>
               </div>
             )}
           </div>
         </div>
 
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-white/10 space-y-2 sm:space-y-2.5 flex flex-col">
-          {msg.phone && (
-            <a
-              href={waUrl(msg.phone)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 py-2 sm:py-2.5 bg-green-500/20 border border-green-500/30 text-green-300 rounded-lg hover:bg-green-500/30 transition-all text-xs sm:text-sm font-medium"
-            >
-              <WaIcon className="w-4 h-4" />
-              Reply on WhatsApp
-            </a>
-          )}
-          {msg.status === 'pending' && (
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-white/10 space-y-3 flex flex-col">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+            {msg.phone && (
+              <a
+                href={waUrl(msg.phone)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 py-2 sm:py-2.5 bg-green-500/20 border border-green-500/30 text-green-300 rounded-lg hover:bg-green-500/30 transition-all text-xs sm:text-sm font-medium sm:col-span-2"
+              >
+                <WaIcon className="w-4 h-4" />
+                Reply on WhatsApp
+              </a>
+            )}
+            {msg.status === 'pending' && (
+              <button
+                onClick={() => act(() => whatsappService.markContacted(msg.id))}
+                disabled={acting}
+                className="flex items-center justify-center gap-2 py-2 sm:py-2.5 bg-blue-500/20 border border-blue-500/30 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-all text-xs sm:text-sm font-medium disabled:opacity-50"
+              >
+                <PhoneCall className="w-4 h-4" />
+                Mark as Contacted
+              </button>
+            )}
+            {msg.status === 'contacted' && (
+              <button
+                onClick={() => act(() => whatsappService.markConverted(msg.id))}
+                disabled={acting}
+                className="flex items-center justify-center gap-2 py-2 sm:py-2.5 bg-green-500/20 border border-green-500/30 text-green-300 rounded-lg hover:bg-green-500/30 transition-all text-xs sm:text-sm font-medium disabled:opacity-50"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                Mark as Converted
+              </button>
+            )}
+            {msg.status !== 'failed' && (
+              <button
+                onClick={() => act(() => whatsappService.updateMessage(msg.id, { status: 'failed' }))}
+                disabled={acting}
+                className="flex items-center justify-center gap-2 py-2 sm:py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg hover:bg-red-500/20 transition-all text-xs sm:text-sm disabled:opacity-50"
+              >
+                <Ban className="w-4 h-4" />
+                Mark as Failed
+              </button>
+            )}
+          </div>
+          
+          <div className="border-t border-white/10 pt-3 mt-1">
+            {convertMsg && (
+              <div className={`flex items-center gap-2 text-xs sm:text-sm px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg mb-3 ${
+                convertMsg.type === 'success' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'
+              }`}>
+                {convertMsg.type === 'success' ? <UserPlus className="w-4 h-4 shrink-0" /> : <X className="w-4 h-4 shrink-0" />}
+                <span className="break-words">{convertMsg.text}</span>
+              </div>
+            )}
             <button
-              onClick={() => act(() => whatsappService.markContacted(msg.id))}
-              disabled={acting}
-              className="w-full flex items-center justify-center gap-2 py-2 sm:py-2.5 bg-blue-500/20 border border-blue-500/30 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-all text-xs sm:text-sm font-medium disabled:opacity-50"
+              disabled={convertingClient || msg.status === 'converted'}
+              onClick={async () => {
+                setConvertingClient(true);
+                setConvertMsg(null);
+                try {
+                  const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/v1/admin/clients/convert`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` },
+                    body: JSON.stringify({ source_type: 'whatsapp', source_id: msg.id }),
+                  });
+                  const data = await res.json();
+                  setConvertMsg({ type: res.ok ? 'success' : 'error', text: data.message ?? (res.ok ? 'Client provisioned!' : 'Failed.') });
+                  if (res.ok) onUpdate();
+                } catch { setConvertMsg({ type: 'error', text: 'Network error.' }); }
+                finally { setConvertingClient(false); }
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2 sm:py-2.5 bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 rounded-lg hover:bg-cyan-500/25 transition-all text-xs sm:text-sm font-medium disabled:opacity-50"
             >
-              <PhoneCall className="w-4 h-4" />
-              Mark as Contacted
+              {convertingClient ? <><Loader2 className="w-4 h-4 animate-spin" /> Provisioning...</> : <><UserPlus className="w-4 h-4" /> Convert to Client</>}
             </button>
-          )}
-          {msg.status === 'contacted' && (
-            <button
-              onClick={() => act(() => whatsappService.markConverted(msg.id))}
-              disabled={acting}
-              className="w-full flex items-center justify-center gap-2 py-2 sm:py-2.5 bg-green-500/20 border border-green-500/30 text-green-300 rounded-lg hover:bg-green-500/30 transition-all text-xs sm:text-sm font-medium disabled:opacity-50"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              Mark as Converted
-            </button>
-          )}
-          {msg.status !== 'failed' && (
-            <button
-              onClick={() => act(() => whatsappService.updateMessage(msg.id, { status: 'failed' }))}
-              disabled={acting}
-              className="w-full flex items-center justify-center gap-2 py-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg hover:bg-red-500/20 transition-all text-xs sm:text-sm disabled:opacity-50"
-            >
-              <Ban className="w-4 h-4" />
-              Mark as Failed
-            </button>
-          )}
-          {/* Convert to Client */}
-          {convertMsg && (
-            <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
-              convertMsg.type === 'success' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'
-            }`}>
-              {convertMsg.type === 'success' ? <UserPlus className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
-              {convertMsg.text}
-            </div>
-          )}
-          <button
-            disabled={convertingClient}
-            onClick={async () => {
-              setConvertingClient(true);
-              setConvertMsg(null);
-              try {
-                const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/v1/admin/clients/convert`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` },
-                  body: JSON.stringify({ source_type: 'whatsapp', source_id: msg.id }),
-                });
-                const data = await res.json();
-                setConvertMsg({ type: res.ok ? 'success' : 'error', text: data.message ?? (res.ok ? 'Client provisioned!' : 'Failed.') });
-                if (res.ok) onUpdate();
-              } catch { setConvertMsg({ type: 'error', text: 'Network error.' }); }
-              finally { setConvertingClient(false); }
-            }}
-            className="w-full flex items-center justify-center gap-2 py-2.5 bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 rounded-lg hover:bg-cyan-500/25 transition-all text-xs sm:text-sm font-medium disabled:opacity-50"
-          >
-            {convertingClient ? <><span className="w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" /> Provisioning...</> : <><UserPlus className="w-4 h-4" /> Convert to Client</>}
-          </button>
+          </div>
         </div>
       </div>
     </div>
@@ -299,7 +316,7 @@ const DetailDrawer = ({
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-const WhatsAppMessages = () => {
+export default function WhatsAppMessages() {
   const { hasRole } = useAuth();
   const isAdmin = hasRole('admin');
 
@@ -363,53 +380,61 @@ const WhatsAppMessages = () => {
 
   return (
     <DashboardLayout userType={isAdmin ? 'admin' : 'staff'}>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <WaIcon className="w-6 h-6 text-green-400" />
-            WhatsApp Messages
-          </h1>
-          <p className="text-slate-400 mt-1">Track and manage WhatsApp chat leads from the website</p>
-        </div>
-        <button
-          onClick={() => { load(); loadStats(); }}
-          className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-slate-300 hover:bg-white/20 transition-all text-sm w-full sm:w-auto justify-center"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+          <WaIcon className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" />
+          WhatsApp Messages
+        </h1>
+        <p className="text-slate-400 mt-1 text-xs sm:text-sm">Track and manage WhatsApp chat leads from the website</p>
       </div>
 
       {/* Stats */}
       {stats?.overview && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-          <StatCard label="Total"      value={stats.overview.total}                      color="text-white" icon={MessageCircle} />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
+          <StatCard label="Total Leads"  value={stats.overview.total}                      color="text-green-400" icon={MessageCircle} />
           <StatCard label="Pending"    value={stats.overview.pending}                    color="text-amber-400" icon={Clock} />
           <StatCard label="Contacted"  value={stats.overview.contacted}                  color="text-blue-400" icon={PhoneCall} />
-          <StatCard label="Converted"  value={stats.overview.converted}                  color="text-green-400" icon={CheckCircle2} />
-          <StatCard label="Failed"     value={stats.overview.failed}                     color="text-red-400" icon={Ban} />
-          <StatCard label="This Month" value={stats.overview.this_month}                 color="text-purple-400" icon={Calendar} />
           <StatCard label="Conversion" value={`${stats.overview.conversion_rate}%`}      color="text-cyan-400" icon={TrendingUp} sub="converted / total" />
         </div>
       )}
 
-      <div className="space-y-4 mb-6">
-        {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row items-center gap-3">
-          <div className="relative w-full sm:flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search name, phone, email..."
-              value={filters.search}
-              onChange={(e) => { setFilters(f => ({ ...f, search: e.target.value })); setPage(1); }}
-              className="w-full pl-10 pr-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-slate-400 focus:border-blue-400 outline-none text-sm transition-all"
-            />
-          </div>
+      {/* Tabs */}
+      <div className="flex gap-1 overflow-x-auto pb-1 bg-white/5 rounded-xl p-1 mb-4 sm:mb-6 scrollbar-hide w-full sm:w-fit max-w-full">
+        {tabs.map((t) => (
+          <button
+            key={t.value}
+            onClick={() => { setFilters(f => ({ ...f, status: t.value })); setPage(1); }}
+            className={`flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all shrink-0 flex-1 sm:flex-none ${
+              filters.status === t.value
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <span>{t.label}</span>
+            <span className={`text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded-full ${filters.status === t.value ? 'bg-white/20' : 'bg-white/10'}`}>
+              {t.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 mb-4 sm:mb-6 w-full">
+        <div className="relative w-full sm:flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search..."
+            value={filters.search}
+            onChange={(e) => { setFilters(f => ({ ...f, search: e.target.value })); setPage(1); }}
+            className="w-full pl-10 pr-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-slate-400 focus:border-blue-400 outline-none text-sm transition-all"
+          />
+        </div>
+        <div className="flex gap-2 w-full sm:w-auto">
           <select
             value={filters.message_type}
             onChange={(e) => { setFilters(f => ({ ...f, message_type: e.target.value })); setPage(1); }}
-            className="w-full sm:w-48 px-4 py-2 rounded-lg bg-slate-800 border border-white/20 text-white text-sm outline-none sm:flex-shrink-0 transition-all"
+            className="flex-1 sm:flex-none sm:w-auto px-3 sm:px-4 py-2 rounded-lg bg-slate-800 border border-white/20 text-white text-sm outline-none transition-all"
           >
             <option value="">All Types</option>
             <option value="predefined">Predefined</option>
@@ -418,175 +443,122 @@ const WhatsAppMessages = () => {
           {(filters.status || filters.message_type || filters.search) && (
             <button
                onClick={() => { setFilters({ status: '', message_type: '', search: '' }); setPage(1); }}
-               className="w-full sm:w-auto flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-300 text-sm hover:bg-blue-500/30 transition-colors sm:flex-shrink-0"
+               className="flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs sm:text-sm hover:bg-blue-500/30 transition-colors shrink-0"
              >
                <X className="w-3 h-3" /> Clear
              </button>
           )}
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 overflow-x-auto pb-1 bg-white/5 rounded-xl p-1 w-full sm:w-fit scrollbar-hide">
-          {tabs.map((t) => (
-            <button
-              key={t.value}
-              onClick={() => { setFilters(f => ({ ...f, status: t.value })); setPage(1); }}
-              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
-                filters.status === t.value
-                  ? 'bg-blue-600 text-white shadow-lg'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              {t.label}
-              <span className={`text-xs px-1.5 py-0.5 rounded-full ${filters.status === t.value ? 'bg-white/20' : 'bg-white/10'}`}>
-                {t.count}
-              </span>
-            </button>
-          ))}
+          <button onClick={() => { load(); loadStats(); }} className="flex items-center justify-center gap-2 p-2 rounded-lg bg-white/10 border border-white/20 text-white/60 hover:text-white transition-colors shrink-0">
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </div>
 
-      {/* ── CARD LIST (replaces the table — works on all screen sizes) ── */}
+      {/* Grid List */}
       {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-500" />
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="animate-spin text-green-500 w-8 h-8" />
         </div>
       ) : messages.length === 0 ? (
-        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl py-20 text-center">
-          <WaIcon className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-          <p className="text-slate-400 font-medium">No WhatsApp leads found</p>
-          <p className="text-slate-600 text-sm mt-1">Leads appear when visitors click the WhatsApp button</p>
+        <div className={`${makeGlassCard} py-8 sm:py-12 text-center`}>
+          <WaIcon className="w-10 h-10 sm:w-12 sm:h-12 text-slate-500 mx-auto mb-3" />
+          <p className="text-white font-medium mb-1 text-sm sm:text-base">No WhatsApp leads found</p>
+          <p className="text-slate-400 text-xs sm:text-sm">Leads appear when visitors click the WhatsApp button</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-3 sm:p-5 hover:bg-white/15 hover:border-white/30 transition-all flex flex-col relative"
-            >
-              {/* Top row: avatar + name + contact + date */}
-              <div className="flex sm:flex-row flex-col gap-2 sm:gap-3 mb-2 sm:mb-3 overflow-hidden">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center flex-shrink-0 hidden sm:flex">
-                  <WaIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+        <>
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`${makeGlassCard} p-3 sm:p-5 hover:border-green-500/30 transition-all flex flex-col group cursor-pointer`}
+                onClick={() => setSelected(msg)}
+              >
+                <div className="flex items-start justify-between gap-2 sm:gap-3 mb-2 sm:mb-3">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+                      <WaIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-semibold text-white truncate group-hover:text-green-300 transition-colors" title={msg.name || 'Anonymous'}>{msg.name || 'Anonymous'}</p>
+                      {msg.phone ? (
+                        <a
+                          href={waUrl(msg.phone)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-green-400 hover:text-green-300 transition-colors truncate mt-0.5"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Phone className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+                          <span className="truncate font-medium">{msg.phone}</span>
+                        </a>
+                      ) : (
+                        <p className="text-[10px] sm:text-xs text-slate-400 truncate mt-0.5">{msg.email ?? 'No contact'}</p>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-[9px] sm:text-[11px] text-slate-500 whitespace-nowrap flex-shrink-0 hidden sm:block">{fmtDate(msg.created_at)}</p>
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-semibold text-white truncate" title={msg.name || 'Anonymous'}>{msg.name || 'Anonymous'}</p>
-                  {msg.phone ? (
-                    <a
-                      href={waUrl(msg.phone)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-[11px] text-green-400 hover:text-green-300 transition-colors truncate"
-                      onClick={(e) => e.stopPropagation()}
+                <div className="bg-green-500/5 rounded-lg border border-green-500/10 p-2 sm:p-3 mb-3 sm:mb-4 flex-1">
+                  <p className="text-xs sm:text-sm text-slate-300 line-clamp-3 break-words leading-relaxed">{msg.message}</p>
+                </div>
+
+                <div className="pt-2 sm:pt-3 border-t border-white/10 flex flex-col gap-2 sm:gap-3 mt-auto">
+                  <div className="flex items-center justify-between gap-2 overflow-hidden">
+                    <StatusBadge status={msg.status} />
+                    {msg.page_url && (
+                      <p className="text-[9px] sm:text-[11px] text-slate-500 font-mono truncate max-w-[80px] sm:max-w-[120px]" title={tryPathname(msg.page_url)}>
+                        {tryPathname(msg.page_url)}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-1 sm:gap-2 mt-1">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setSelected(msg); }}
+                      className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-medium bg-blue-500/10 text-blue-300 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-all"
                     >
-                      <Phone className="w-2.5 h-2.5 flex-shrink-0" />
-                      <span className="truncate">{msg.phone}</span>
-                    </a>
-                  ) : (
-                    <p className="text-[11px] text-slate-500 truncate">{msg.email ?? 'No contact'}</p>
-                  )}
+                      <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> View
+                    </button>
+                    {msg.phone && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); window.open(waUrl(msg.phone), '_blank'); }}
+                        className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-medium bg-green-500/10 text-green-300 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-all"
+                      >
+                        <WaIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Chat
+                      </button>
+                    )}
+                    {isAdmin && !msg.phone && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(msg.id); }}
+                        className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-medium bg-red-500/10 text-red-300 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-all"
+                      >
+                        <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Delete
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <p className="text-[10px] text-slate-500 whitespace-nowrap flex-shrink-0">{fmtDate(msg.created_at)}</p>
               </div>
+            ))}
+          </div>
 
-              {/* Message preview */}
-              <div className="bg-green-500/5 rounded-lg border border-green-500/10 p-3 mb-4 flex-1">
-                <p className="text-xs sm:text-xs text-slate-300 line-clamp-3 break-words leading-relaxed">{msg.message}</p>
-              </div>
-
-              {/* Badges + page origin */}
-              <div className="flex flex-wrap items-center gap-1.5 mt-auto mb-3">
-                <StatusBadge status={msg.status} />
-                <TypeBadge type={msg.message_type} />
-              </div>
-              {msg.page_url && (
-                <p className="text-[10px] text-slate-500 font-mono truncate mb-2" title={tryPathname(msg.page_url)}>
-                  {tryPathname(msg.page_url)}
-                </p>
-              )}
-
-              {/* Actions */}
-              <div className="pt-3 border-t border-white/10 grid grid-cols-2 gap-2 mt-auto">
-                <button
-                  onClick={() => setSelected(msg)}
-                  className="flex items-center justify-center gap-1 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 transition-all"
-                >
-                  <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5 hidden sm:block" /> View
-                </button>
-                {msg.phone && (
-                  <button
-                    onClick={() => window.open(waUrl(msg.phone), '_blank')}
-                    className="flex items-center justify-center gap-1 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs bg-green-500/20 text-green-300 border border-green-500/30 rounded-lg hover:bg-green-500/30 transition-all"
-                  >
-                    <WaIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 hidden sm:block" /> Chat
-                  </button>
-                )}
-                {isAdmin && (
-                  <button
-                    onClick={() => handleDelete(msg.id)}
-                    className="px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs bg-red-500/20 text-red-300 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-all col-span-2 sm:col-span-1"
-                    title="Delete"
-                  >
-                    Delete
-                  </button>
-                )}
+          {/* Pagination */}
+          {pagination.last_page > 1 && (
+            <div className="mt-auto pt-6 pb-4">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mt-6 sm:mt-8 pb-4">
+                <button disabled={pagination.current_page === 1} onClick={() => setPage(pagination.current_page - 1)} className="w-full sm:w-auto px-5 py-2 rounded-lg bg-white/5 border border-white/10 text-white/70 disabled:opacity-40 hover:bg-white/10 transition-colors text-sm font-medium">Previous</button>
+                <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-2">
+                  <span className="text-slate-300 text-sm font-medium">Page {pagination.current_page} of {pagination.last_page}</span>
+                </div>
+                <button disabled={pagination.current_page === pagination.last_page} onClick={() => setPage(pagination.current_page + 1)} className="w-full sm:w-auto px-5 py-2 rounded-lg bg-white/5 border border-white/10 text-white/70 disabled:opacity-40 hover:bg-white/10 transition-colors text-sm font-medium">Next</button>
               </div>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
 
-      {/* Pagination */}
-      {pagination.last_page > 1 && (
-        <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 p-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl">
-          <p className="text-xs sm:text-sm text-slate-400">
-            Showing {((pagination.current_page - 1) * 15) + 1}–{Math.min(pagination.current_page * 15, pagination.total)} of {pagination.total}
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-0.5 sm:gap-1">
-            <button
-              onClick={() => setPage(Math.max(1, pagination.current_page - 1))}
-              disabled={pagination.current_page === 1}
-              className="px-2 sm:px-3 py-1.5 rounded text-xs sm:text-sm text-slate-400 hover:bg-white/10 disabled:opacity-30 transition-all font-medium border border-transparent hover:border-white/10"
-            >Prev</button>
-            {Array.from({ length: Math.min(5, pagination.last_page) }, (_, i) => {
-              const p = pagination.current_page <= 3
-                ? i + 1
-                : pagination.current_page >= pagination.last_page - 2
-                  ? pagination.last_page - 4 + i
-                  : pagination.current_page - 2 + i;
-              return (
-                <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  className={`min-w-[28px] sm:min-w-[32px] h-8 px-1 sm:px-2 rounded text-xs sm:text-sm font-medium transition-all ${
-                    p === pagination.current_page
-                      ? 'bg-green-500/30 text-green-300 border border-green-500/40'
-                      : 'text-slate-400 hover:bg-white/10 border border-transparent hover:border-white/10'
-                  }`}
-                >{p}</button>
-              );
-            })}
-            <button
-              onClick={() => setPage(Math.min(pagination.last_page, pagination.current_page + 1))}
-              disabled={pagination.current_page === pagination.last_page}
-              className="px-2 sm:px-3 py-1.5 rounded text-xs sm:text-sm text-slate-400 hover:bg-white/10 disabled:opacity-30 transition-all font-medium border border-transparent hover:border-white/10"
-            >Next</button>
-          </div>
-        </div>
-      )}
-
-      {/* Detail drawer */}
-      {selected && (
-        <DetailDrawer
-          msg={selected}
-          isAdmin={isAdmin}
-          onClose={() => setSelected(null)}
-          onUpdate={() => { load(); loadStats(); }}
-        />
-      )}
+      {selected && <DetailDrawer msg={selected} isAdmin={isAdmin} onClose={() => setSelected(null)} onUpdate={() => { load(); loadStats(); }} />}
     </DashboardLayout>
   );
-};
-
-export default WhatsAppMessages;
+}

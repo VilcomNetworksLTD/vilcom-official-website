@@ -224,6 +224,11 @@ class InvitationController extends Controller
         if ($existingUser) {
             // User exists - just assign the role
             $existingUser->assignRole($invitation->role);
+            
+            if ($invitation->role !== 'admin' && $invitation->role !== 'client') {
+                $existingUser->assignRole('staff');
+            }
+            
             $invitation->markAsAccepted();
 
             return response()->json([
@@ -243,6 +248,11 @@ class InvitationController extends Controller
 
         // Assign the invited role
         $user->assignRole($invitation->role);
+
+        // ALWAYS assign the base 'staff' role so they can pass Route::middleware('role:admin|staff')
+        if ($invitation->role !== 'admin' && $invitation->role !== 'client') {
+            $user->assignRole('staff');
+        }
 
         // Mark invitation as accepted
         $invitation->markAsAccepted();

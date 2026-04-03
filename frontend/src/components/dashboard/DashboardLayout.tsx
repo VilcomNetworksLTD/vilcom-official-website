@@ -36,6 +36,7 @@ import {
   LifeBuoy,
   Receipt,
   Briefcase,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -45,6 +46,7 @@ interface SidebarItem {
   href: string;
   badge?: number;
   requiredRole?: string | string[];
+  requiredPermission?: string | string[];
 }
 
 interface SidebarSection {
@@ -182,6 +184,7 @@ const staffSections: SidebarSection[] = [
       { icon: Users2, label: 'Leads', href: '/admin/leads' },
       { icon: Briefcase, label: 'Careers', href: '/admin/careers' },
       { icon: Shield, label: 'Emerald Approvals', href: '/admin/emerald-approvals' },
+      { icon: ShieldCheck, label: 'Safetika/ Emerald List', href: '/admin/safetika-portal' },
     ]
   },
   { 
@@ -205,22 +208,22 @@ const adminSections: SidebarSection[] = [
   { 
     title: 'Users', 
     items: [
-      { icon: Users, label: 'All Users', href: '/admin/users' },
-      { icon: UserCheck, label: 'Clients', href: '/admin/clients' },
-      { icon: Shield, label: 'Staff', href: '/admin/staff' },
-      { icon: Layers, label: 'Roles & Permissions', href: '/admin/roles' },
-      { icon: Briefcase, label: 'Career Management', href: '/admin/careers' },
-      { icon: Shield, label: 'Emerald Approvals', href: '/admin/emerald-approvals' },
+      { icon: Users, label: 'All Users', href: '/admin/users', requiredPermission: 'users.view.all' },
+      { icon: UserCheck, label: 'Clients', href: '/admin/clients', requiredPermission: ['users.view.clients', 'users.view.all'] },
+      { icon: Shield, label: 'Staff', href: '/admin/staff', requiredPermission: 'users.view.staff' },
+      { icon: Layers, label: 'Roles & Permissions', href: '/admin/roles', requiredPermission: 'roles.view' },
+      { icon: Briefcase, label: 'Career Management', href: '/admin/careers', requiredPermission: 'hr.view.departments' },
+      { icon: Shield, label: 'Emerald Approvals', href: '/admin/emerald-approvals', requiredPermission: 'users.edit.clients' },
+      { icon: ShieldCheck, label: 'Safetika Portal', href: '/admin/safetika-portal', requiredPermission: 'users.edit.clients' },
     ]
   },
   { 
     title: 'Services', 
     items: [
-      { icon: Folder, label: 'Categories', href: '/admin/categories' },
-      { icon: ShoppingCart, label: 'Products', href: '/admin/products' },
-     // { icon: Package, label: 'Plans & Pricing', href: '/admin/plans' },
-      { icon: Wifi, label: 'Subscriptions', href: '/admin/subscriptions' },
-      { icon: Building2, label: 'Coverage Areas', href: '/admin/coverage' },
+      { icon: Folder, label: 'Categories', href: '/admin/categories', requiredPermission: 'categories.view' },
+      { icon: ShoppingCart, label: 'Products', href: '/admin/products', requiredPermission: 'products.view.all' },
+      { icon: Wifi, label: 'Subscriptions', href: '/admin/subscriptions', requiredPermission: 'subscriptions.view.all' },
+      { icon: Building2, label: 'Coverage Areas', href: '/admin/coverage', requiredPermission: 'coverage.view' },
       { icon: FileText, label: 'Quote Requests', href: '/admin/quotes' },
       { icon: Users2, label: 'Leads', href: '/admin/leads' },
     ]
@@ -228,30 +231,27 @@ const adminSections: SidebarSection[] = [
   { 
     title: 'Content', 
     items: [
-      { icon: Image, label: 'Media Library', href: '/admin/media' },
-      { icon: Layout, label: 'Banners', href: '/admin/banners' },
-      { icon: FileText, label: 'Press Articles', href: '/admin/press-articles' },
-      { icon: Image, label: 'Gallery', href: '/admin/gallery-manager' },
-      { icon: Folder, label: 'Portfolio', href: '/admin/portfolio-manager' },
-      { icon: MessageSquare, label: 'Testimonials', href: '/admin/testimonials' },
-      { icon: HelpCircle, label: 'FAQs', href: '/admin/faqs' },
+      { icon: Image, label: 'Media Library', href: '/admin/media', requiredPermission: 'media.view' },
+      { icon: Layout, label: 'Banners', href: '/admin/banners', requiredPermission: 'banners.view' },
+      { icon: FileText, label: 'Press Articles', href: '/admin/press-articles', requiredPermission: 'blog.view' },
+      { icon: Image, label: 'Gallery', href: '/admin/gallery-manager', requiredPermission: 'portfolio.view' },
+      { icon: Folder, label: 'Portfolio', href: '/admin/portfolio-manager', requiredPermission: 'portfolio.view' },
+      { icon: MessageSquare, label: 'Testimonials', href: '/admin/testimonials', requiredPermission: 'testimonials.view' },
+      { icon: HelpCircle, label: 'FAQs', href: '/admin/faqs', requiredPermission: 'faqs.view' },
     ]
   },
   { 
     title: 'Support', 
     items: [
-      { icon: LifeBuoy, label: 'Tickets', href: '/admin/tickets' },
-      { icon: Mail, label: 'Contact Messages', href: '/admin/contact-messages' },
-      { icon: Mail, label: 'WhatsApp Messages', href: '/admin/whatsapp-messages' },
+      { icon: LifeBuoy, label: 'Tickets', href: '/admin/tickets', requiredPermission: 'tickets.view.all' },
+      { icon: Mail, label: 'Contact Messages', href: '/admin/contact-messages', requiredPermission: 'tickets.view.all' },
+      { icon: Mail, label: 'WhatsApp Messages', href: '/admin/whatsapp-messages', requiredPermission: 'tickets.view.all' },
     ]
   },
   { 
     title: 'System', 
     items: [
-      { icon: BarChart3, label: 'Analytics', href: '/admin/analytics' },
-      // { icon: Database, label: 'Backups', href: '/admin/backups' },
-      // { icon: Settings, label: 'Settings', href: '/admin/settings' },
-      // { icon: Mail, label: 'Email Templates', href: '/admin/emails' },
+      { icon: BarChart3, label: 'Analytics', href: '/admin/analytics', requiredPermission: 'analytics.view' },
     ]
   },
 ];
@@ -278,7 +278,7 @@ const MeshGradientBackground = ({ colors }: { colors: string[] }) => (
 const DashboardLayout = ({ children, userType }: DashboardLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout, hasRole } = useAuth();
+  const { user, logout, hasRole, hasPermission } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -304,7 +304,7 @@ const DashboardLayout = ({ children, userType }: DashboardLayoutProps) => {
   const borderColor = userType === 'client' ? 'border-amber-500/30' : 'border-blue-500/30';
 
   return (
-    <div className={`min-h-screen flex ${theme.backgroundGradient} ${theme.background}`}>
+    <div className={`min-h-[100dvh] flex ${theme.backgroundGradient} ${theme.background}`}>
       {theme.meshGradient && <MeshGradientBackground colors={theme.meshColors} />}
 
       {/* Mobile overlay */}
@@ -366,9 +366,18 @@ const DashboardLayout = ({ children, userType }: DashboardLayoutProps) => {
           {sections.map((section, si) => {
             const visibleItems = section.items.filter((item: SidebarItem) => {
               if (hasRole('admin')) return true;
-              if (!item.requiredRole) return true;
-              const roleList = Array.isArray(item.requiredRole) ? item.requiredRole : [item.requiredRole];
-              return roleList.some((role) => hasRole(role));
+              
+              if (item.requiredRole) {
+                const roleList = Array.isArray(item.requiredRole) ? item.requiredRole : [item.requiredRole];
+                if (!roleList.some((role) => hasRole(role))) return false;
+              }
+
+              if (item.requiredPermission) {
+                const permList = Array.isArray(item.requiredPermission) ? item.requiredPermission : [item.requiredPermission];
+                if (!permList.some((perm) => hasPermission(perm))) return false;
+              }
+
+              return true;
             });
             
             if (visibleItems.length === 0) return null;
@@ -440,7 +449,7 @@ const DashboardLayout = ({ children, userType }: DashboardLayoutProps) => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-screen relative z-10">
+      <div className="flex-1 flex flex-col min-h-[100dvh] relative z-10 w-full overflow-x-hidden">
         {/* Mobile header */}
         <header className={`${theme.headerBg} shadow-sm border-b ${userType === 'client' ? 'border-amber-500/20' : 'border-blue-500/20'} lg:hidden`}>
           <div className="flex items-center justify-between px-4 h-16">
@@ -452,7 +461,7 @@ const DashboardLayout = ({ children, userType }: DashboardLayoutProps) => {
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-8">
+        <main className="flex-1 flex flex-col p-4 lg:p-8">
           {children}
         </main>
       </div>
