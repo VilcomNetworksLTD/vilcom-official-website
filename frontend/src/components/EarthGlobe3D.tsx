@@ -3,6 +3,8 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import earcut from "earcut";
 
+import { TessellateModifier } from "three/examples/jsm/modifiers/TessellateModifier.js";
+
 // ─── Color Palette ────────────────────────────────────────────────────────────
 const COLORS = {
   equator: "#22c55e",
@@ -27,7 +29,8 @@ type GeoMap = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const ll2xyz = (lat: number, lon: number, r: number): [number, number, number] => {
   const phi = (90 - lat) * (Math.PI / 180);
-  const theta = (lon + 180) * (Math.PI / 180);
+  // Add 90 degrees to align longitude mapping with the sphere's texture coordinates.
+  const theta = (lon + 90) * (Math.PI / 180);
   return [
     -(r * Math.sin(phi) * Math.cos(theta)),
     r * Math.cos(phi),
@@ -109,9 +112,23 @@ const buildFillGeometry = (geoJson: GeoMap, r: number): THREE.BufferGeometry => 
 
   if (!positions.length || !indices.length) return new THREE.BufferGeometry();
 
-  const geo = new THREE.BufferGeometry();
+  let geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(positions), 3));
   geo.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
+  
+  // Tessellate flat triangles to curve smoothly around the sphere
+  const tessellator = new TessellateModifier(0.1, 6);
+  geo = tessellator.modify(geo);
+  
+  // Project all vertices back onto the sphere
+  const posAttr = geo.attributes.position;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < posAttr.count; i++) {
+    v.fromBufferAttribute(posAttr, i);
+    v.normalize().multiplyScalar(r);
+    posAttr.setXYZ(i, v.x, v.y, v.z);
+  }
+
   geo.computeVertexNormals();
   return geo;
 };
@@ -335,9 +352,10 @@ const LandFill = ({ geoData, color = "#ffffff", visible = true }: {
   if (!geoData) return null;
   return (
     <mesh geometry={geo} visible={visible}>
-      <meshBasicMaterial
+      <meshPhongMaterial
         color={color}
         side={THREE.DoubleSide}
+        shininess={5}
         polygonOffset
         polygonOffsetFactor={-1}
         polygonOffsetUnits={-1}
@@ -366,9 +384,10 @@ const PresenceFill = ({ geoData }: { geoData: any }) => {
   if (!geoData) return null;
   return (
     <mesh geometry={geo}>
-      <meshBasicMaterial
+      <meshPhongMaterial
         color="#60a5fa"
         side={THREE.DoubleSide}
+        shininess={5}
         polygonOffset
         polygonOffsetFactor={-2}
         polygonOffsetUnits={-2}
@@ -442,8 +461,14 @@ const Scene = ({
     let rot = groupRef.current.rotation.y % (Math.PI * 2);
     if (rot < 0) rot += Math.PI * 2;
     
-    const factor = (Math.cos(rot - 4.05) + 1) / 2;
-    const speed = 0.003 - factor * 0.0025;
+    // Africa (Kenya) is at ~38 deg E. With the ll2xyz mapping (lon + 90), 
+    // it faces the camera when rotation.y is ~ -38 deg, which is 5.62 rad.
+    const factor = (Math.cos(rot - 5.62) + 1) / 2;
+    // Tighten the slow-down region using a power curve
+    const slowRegion = Math.pow(factor, 4);
+
+    // Fast speed elsewhere, super slow over Africa
+    const speed = 0.008 - slowRegion * 0.0076;
     
     groupRef.current.rotation.y += speed;
   });
