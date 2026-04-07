@@ -327,6 +327,7 @@ const HeroSection = () => {
             flex-direction: column !important;
             align-items: stretch !important;
             min-height: auto !important;
+            padding-top: 80px;
           }
 
           /* Globe block at top */
@@ -334,16 +335,17 @@ const HeroSection = () => {
             position: relative !important;
             inset: auto !important;
             width: 100% !important;
-            height: 312px;
+            height: 400px;
+            margin-top: 40px !important;
             order: -1;
             overflow: hidden;
           }
-          /* canvas box fills that 340px block */
+          /* canvas box fills that block */
           .globe-canvas-box {
             position: absolute !important;
             inset: 0 !important;
             margin-top: 0 !important;
-            height: 312px !important;
+            height: 400px !important;
           }
           .orbit-ring       { display: none !important; }
           .globe-fade-left  { display: none; }
@@ -365,8 +367,11 @@ const HeroSection = () => {
            MOBILE  ≤ 767px
         ══════════════════════════════════ */
 @media (max-width: 767px) {
-          .globe-wrapper    { height: 256px; }
-          .globe-canvas-box { height: 256px !important; }
+          .hero-root {
+            padding-top: 85px;
+          }
+          .globe-wrapper    { height: 360px; margin-top: 40px !important; }
+          .globe-canvas-box { height: 360px !important; }
 
           .content-section  { padding: 20px 16px 40px !important; }
           .hero-heading     { font-size: 1.75rem !important; line-height: 1.2 !important; }
@@ -389,8 +394,11 @@ const HeroSection = () => {
            VERY SMALL  ≤ 400px
         ══════════════════════════════════ */
 @media (max-width: 400px) {
-          .globe-wrapper    { height: 202px; }
-          .globe-canvas-box { height: 202px !important; }
+          .hero-root {
+            padding-top: 75px;
+          }
+          .globe-wrapper    { height: 300px; margin-top: 30px !important; }
+          .globe-canvas-box { height: 300px !important; }
 
           .hero-heading { font-size: 1.5rem !important; }
           .hero-body    { font-size: 0.875rem !important; }

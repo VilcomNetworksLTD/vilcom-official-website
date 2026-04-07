@@ -141,7 +141,12 @@ export default function EmeraldApprovals() {
     accountTypes: [],
     customerTypes: [],
   });
-  const [dropdownsLoading, setDropdownsLoading] = useState(false);
+  const [dropdownsLoading, setDropdownsLoading] = useState({
+    salesPersons: false,
+    serviceCategories: false,
+    accountTypes: false,
+    customerTypes: false,
+  });
   const [filteredAccountTypes, setFilteredAccountTypes] = useState<DropdownOption[]>([]);
   const [accountTypesLoading, setAccountTypesLoading] = useState(false);
 
@@ -179,15 +184,26 @@ export default function EmeraldApprovals() {
 
   // ── Fetch all dropdowns when modal opens ──────────────────────────────────
   const loadDropdowns = useCallback(async () => {
-    setDropdownsLoading(true);
+    setDropdownsLoading({
+      salesPersons: true,
+      serviceCategories: true,
+      accountTypes: true,
+      customerTypes: true,
+    });
+
     try {
       const data = await safetikaDropdownsApi.fetchAll();
       setDropdowns(data);
-      setFilteredAccountTypes(data.accountTypes); // start with all account types
+      setFilteredAccountTypes(data.accountTypes);
     } catch {
-      toast({ title: "Warning", description: "Could not load Safetika dropdowns. Using defaults.", variant: "destructive" });
+      toast({ title: "Warning", description: "Failed to load Safetika dropdowns.", variant: "destructive" });
     } finally {
-      setDropdownsLoading(false);
+      setDropdownsLoading({
+        salesPersons: false,
+        serviceCategories: false,
+        accountTypes: false,
+        customerTypes: false,
+      });
     }
   }, [toast]);
 
@@ -504,7 +520,7 @@ export default function EmeraldApprovals() {
                         <Icon className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
                         <div>
                           <p className="text-xs text-slate-400">{label}</p>
-                          <p className="font-medium text-white capitalize break-all">{value}</p>
+                          <p className={`font-medium text-white break-all ${label === 'Email' ? 'lowercase' : 'capitalize'}`}>{value}</p>
                         </div>
                       </div>
                     ))}
@@ -587,7 +603,7 @@ export default function EmeraldApprovals() {
                     <h3 className="text-sm font-semibold text-cyan-300 uppercase tracking-wider">
                       Safetika Provisioning Options
                     </h3>
-                    {dropdownsLoading && (
+                    {Object.values(dropdownsLoading).some(Boolean) && (
                       <Loader2 className="w-4 h-4 animate-spin text-cyan-400 ml-auto" />
                     )}
                   </div>
@@ -601,7 +617,7 @@ export default function EmeraldApprovals() {
                       label="Sales Person"
                       value={selectedSalesPerson}
                       options={dropdowns.salesPersons}
-                      loading={dropdownsLoading}
+                      loading={dropdownsLoading.salesPersons}
                       placeholder="— Use default —"
                       onChange={setSelectedSalesPerson}
                     />
@@ -611,7 +627,7 @@ export default function EmeraldApprovals() {
                       label="Customer Type"
                       value={selectedCustomerType}
                       options={dropdowns.customerTypes}
-                      loading={dropdownsLoading}
+                      loading={dropdownsLoading.customerTypes}
                       placeholder="— Use default —"
                       onChange={setSelectedCustomerType}
                     />
@@ -621,7 +637,7 @@ export default function EmeraldApprovals() {
                       label="Service Category"
                       value={selectedServiceCategory}
                       options={dropdowns.serviceCategories}
-                      loading={dropdownsLoading}
+                      loading={dropdownsLoading.serviceCategories}
                       placeholder="— Use default —"
                       onChange={setSelectedServiceCategory}
                     />
@@ -631,7 +647,7 @@ export default function EmeraldApprovals() {
                       label="Account Type"
                       value={selectedAccountType}
                       options={filteredAccountTypes}
-                      loading={dropdownsLoading || accountTypesLoading}
+                      loading={dropdownsLoading.accountTypes || accountTypesLoading}
                       placeholder={
                         accountTypesLoading
                           ? "Loading…"

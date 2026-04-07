@@ -35,29 +35,48 @@ class VilcomSafetikaService
      */
     public function getToken(): string
     {
-        $response = Http::timeout($this->timeout)
-            ->post("{$this->baseUrl}/login", [
-                'username' => $this->username,
-                'password' => $this->password,
-            ]);
-
-        if (!$response->successful()) {
-            throw new \RuntimeException(
-                "VilcomSafetika: Login failed (HTTP {$response->status()}): " . $response->body()
-            );
+        if ($token = \Illuminate\Support\Facades\Cache::get('vilcom_safetika_token')) {
+            return $token;
         }
 
-        $data = $response->json();
+        $lock = \Illuminate\Support\Facades\Cache::lock('vilcom_safetika_token_lock', 10);
 
-        if (empty($data['token'])) {
-            throw new \RuntimeException(
-                'VilcomSafetika: Login response missing token. Response: ' . json_encode($data)
-            );
+        try {
+            $lock->block(10);
+
+            if ($token = \Illuminate\Support\Facades\Cache::get('vilcom_safetika_token')) {
+                return $token;
+            }
+
+            $response = Http::timeout($this->timeout)
+                ->post("{$this->baseUrl}/login", [
+                    'username' => $this->username,
+                    'password' => $this->password,
+                ]);
+
+            if (!$response->successful()) {
+                throw new \RuntimeException(
+                    "VilcomSafetika: Login failed (HTTP {$response->status()}): " . $response->body()
+                );
+            }
+
+            $data = $response->json();
+
+            if (empty($data['token'])) {
+                throw new \RuntimeException(
+                    'VilcomSafetika: Login response missing token. Response: ' . json_encode($data)
+                );
+            }
+
+            Log::debug('VilcomSafetika: Token acquired', ['expires_in' => $data['expires_in'] ?? 'unknown']);
+
+            // Cache token for 55 minutes to be safe
+            \Illuminate\Support\Facades\Cache::put('vilcom_safetika_token', $data['token'], now()->addMinutes(55));
+
+            return $data['token'];
+        } finally {
+            optional($lock)->release();
         }
-
-        Log::debug('VilcomSafetika: Token acquired', ['expires_in' => $data['expires_in'] ?? 'unknown']);
-
-        return $data['token'];
     }
 
     // ── MBR Customer Management ───────────────────────────────────────────
@@ -107,6 +126,7 @@ class VilcomSafetikaService
         ]);
 
         if (!$response->successful() || empty($data['success'])) {
+            if ($response->status() === 401) \Illuminate\Support\Facades\Cache::forget('vilcom_safetika_token');
             throw new \RuntimeException(
                 'VilcomSafetika: create-mbr failed: ' . ($data['message'] ?? $response->body())
             );
@@ -160,6 +180,7 @@ class VilcomSafetikaService
         ]);
 
         if (!$response->successful() || empty($data['success'])) {
+            if ($response->status() === 401) \Illuminate\Support\Facades\Cache::forget('vilcom_safetika_token');
             throw new \RuntimeException(
                 'VilcomSafetika: add-service failed: ' . ($data['message'] ?? $response->body())
             );
@@ -226,6 +247,7 @@ class VilcomSafetikaService
         ]);
 
         if (!$response->successful() || empty($data['success'])) {
+            if ($response->status() === 401) \Illuminate\Support\Facades\Cache::forget('vilcom_safetika_token');
             throw new \RuntimeException(
                 'VilcomSafetika: inventory search failed: ' . ($data['message'] ?? $response->body())
             );
@@ -275,6 +297,7 @@ class VilcomSafetikaService
         ]);
 
         if (!$response->successful() || empty($data['success'])) {
+            if ($response->status() === 401) \Illuminate\Support\Facades\Cache::forget('vilcom_safetika_token');
             throw new \RuntimeException(
                 'VilcomSafetika: assign-inventory failed: ' . ($data['message'] ?? $response->body())
             );
@@ -293,6 +316,7 @@ class VilcomSafetikaService
             ->get("{$this->baseUrl}/dropdowns/sales-persons");
 
         if (!$response->successful()) {
+            if ($response->status() === 401) \Illuminate\Support\Facades\Cache::forget('vilcom_safetika_token');
             Log::error('VilcomSafetika: getSalesPersons failed', ['status' => $response->status(), 'response' => $response->body()]);
             return [];
         }
@@ -310,7 +334,12 @@ class VilcomSafetikaService
             ->withToken($token)
             ->get("{$this->baseUrl}/dropdowns/customer-types");
 
-        return $response->successful() ? ($response->json()['data'] ?? []) : [];
+        if (!$response->successful()) {
+            if ($response->status() === 401) \Illuminate\Support\Facades\Cache::forget('vilcom_safetika_token');
+            return [];
+        }
+
+        return $response->json()['data'] ?? [];
     }
 
     /**
@@ -322,7 +351,12 @@ class VilcomSafetikaService
             ->withToken($token)
             ->get("{$this->baseUrl}/dropdowns/regions");
 
-        return $response->successful() ? ($response->json()['data'] ?? []) : [];
+        if (!$response->successful()) {
+            if ($response->status() === 401) \Illuminate\Support\Facades\Cache::forget('vilcom_safetika_token');
+            return [];
+        }
+
+        return $response->json()['data'] ?? [];
     }
 
     // ── MBR Customer Queries ──────────────────────────────────────────────
@@ -337,6 +371,10 @@ class VilcomSafetikaService
             ->withToken($token)
             ->get("{$this->baseUrl}/vilcom/customers", $params);
 
+        if (!$response->successful() && $response->status() === 401) {
+            \Illuminate\Support\Facades\Cache::forget('vilcom_safetika_token');
+        }
+
         return $response->json() ?? [];
     }
 
@@ -348,6 +386,10 @@ class VilcomSafetikaService
         $response = Http::timeout($this->timeout)
             ->withToken($token)
             ->get("{$this->baseUrl}/vilcom/customers/{$id}");
+
+        if (!$response->successful() && $response->status() === 401) {
+            \Illuminate\Support\Facades\Cache::forget('vilcom_safetika_token');
+        }
 
         return $response->json() ?? [];
     }
@@ -364,6 +406,10 @@ class VilcomSafetikaService
             ->withToken($token)
             ->get("{$this->baseUrl}/inventory/assignments", $params);
 
+        if (!$response->successful() && $response->status() === 401) {
+            \Illuminate\Support\Facades\Cache::forget('vilcom_safetika_token');
+        }
+
         return $response->json() ?? [];
     }
 
@@ -375,6 +421,10 @@ class VilcomSafetikaService
         $response = Http::timeout($this->timeout)
             ->withToken($token)
             ->get("{$this->baseUrl}/inventory/assignments/customer/{$customerId}");
+
+        if (!$response->successful() && $response->status() === 401) {
+            \Illuminate\Support\Facades\Cache::forget('vilcom_safetika_token');
+        }
 
         return $response->json() ?? [];
     }
@@ -391,6 +441,7 @@ class VilcomSafetikaService
         $data = $response->json() ?? [];
 
         if (!$response->successful() || empty($data['success'])) {
+            if ($response->status() === 401) \Illuminate\Support\Facades\Cache::forget('vilcom_safetika_token');
             throw new \RuntimeException(
                 'VilcomSafetika: unassign failed: ' . ($data['message'] ?? $response->body())
             );
@@ -463,7 +514,12 @@ public function getAccountTypes(string $token): array
         ->withToken($token)
         ->get("{$this->baseUrl}/dropdowns/account-types");
 
-    return $response->successful() ? ($response->json()['data'] ?? []) : [];
+    if (!$response->successful()) {
+        if ($response->status() === 401) \Illuminate\Support\Facades\Cache::forget('vilcom_safetika_token');
+        return [];
+    }
+
+    return $response->json()['data'] ?? [];
 }
 
 public function getServiceCategories(string $token): array
@@ -472,7 +528,12 @@ public function getServiceCategories(string $token): array
         ->withToken($token)
         ->get("{$this->baseUrl}/dropdowns/service-categories");
 
-    return $response->successful() ? ($response->json()['data'] ?? []) : [];
+    if (!$response->successful()) {
+        if ($response->status() === 401) \Illuminate\Support\Facades\Cache::forget('vilcom_safetika_token');
+        return [];
+    }
+
+    return $response->json()['data'] ?? [];
 }
 
 public function getAccountTypesByCategory(string $token, string $serviceCategory): array
@@ -483,7 +544,12 @@ public function getAccountTypesByCategory(string $token, string $serviceCategory
             'service_category' => $serviceCategory,
         ]);
 
-    return $response->successful() ? ($response->json()['data'] ?? []) : [];
+    if (!$response->successful()) {
+        if ($response->status() === 401) \Illuminate\Support\Facades\Cache::forget('vilcom_safetika_token');
+        return [];
+    }
+
+    return $response->json()['data'] ?? [];
 }
 
 }

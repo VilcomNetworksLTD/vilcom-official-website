@@ -379,7 +379,12 @@ function AddServiceTab() {
 
   const [dropdowns, setDropdowns]           = useState<SafetikaDropdowns>({ salesPersons: [], serviceCategories: [], accountTypes: [], customerTypes: [] });
   const [filteredAccountTypes, setFilteredAccountTypes] = useState<DropdownOption[]>([]);
-  const [dropdownsLoading, setDropdownsLoading] = useState(false);
+  const [dropdownsLoading, setDropdownsLoading] = useState({
+    salesPersons: false,
+    serviceCategories: false,
+    accountTypes: false,
+    customerTypes: false,
+  });
   const [acctTypesLoading, setAcctTypesLoading] = useState(false);
 
   const [serviceCategory, setServiceCategory] = useState("");
@@ -391,11 +396,25 @@ function AddServiceTab() {
   const [result, setResult]         = useState<any>(null);
 
   useEffect(() => {
-    setDropdownsLoading(true);
+    setDropdownsLoading({
+      salesPersons: true,
+      serviceCategories: true,
+      accountTypes: true,
+      customerTypes: true,
+    });
+
     safetikaDropdownsApi.fetchAll()
-      .then((d) => { setDropdowns(d); setFilteredAccountTypes(d.accountTypes); })
-      .finally(() => setDropdownsLoading(false));
-  }, []);
+      .then((d) => { 
+        setDropdowns(d); 
+        setFilteredAccountTypes(d.accountTypes); 
+      })
+      .finally(() => setDropdownsLoading({
+        salesPersons: false,
+        serviceCategories: false,
+        accountTypes: false,
+        customerTypes: false,
+      }));
+  }, [toast]);
 
   useEffect(() => {
     if (!serviceCategory) { setFilteredAccountTypes(dropdowns.accountTypes); setAccountType(""); return; }
@@ -527,7 +546,7 @@ function AddServiceTab() {
               label="Service Category"
               value={serviceCategory}
               options={dropdowns.serviceCategories}
-              loading={dropdownsLoading}
+              loading={dropdownsLoading.serviceCategories}
               onChange={setServiceCategory}
               required
             />
@@ -535,7 +554,7 @@ function AddServiceTab() {
               label="Account Type"
               value={accountType}
               options={filteredAccountTypes}
-              loading={dropdownsLoading || acctTypesLoading}
+              loading={dropdownsLoading.accountTypes || acctTypesLoading}
               placeholder={serviceCategory ? "Select account type" : "Select service category first"}
               onChange={setAccountType}
               required
@@ -544,7 +563,7 @@ function AddServiceTab() {
               label="Sales Person"
               value={salesPerson}
               options={dropdowns.salesPersons}
-              loading={dropdownsLoading}
+              loading={dropdownsLoading.salesPersons}
               placeholder="— Select sales person —"
               onChange={setSalesPerson}
             />
