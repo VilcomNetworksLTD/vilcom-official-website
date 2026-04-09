@@ -1,5 +1,5 @@
-import { Search, CheckCircle, Clock, Wifi, Globe, X, ChevronRight, Zap, Map, Box, Globe2, Menu } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Search, CheckCircle, Clock, Wifi, Globe, X, ChevronRight, Zap, Map, Box, Globe2, Menu, ZoomIn } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import FooterSection from "@/components/FooterSection";
@@ -8,6 +8,17 @@ import KenyaCoverageMap2D from "@/components/KenyaCoverageMap2D";
 import EarthGlobe3D from "@/components/EarthGlobe3D";
 
 import api from "@/lib/axios";
+
+// East African countries with their approximate centres
+const EA_COUNTRIES = [
+  { name: "Kenya",    lat: -1.28,  lon: 36.82  },
+  { name: "Rwanda",   lat: -1.94,  lon: 29.87  },
+  { name: "Uganda",   lat:  0.35,  lon: 32.58  },
+  { name: "Tanzania", lat: -6.37,  lon: 34.89  },
+  { name: "DRC",      lat: -4.03,  lon: 21.76  },
+  { name: "Ethiopia", lat:  9.15,  lon: 40.49  },
+  { name: "Burundi",  lat: -3.37,  lon: 29.92  },
+];
 
 interface Region {
   id: number;
@@ -35,6 +46,8 @@ const Coverage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [locationsOpen, setLocationsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [countryPickerOpen, setCountryPickerOpen] = useState(false);
+  const [zoomTarget, setZoomTarget] = useState<{ name: string; lat: number; lon: number } | null>(null);
 
   // Fetch live coverage data
   useEffect(() => {
@@ -81,7 +94,7 @@ const Coverage = () => {
 
   const renderMap = () => {
     switch (mapView) {
-      case "kenya3d": return <KenyaGlobe3D style={{ width: "100%", height: "100%" }} />;
+      case "kenya3d": return <KenyaGlobe3D style={{ width: "100%", height: "100%" }} interactive={true} />;
       case "kenya2d": return (
         <div style={{ width: "100%", height: "100%" }}>
           <KenyaCoverageMap2D
@@ -94,8 +107,8 @@ const Coverage = () => {
           />
         </div>
       );
-      case "global": return <EarthGlobe3D style={{ width: "100%", height: "100%" }} />;
-      default:       return <KenyaGlobe3D style={{ width: "100%", height: "100%" }} />;
+      case "global": return <EarthGlobe3D style={{ width: "100%", height: "100%" }} interactive={true} />;
+      default:       return <KenyaGlobe3D style={{ width: "100%", height: "100%" }} interactive={true} />;
     }
   };
 
@@ -192,6 +205,65 @@ const Coverage = () => {
               <span style={{ fontSize: 13, fontWeight: 800, color: "#10b981" }}>{liveCount}</span>
               <span style={{ fontSize: 13, fontWeight: 700, color: "#f59e0b" }}>{soonCount}</span>
               <span style={{ fontSize: 13, color: "#94a3b8" }}>locations</span>
+
+              {/* Country zoom picker — only relevant for 3D/global views */}
+              {mapView !== "kenya2d" && (
+                <div style={{ position: "relative" }}>
+                  <button
+                    onClick={() => setCountryPickerOpen(p => !p)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 6,
+                      padding: "7px 14px", borderRadius: 10, cursor: "pointer",
+                      background: countryPickerOpen ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.06)",
+                      border: `1px solid ${countryPickerOpen ? "rgba(99,102,241,0.5)" : "rgba(255,255,255,0.12)"}`,
+                      color: countryPickerOpen ? "#a5b4fc" : "#94a3b8",
+                      fontSize: 13, fontWeight: 600, transition: "all 0.2s",
+                    }}
+                  >
+                    <ZoomIn size={14} />
+                    {zoomTarget ? zoomTarget.name : "Zoom to…"}
+                  </button>
+                  {countryPickerOpen && (
+                    <div style={{
+                      position: "absolute", top: "calc(100% + 8px)", right: 0,
+                      background: "rgba(15,23,42,0.97)", border: "1px solid rgba(255,255,255,0.12)",
+                      borderRadius: 12, padding: 6, zIndex: 60, minWidth: 160,
+                      backdropFilter: "blur(20px)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                    }}>
+                      {EA_COUNTRIES.map(c => (
+                        <button
+                          key={c.name}
+                          onClick={() => { setZoomTarget(c); setCountryPickerOpen(false); }}
+                          style={{
+                            width: "100%", textAlign: "left", padding: "8px 12px",
+                            borderRadius: 8, border: "none", cursor: "pointer",
+                            background: zoomTarget?.name === c.name ? "rgba(99,102,241,0.18)" : "transparent",
+                            color: zoomTarget?.name === c.name ? "#a5b4fc" : "#e2e8f0",
+                            fontSize: 13, fontWeight: 500, transition: "all 0.15s",
+                          }}
+                        >
+                          {c.name}
+                        </button>
+                      ))}
+                      {zoomTarget && (
+                        <button
+                          onClick={() => { setZoomTarget(null); setCountryPickerOpen(false); }}
+                          style={{
+                            width: "100%", textAlign: "left", padding: "7px 12px",
+                            borderRadius: 8, border: "none", cursor: "pointer",
+                            background: "transparent", color: "#64748b",
+                            fontSize: 11, fontWeight: 500, borderTop: "1px solid rgba(255,255,255,0.07)",
+                            marginTop: 4,
+                          }}
+                        >
+                          ✕ Clear zoom
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <Button size="sm" variant="default" className="font-semibold shadow-cyan-500/20 shadow-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500">
                 <Zap size={14} className="mr-2" /> Get Connected
               </Button>
@@ -233,6 +305,19 @@ const Coverage = () => {
             background: "transparent",
           }}>
             <div style={{ position: "absolute", inset: 0 }}>{renderMap()}</div>
+            {/* Zoom/scroll hint */}
+            {mapView !== "kenya2d" && (
+              <div style={{
+                position: "absolute", bottom: 14, right: 14, zIndex: 10,
+                background: "rgba(0,0,0,0.55)", backdropFilter: "blur(10px)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 8, padding: "6px 12px",
+                fontSize: 11, color: "#94a3b8", fontWeight: 500,
+                display: "flex", alignItems: "center", gap: 5, pointerEvents: "none",
+              }}>
+                <ZoomIn size={11} /> Scroll to zoom · Drag to rotate
+              </div>
+            )}
           </main>
         </div>
 

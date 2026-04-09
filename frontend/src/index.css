@@ -626,3 +626,82 @@
   100% { transform: translateX(100%); }
 }
 
+/* ============================================================
+   MOBILE PERFORMANCE OPTIMIZATIONS
+   Reduces GPU-heavy effects on small screens to prevent
+   white flash / jank when scrolling.
+   ============================================================ */
+
+/* content-visibility: auto lets browser skip rendering off-screen
+   sections entirely — biggest single win for scroll performance */
+section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 600px; /* rough estimate prevents layout shift */
+}
+
+@media (max-width: 768px) {
+  /* Reduce costly backdrop-filter blur on mobile */
+  .glass {
+    backdrop-filter: blur(8px) saturate(140%);
+    -webkit-backdrop-filter: blur(8px) saturate(140%);
+  }
+
+  .glass-crystal,
+  .glass-strong,
+  .glass-bubble,
+  .glass-bubble-dark,
+  .glass-dark,
+  .glass-dark-strong,
+  .glass-frosty,
+  .glass-frosty-cracked,
+  .glass-sky,
+  .glass-shimmer {
+    backdrop-filter: blur(6px) saturate(130%);
+    -webkit-backdrop-filter: blur(6px) saturate(130%);
+  }
+
+  .glass-navbar {
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+  }
+
+  /* Disable shimmer border animation on mobile — continuous repaints */
+  .glass-shimmer::before {
+    animation: none;
+    display: none;
+  }
+
+  /* Reduce hover scale transforms on mobile — no hover on touch anyway */
+  .glass-frosty:hover {
+    transform: none;
+  }
+
+  /* Disable heavy hover box-shadow transitions on mobile */
+  .glass-frosty {
+    transition: none;
+  }
+
+  /* Ensure sections have a solid background color to prevent
+     the white flash while content loads / animates in */
+  section[class*="py-"] {
+    background-clip: padding-box;
+  }
+}
+
+/* Promote composited layer for animated blobs to avoid main-thread paint */
+@media (max-width: 768px) {
+  .animate-float,
+  .animate-float-delayed,
+  .animate-float-slow,
+  .animate-orbit {
+    animation: none;
+    will-change: auto;
+  }
+
+  /* Tone down blob animations on mobile — they're invisible benefit but high cost */
+  .animate-pulse-glow,
+  .animate-morph {
+    animation: none;
+  }
+}
+

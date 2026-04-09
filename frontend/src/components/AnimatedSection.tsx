@@ -26,8 +26,8 @@ const AnimatedSection = ({
         }
       },
       {
-        threshold: 0.1,                  // trigger when 10% visible
-        rootMargin: "0px 0px -50px 0px", // trigger slightly before it enters the viewport
+        threshold: 0,                      // trigger as soon as any pixel is visible
+        rootMargin: "0px 0px -30px 0px",   // pre-fire 30px before element enters viewport
       }
     );
 
@@ -48,12 +48,13 @@ const AnimatedSection = ({
     <div
       ref={ref}
       id={id}
-      // Tailwind classes for the transition effect
-      className={`transform transition-all duration-1000 ease-out ${
-        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+      className={`transition-[opacity,transform] duration-[600ms] ease-out ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
       } ${className}`}
-      // Apply the dynamic delay
-      style={{ transitionDelay: `${delay}ms` }}
+      style={{
+        transitionDelay: `${delay}ms`,
+        willChange: isVisible ? "auto" : "transform, opacity",
+      }}
     >
       {children}
     </div>

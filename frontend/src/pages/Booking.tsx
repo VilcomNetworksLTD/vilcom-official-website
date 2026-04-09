@@ -405,21 +405,21 @@ const Booking = () => {
 
                       <div>
                         <label className="block text-sm font-semibold text-white/80 mb-2">Meeting Type *</label>
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           {meetingTypes.map(type => (
                             <button
                               key={type.value}
                               type="button"
                               onClick={() => setFormData({ ...formData, meeting_mode: type.value as any })}
-                              className={`p-4 rounded-xl text-center transition-all ${
+                              className={`p-4 rounded-xl text-center transition-all overflow-hidden ${
                                 formData.meeting_mode === type.value
                                   ? "bg-primary/30 border-2 border-primary"
                                   : "bg-white/10 border-2 border-transparent hover:bg-white/20"
                               }`}
                             >
                               <type.icon className={`w-6 h-6 mx-auto mb-2 ${formData.meeting_mode === type.value ? "text-primary" : "text-white/70"}`} />
-                              <p className="text-sm font-semibold text-white">{type.label}</p>
-                              <p className="text-xs text-white/50 mt-1">{type.description}</p>
+                              <p className="text-sm font-semibold text-white truncate">{type.label}</p>
+                              <p className="text-xs text-white/50 mt-1 leading-tight break-words">{type.description}</p>
                             </button>
                           ))}
                         </div>

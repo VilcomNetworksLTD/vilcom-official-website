@@ -1,5 +1,6 @@
 import { useRef, useMemo, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
+import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import earcut from "earcut";
 
@@ -445,7 +446,7 @@ const NetworkPath = ({ centers }: { centers: {name: string, lat: number, lon: nu
 
 // ─── Scene ────────────────────────────────────────────────────────────────────
 const Scene = ({
-  tex, worldGeo, kenyaGeo, presenceGeo, showCountries, showCounties,
+  tex, worldGeo, kenyaGeo, presenceGeo, showCountries, showCounties, interactive
 }: {
   tex: THREE.Texture;
   worldGeo: GeoMap | null;
@@ -453,11 +454,14 @@ const Scene = ({
   presenceGeo: any | null;
   showCountries: boolean;
   showCounties: boolean;
+  interactive?: boolean;
 }) => {
   const groupRef = useRef<THREE.Group>(null!);
 
   useFrame(() => {
     if (!groupRef.current) return;
+    if (interactive) return; // User controls the map on the coverage page
+    
     let rot = groupRef.current.rotation.y % (Math.PI * 2);
     if (rot < 0) rot += Math.PI * 2;
     
@@ -482,7 +486,8 @@ const Scene = ({
       <StarField />
       <Atmosphere />
 
-      <group ref={groupRef}>
+      {/* When interactive is true, orient the globe to face East Africa/Kenya at roughly 5.62 rad (~38 deg East). Otherwise it starts at 0. */}
+      <group ref={groupRef} rotation={[0, interactive ? 5.62 : 0, 0]}>
         <EarthSphere tex={tex} />
         <EarthDots />
 
@@ -504,7 +509,7 @@ const Scene = ({
 };
 
 // ─── Root Component (Cleaned) ─────────────────────────────────────────────────
-const EarthGlobe3D = () => {
+const EarthGlobe3D = ({ style, interactive = false }: { style?: React.CSSProperties, interactive?: boolean }) => {
   const [mobile, setMobile] = useState(false);
   const [worldGeo, setWorldGeo] = useState<GeoMap | null>(null);
   const [kenyaGeo, setKenyaGeo] = useState<GeoMap | null>(null);
@@ -557,13 +562,14 @@ const EarthGlobe3D = () => {
   const cam: [number, number, number] = mobile ? [0.1, -0.4, 6.2] : [0.4, 0.3, 5.8];
 
   return (
-    <div style={{ width: "100%", height: "100%", position: "relative", overflow: "hidden" }}>
+    <div style={{ ...(style || {}), width: "100%", height: "100%", position: "relative", overflow: "hidden" }}>
       <Canvas
         style={{ width: "100%", height: "100%", display: "block" }}
         camera={{ position: cam, fov: mobile ? 52 : 48 }}
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
         dpr={mobile ? [1, 1.5] : [1, 2]}
       >
+        {interactive && <OrbitControls enableZoom={true} enablePan={false} enableRotate={true} zoomSpeed={0.8} rotateSpeed={0.6} minDistance={2.8} maxDistance={15} />}
         <group scale={mobile ? 0.60 : 0.70}>
           <Scene
             tex={tex}
@@ -572,6 +578,7 @@ const EarthGlobe3D = () => {
             presenceGeo={presenceGeo}
             showCountries={showCountries}
             showCounties={showCounties}
+            interactive={interactive}
           />
         </group>
       </Canvas>
