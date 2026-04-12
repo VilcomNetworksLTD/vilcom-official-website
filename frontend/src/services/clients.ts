@@ -98,7 +98,7 @@ export const clientsApi = {
     return api.get(`/admin/clients/${id}`);
   },
 
-  create: (data: Partial<Client> & { password: string }): Promise<{ data: Client }> => {
+  create: (data: Partial<Client> & { password: string, auto_verify?: boolean, send_welcome?: boolean }): Promise<{ data: Client }> => {
     return api.post("/admin/clients", data);
   },
 

@@ -102,6 +102,10 @@ export default function CreateClient() {
   const [password, setPassword]       = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  // Email/verification preferences
+  const [autoVerify, setAutoVerify]   = useState(true);
+  const [sendWelcome, setSendWelcome] = useState(true);
+
   // Flag: assign service at creation
   const [assignService, setAssignService] = useState(false);
 
@@ -177,6 +181,8 @@ export default function CreateClient() {
         city:          city      || undefined,
         county:        county    || undefined,
         password,
+        auto_verify:   autoVerify,
+        send_welcome:  sendWelcome,
       } as any);
 
       const newClient = (res as any).data?.client ?? (res as any).client ?? (res as any).data;
@@ -304,11 +310,12 @@ export default function CreateClient() {
             </div>
           </div>
 
-          {/* ── Password ──────────────────────────────────────────────── */}
-          <div className={`${glass} p-5 space-y-4`}>
+          {/* ── Password & Preferences ────────────────────────────────── */}
+          <div className={`${glass} p-5 space-y-5`}>
             <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Lock className="w-4 h-4 text-cyan-400" /> Account Password
+              <Lock className="w-4 h-4 text-cyan-400" /> Account Security & Preferences
             </h2>
+            
             <Field label="Password" required hint="Minimum 8 characters. Client can reset via email.">
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
@@ -329,6 +336,30 @@ export default function CreateClient() {
                 </button>
               </div>
             </Field>
+
+            <div className="flex flex-col gap-3 pt-2">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${autoVerify ? 'bg-cyan-500 border-cyan-500' : 'bg-white/5 border-white/20 group-hover:border-white/40'}`}>
+                  {autoVerify && <CheckCircle className="w-3.5 h-3.5 text-white" />}
+                </div>
+                <input type="checkbox" className="hidden" checked={autoVerify} onChange={(e) => setAutoVerify(e.target.checked)} />
+                <div className="flex flex-col">
+                  <span className="text-sm text-white font-medium">Auto-verify email address</span>
+                  <span className="text-xs text-slate-400">If unchecked, the user will receive an email verification link.</span>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${sendWelcome ? 'bg-cyan-500 border-cyan-500' : 'bg-white/5 border-white/20 group-hover:border-white/40'}`}>
+                  {sendWelcome && <CheckCircle className="w-3.5 h-3.5 text-white" />}
+                </div>
+                <input type="checkbox" className="hidden" checked={sendWelcome} onChange={(e) => setSendWelcome(e.target.checked)} />
+                <div className="flex flex-col">
+                  <span className="text-sm text-white font-medium">Send welcome email</span>
+                  <span className="text-xs text-slate-400">Send an introductory welcome email automatically after creation.</span>
+                </div>
+              </label>
+            </div>
           </div>
 
           {/* ── Assign Service / Emerald ───────────────────────────────── */}

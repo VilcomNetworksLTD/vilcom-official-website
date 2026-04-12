@@ -55,13 +55,15 @@ class ClientController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'password' => ['required', Rules\Password::defaults()],
             'phone' => ['nullable', 'string', 'max:20'],
             'customer_type' => ['nullable', 'in:individual,business'],
             'company_name' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string', 'max:500'],
             'city' => ['nullable', 'string', 'max:100'],
             'county' => ['nullable', 'string', 'max:100'],
+            'auto_verify' => ['nullable', 'boolean'],
+            'send_welcome' => ['nullable', 'boolean'],
         ]);
 
         $client = User::create([
@@ -75,10 +77,20 @@ class ClientController extends Controller
             'city' => $request->city,
             'county' => $request->county,
             'status' => 'active',
+            'email_verified_at' => $request->boolean('auto_verify', true) ? now() : null,
         ]);
 
         // Assign client role
         $client->assignRole('client');
+
+        // Send notifications if requested
+        if (!$request->boolean('auto_verify', true)) {
+            $client->sendEmailVerificationNotification();
+        }
+
+        if ($request->boolean('send_welcome', true)) {
+            $client->notify(new \App\Notifications\WelcomeNotification());
+        }
 
         return response()->json([
             'message' => 'Client created successfully.',
