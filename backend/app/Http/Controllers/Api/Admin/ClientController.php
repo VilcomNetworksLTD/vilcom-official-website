@@ -225,6 +225,108 @@ class ClientController extends Controller
     }
 
     /**
+     * Push an existing client (who has no emerald account) to Emerald Provision queue.
+     * The admin selects a product and optionally overrides the Safetika provisioning fields.
+     * If all Safetika fields are provided, provisioning is attempted immediately.
+     * Otherwise the client is placed in 'pending' status for the EmeraldApprovalController.
+     */
+    public function pushToEmerald(Request $request, User $client)
+    {
+        if (!$client->hasRole('client')) {
+            return response()->json(['message' => 'User is not a client.'], 404);
+        }
+
+        if ($client->emerald_mbr_id) {
+            return response()->json([
+                'message' => 'This client already has an Emerald account (MBR ID: ' . $client->emerald_mbr_id . ').',
+            ], 422);
+        }
+
+        $request->validate([
+            'product_id'       => ['required', 'integer', 'exists:products,id'],
+            'account_type'     => ['nullable', 'string', 'max:255'],
+            'service_category' => ['nullable', 'string', 'max:255'],
+            'customer_type'    => ['nullable', 'string', 'max:255'],
+            'sales_person'     => ['nullable', 'string', 'max:255'],
+            'notes'            => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $product = \App\Models\Product::findOrFail($request->product_id);
+
+        // Set the pending product and move status to pending for Emerald Approval queue
+        $client->update([
+            'emerald_pending_product_id' => $product->id,
+            'emerald_approval_status'    => 'pending',
+            'emerald_approval_notes'     => $request->notes,
+        ]);
+
+        // Attempt immediate provisioning if Safetika overrides are provided
+        $hasSafetikaOverrides = $request->filled('account_type')
+            || $request->filled('service_category')
+            || $request->filled('customer_type')
+            || $request->filled('sales_person');
+
+        if ($hasSafetikaOverrides) {
+            $orchestrator = app(\App\Services\EmeraldBillingOrchestrator::class);
+
+            $result = $orchestrator->provisionNewSubscriber(
+                $client,
+                (int) $product->id,
+                $request->input('account_type')     ?: null,
+                $request->input('service_category') ?: null,
+                $request->input('customer_type')    ?: null,
+                $request->input('sales_person')     ?: null,
+            );
+
+            if ($result->isSuccess()) {
+                $client->update([
+                    'emerald_approval_status'      => 'approved',
+                    'emerald_approval_reviewed_by' => $request->user()->id,
+                    'emerald_approval_reviewed_at' => now(),
+                    'status'                       => 'active',
+                ]);
+
+                \Illuminate\Support\Facades\Log::info('Admin directly provisioned client to Emerald', [
+                    'client_id'   => $client->id,
+                    'product_id'  => $product->id,
+                    'reviewed_by' => $request->user()->id,
+                    'mbr_id'      => $result->customerId,
+                ]);
+
+                return response()->json([
+                    'success'     => true,
+                    'provisioned' => true,
+                    'message'     => "Client provisioned to Emerald successfully. MBR ID: {$result->customerId}",
+                    'customer_id' => $result->customerId,
+                    'account_id'  => $result->accountId,
+                    'client'      => $client->fresh(),
+                ]);
+            }
+
+            // Provisioning failed — leave as pending so admin can retry via EmeraldApprovals
+            \Illuminate\Support\Facades\Log::warning('Immediate Emerald provisioning failed — left as pending', [
+                'client_id' => $client->id,
+                'reason'    => $result->message,
+            ]);
+
+            return response()->json([
+                'success'     => false,
+                'provisioned' => false,
+                'message'     => 'Provisioning failed: ' . $result->message . '. Client has been queued as pending in Emerald Approvals.',
+                'client'      => $client->fresh(),
+            ], 422);
+        }
+
+        // No Safetika overrides — just queued as pending
+        return response()->json([
+            'success'     => true,
+            'provisioned' => false,
+            'message'     => "Client assigned to \"{$product->name}\" and added to the Emerald Approvals queue as pending.",
+            'client'      => $client->fresh()->load('pendingProduct:id,name,price_monthly,slug'),
+        ]);
+    }
+
+    /**
      * Convert Application entities (Lead, Quote Request, WhatsApp) directly into a secure Client account.
      */
     public function convert(Request $request)

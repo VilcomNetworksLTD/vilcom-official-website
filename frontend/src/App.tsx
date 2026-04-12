@@ -78,6 +78,7 @@ const CoverageManagement    = lazy(() => import("./pages/admin/CoverageManagemen
 const InvoiceManagement     = lazy(() => import("./pages/admin/InvoiceManagement"));
 const Users                 = lazy(() => import("./pages/admin/Users"));
 const Clients               = lazy(() => import("./pages/admin/Clients"));
+const CreateClient          = lazy(() => import("./pages/admin/CreateClient"));
 const LeadManagement        = lazy(() => import("./pages/admin/LeadManagement"));
 const ContactMessages       = lazy(() => import("./pages/admin/ContactMessages"));
 const AdminPressArticles    = lazy(() => import("./pages/admin/PressArticles"));
@@ -207,6 +208,7 @@ const App = () => (
                 <Route path="/admin/coverage"           element={<ProtectedRoute requireRoles={['admin', 'staff']}><CoverageManagement /></ProtectedRoute>} />
                 <Route path="/admin/invoices"           element={<ProtectedRoute requireRoles={['admin', 'staff']}><InvoiceManagement /></ProtectedRoute>} />
                 <Route path="/admin/users"              element={<ProtectedRoute requireRoles={['admin']}><Users /></ProtectedRoute>} />
+                <Route path="/admin/clients/create"    element={<ProtectedRoute requireRoles={['admin', 'staff', 'sales']}><CreateClient /></ProtectedRoute>} />
                 <Route path="/admin/clients"            element={<ProtectedRoute requireRoles={['admin', 'staff', 'sales']}><Clients /></ProtectedRoute>} />
                 <Route path="/admin/leads"              element={<ProtectedRoute requireRoles={['admin', 'staff', 'sales']}><LeadManagement /></ProtectedRoute>} />
                 <Route path="/admin/press-articles"     element={<ProtectedRoute requireRoles={['admin', 'content_manager']}><AdminPressArticles /></ProtectedRoute>} />

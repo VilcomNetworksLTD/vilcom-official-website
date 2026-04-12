@@ -724,7 +724,7 @@ export default function EmeraldApprovals() {
                   {!showRejectNotes ? (
                     <button
                       onClick={() => setShowRejectNotes(true)}
-                      disabled={actionLoading || !selectedClient.pending_product}
+                      disabled={actionLoading}
                       className="w-full sm:w-auto px-5 py-2 bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30 rounded-lg font-medium transition flex items-center justify-center gap-2 text-sm"
                     >
                       <XCircle className="w-4 h-4" /> Reject
@@ -746,7 +746,7 @@ export default function EmeraldApprovals() {
                   {!showRejectNotes && (
                     <button
                       onClick={handleApprove}
-                      disabled={actionLoading || !selectedClient.pending_product}
+                      disabled={actionLoading}
                       className="w-full sm:w-auto px-6 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg shadow-cyan-900/40 rounded-lg font-semibold transition flex items-center justify-center gap-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       {actionLoading ? (

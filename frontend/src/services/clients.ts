@@ -13,6 +13,18 @@ export interface Client {
   status: "active" | "inactive" | "suspended";
   created_at: string;
   updated_at: string;
+  // Emerald provisioning fields
+  emerald_approval_status: "none" | "pending" | "approved" | "rejected";
+  emerald_pending_product_id: number | null;
+  emerald_mbr_id: string | null;
+  emerald_approval_notes: string | null;
+  emerald_approval_reviewed_at: string | null;
+  pending_product?: {
+    id: number;
+    name: string;
+    price_monthly: number;
+    slug: string;
+  };
   subscriptions?: Subscription[];
   invoices?: Invoice[];
 }
@@ -60,8 +72,25 @@ export interface PaginatedResponse<T> {
   total: number;
 }
 
+export interface ProductOption {
+  id: number;
+  name: string;
+  price_monthly: number | null;
+  slug: string;
+  type: string;
+}
+
+export interface PushToEmeraldPayload {
+  product_id: number;
+  account_type?: string;
+  service_category?: string;
+  customer_type?: string;
+  sales_person?: string;
+  notes?: string;
+}
+
 export const clientsApi = {
-  list: (filters: ClientFilters = {}): Promise<PaginatedResponse<Client>> => {
+  list: (filters: ClientFilters = {}): Promise<any> => {
     return api.get("/admin/clients", { params: filters });
   },
 
@@ -92,5 +121,25 @@ export const clientsApi = {
   statistics: (): Promise<{ data: ClientStatistics }> => {
     return api.get("/admin/clients/statistics");
   },
-};
 
+  /** Push an existing client to Emerald Provision (with optional immediate provisioning) */
+  pushToEmerald: (id: number, payload: PushToEmeraldPayload): Promise<any> => {
+    return api.post(`/admin/clients/${id}/push-to-emerald`, payload);
+  },
+
+  /** Fetch active products for Emerald provisioning assignment */
+  listProducts: (): Promise<ProductOption[]> => {
+    return api
+      .get("/products", { params: { is_active: 1, per_page: 100 } })
+      .then((res: any) => {
+        const raw = res.data?.data ?? res.data ?? [];
+        return raw.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          price_monthly: p.price_monthly ? parseFloat(p.price_monthly) : null,
+          slug: p.slug,
+          type: p.type,
+        }));
+      });
+  },
+};

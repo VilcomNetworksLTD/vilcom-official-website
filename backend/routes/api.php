@@ -648,6 +648,9 @@ Route::prefix('press-articles')->group(function () {
 
         Route::post('/{client}/activate', [ClientController::class, 'activate'])
             ->name('api.admin.clients.activate');
+
+        Route::post('/{client}/push-to-emerald', [ClientController::class, 'pushToEmerald'])
+            ->name('api.admin.clients.push-to-emerald');
     });
 
     // ============================================
