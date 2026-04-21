@@ -429,11 +429,15 @@ class LeadController extends Controller
     public function staff(): JsonResponse
     {
         $staff = \App\Models\User::role(['admin', 'staff', 'sales'])
-            ->where('is_active', true)
+            ->where(function ($q) {
+                // Include users who are explicitly active (true) OR where is_active is NULL (default state)
+                $q->where('is_active', true)->orWhereNull('is_active');
+            })
             ->select('id', 'name', 'email')
             ->withCount(['leads' => function ($query) {
                 $query->whereIn('status', ['new', 'contacted', 'qualified', 'proposal']);
             }])
+            ->orderBy('leads_count', 'asc')
             ->get();
 
         return response()->json([

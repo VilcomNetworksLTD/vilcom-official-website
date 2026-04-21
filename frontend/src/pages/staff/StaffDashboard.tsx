@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { activitiesApi, Activity as RecentActivity } from '@/services/activities';
+import { clientsApi } from '@/services/clients';
+import { adminTicketsApi } from '@/services/tickets';
+import { adminSubscriptionApi } from '@/services/subscriptions';
 import { Link, Navigate } from 'react-router-dom';
 import { 
   Users, 
@@ -136,28 +139,86 @@ const StaffDashboard = () => {
   // Determine userType from auth context
   const userType = hasRole('admin') ? 'admin' : hasRole(['staff', 'sales', 'technical_support', 'web_developer', 'content_manager']) ? 'staff' : 'client';
   
-  const [stats] = useState({
-    totalClients: 156,
-    activeSubscriptions: 142,
-    monthlyRevenue: 2450000,
-    openTickets: 28,
+  const [stats, setStats] = useState({
+    totalClients: 0,
+    activeSubscriptions: 0,
+    monthlyRevenue: 0,
+    openTickets: 0,
     performanceScore: 87,
-    completedToday: 12,
+    completedToday: 0,
     avgResponseTime: '18 min'
   });
   
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const [assignedTickets, setAssignedTickets] = useState<any[]>([]);
+  const [topPlans, setTopPlans] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchActivities = async () => {
+    const fetchDashboardData = async () => {
+      setLoading(true);
       try {
-        const data = await activitiesApi.getRecent(5);
-        setRecentActivities(data);
+        const [clientRes, subRes, activitiesRes, ticketsRes] = await Promise.allSettled([
+          clientsApi.statistics(),
+          adminSubscriptionApi.analytics().catch(() => null),
+          activitiesApi.getRecent(5),
+          adminTicketsApi.getAll({ status: 'open', per_page: 5 }).catch(() => null) // recent open tickets
+        ]);
+
+        const clientStats = clientRes.status === 'fulfilled' ? clientRes.value.data : null;
+        const subAnalytics = subRes.status === 'fulfilled' ? subRes.value : null;
+        const recentActivityData = activitiesRes.status === 'fulfilled' ? activitiesRes.value : [];
+        const ticketsData = ticketsRes.status === 'fulfilled' ? ticketsRes.value?.data : [];
+
+        if (recentActivityData) {
+          setRecentActivities(recentActivityData);
+        }
+
+        // Map assigned tickets from real data
+        if (ticketsData && ticketsData.length > 0) {
+          const mappedTickets = ticketsData.map((t: any) => ({
+            id: `#TKT-${t.id}`,
+            title: t.title,
+            status: t.status === 'open' ? 'pending' : t.status,
+            location: t.user?.city || 'Remote',
+            time: new Date(t.created_at).toLocaleDateString()
+          }));
+          setAssignedTickets(mappedTickets);
+        }
+
+        // Map top plans
+        if (subAnalytics && subAnalytics.by_product) {
+          const mappedPlans = subAnalytics.by_product.map((p: any) => ({
+            name: p.product?.name || `Plan ${p.product_id}`,
+            subscribers: p.count,
+            revenue: p.revenue || (p.count * 3500) // fallback if real revenue isn't provided
+          })).sort((a: any, b: any) => b.subscribers - a.subscribers).slice(0, 4);
+          if (mappedPlans.length > 0) {
+            setTopPlans(mappedPlans);
+          }
+        }
+
+        let openTicketsCount = 0;
+        if (ticketsRes.status === 'fulfilled' && ticketsRes.value?.total !== undefined) {
+           openTicketsCount = ticketsRes.value.total;
+        }
+
+        setStats(prev => ({
+          ...prev,
+          totalClients: clientStats?.total_clients || prev.totalClients,
+          activeSubscriptions: subAnalytics?.summary?.active || prev.activeSubscriptions,
+          monthlyRevenue: subAnalytics?.mrr || prev.monthlyRevenue,
+          openTickets: openTicketsCount || prev.openTickets,
+          completedToday: recentActivityData.filter((a: any) => a.action?.toLowerCase().includes('completed') || a.action?.toLowerCase().includes('resolved')).length || prev.completedToday,
+        }));
+
       } catch (err) {
-        console.error('Failed to fetch activities:', err);
+        console.error('Failed to fetch dashboard data:', err);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchActivities();
+    fetchDashboardData();
   }, []);
 
   // Quick actions for staff dashboard with blue/moroccan theme
@@ -178,22 +239,7 @@ const StaffDashboard = () => {
     { icon: Database, label: 'Categories', href: '/admin/categories', color: 'from-pink-500 to-rose-500', bgColor: 'bg-pink-500/20' },
   ];
 
-  // Assigned tickets with different statuses
-  const assignedTickets = [
-    { id: '#TKT-456', title: 'Internet down in Westlands', status: 'urgent', location: 'Westlands', time: '10 min ago' },
-    { id: '#TKT-457', title: 'Installation request - Karen', status: 'in_progress', location: 'Karen', time: '25 min ago' },
-    { id: '#TKT-458', title: 'Slow connection complaint', status: 'pending', location: 'Kilimani', time: '1 hour ago' },
-    { id: '#TKT-459', title: 'Router configuration', status: 'completed', location: 'CBD', time: '2 hours ago' },
-    { id: '#TKT-460', title: 'New fiber line setup', status: 'pending', location: 'Runda', time: '3 hours ago' },
-  ];
 
-  // Top performing plans
-  const topPlans = [
-    { name: 'Fiber 50Mbps', subscribers: 89, revenue: 311500 },
-    { name: 'Fiber 100Mbps', subscribers: 42, revenue: 630000 },
-    { name: 'Fiber 200Mbps', subscribers: 18, revenue: 360000 },
-    { name: 'Home Basic 10Mbps', subscribers: 34, revenue: 102000 },
-  ];
 
   return (
     <DashboardLayout userType="staff">
@@ -314,9 +360,11 @@ const StaffDashboard = () => {
               <Link to="/admin/tickets" className="text-sm text-blue-400 hover:underline">View All</Link>
             </div>
             <div className="space-y-3">
-              {assignedTickets.map((ticket, index) => (
+              {assignedTickets.length > 0 ? assignedTickets.map((ticket, index) => (
                 <TicketCard key={index} ticket={ticket} />
-              ))}
+              )) : (
+                <div className="text-slate-400 text-sm text-center py-4">No open tickets</div>
+              )}
             </div>
           </div>
 
@@ -336,7 +384,7 @@ const StaffDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {topPlans.map((plan, index) => (
+                  {topPlans.length > 0 ? topPlans.map((plan, index) => (
                     <tr key={index} className="border-b border-white/10 hover:bg-white/5">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
@@ -347,9 +395,15 @@ const StaffDashboard = () => {
                         </div>
                       </td>
                       <td className="py-3 px-4 text-slate-300">{plan.subscribers}</td>
-                      <td className="py-3 px-4 text-white font-medium">KES {plan.revenue.toLocaleString()}</td>
+                      <td className="py-3 px-4 text-white font-medium">KES {plan.revenue ? plan.revenue.toLocaleString() : '0'}</td>
                     </tr>
-                  ))}
+                  )) : (
+                    <tr>
+                      <td colSpan={3} className="py-8 text-center text-slate-400 text-sm">
+                        No plans data available
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

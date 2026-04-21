@@ -56,6 +56,8 @@ const navLinks: NavItem[] = [
         ]
       },
       { label: "Web Development", to: "/services/web-development-enterprise" },
+      { label: "Data & AI Workflows", to: "/services/data-ai-workflows" },
+      { label: "Technology Events", to: "/services/technology-events" },
       { label: "ERP As A Service", to: "/services/erp-service" },
       { label: "ISP Billing As A Service", to: "/services/isp-billing" },
       { label: "ISP CPE As A Service", to: "/services/isp-cpe" },

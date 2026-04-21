@@ -541,7 +541,7 @@ public function getAccountTypesByCategory(string $token, string $serviceCategory
     $response = Http::timeout($this->timeout)
         ->withToken($token)
         ->post("{$this->baseUrl}/dropdowns/account-types/by-category", [
-            'service_category' => $serviceCategory,
+            'category' => $serviceCategory,
         ]);
 
     if (!$response->successful()) {

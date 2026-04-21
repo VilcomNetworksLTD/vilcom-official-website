@@ -24,6 +24,8 @@ interface ServicePageProps {
   serviceType?: string; // New prop for quote form
   productId?: number;
   productName?: string;
+  technologies?: string[];
+  detailedContent?: React.ReactNode;
 }
 
 // Map icons to use consistent styling
@@ -31,7 +33,7 @@ const getIconComponent = (icon: React.ReactNode) => {
   return icon;
 };
 
-const ServicePage = ({ title, subtitle, description, features, icon, iconBgColor, iconColor, blobColor = "bg-purple-500/20", serviceType, productId, productName }: ServicePageProps) => {
+const ServicePage = ({ title, subtitle, description, features, icon, iconBgColor, iconColor, blobColor = "bg-purple-500/20", serviceType, productId, productName, technologies, detailedContent }: ServicePageProps) => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -142,9 +144,14 @@ const ServicePage = ({ title, subtitle, description, features, icon, iconBgColor
                 <h2 className="font-heading text-2xl font-bold text-white mb-4">
                   About This Service
                 </h2>
-                <p className="text-white/80 leading-relaxed text-lg">
+                <p className="text-white/80 leading-relaxed text-lg mb-4">
                   {description}
                 </p>
+                {detailedContent && (
+                  <div className="text-white/70 space-y-4">
+                    {detailedContent}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -203,11 +210,11 @@ const ServicePage = ({ title, subtitle, description, features, icon, iconBgColor
                   Technologies We Use
                 </h3>
                 <div className="flex flex-wrap justify-center gap-4">
-                  {[
+                  {(technologies || [
                     "Cloud Infrastructure", "AWS", "Azure", "Google Cloud",
                     "Docker", "Kubernetes", "Python", "Node.js",
                     "React", "Vue.js", "MongoDB", "PostgreSQL"
-                  ].map((tech) => (
+                  ]).map((tech) => (
                     <span 
                       key={tech}
                       className="px-4 py-2 rounded-full bg-white/10 border border-white/15 text-white/80 text-sm backdrop-blur-sm"
@@ -226,7 +233,7 @@ const ServicePage = ({ title, subtitle, description, features, icon, iconBgColor
               <QuoteRequestForm 
                 serviceType={serviceType}
                 productId={productId}
-                productName={productName}
+                productName={productName || title}
                 onSuccess={handleQuoteSuccess}
               />
             ) : (

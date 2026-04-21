@@ -123,7 +123,7 @@ function StatCard({
 // ══════════════════════════════════════════════════════════════════════════════
 // Tab 1 — MBR Customers
 // ══════════════════════════════════════════════════════════════════════════════
-function MbrCustomersTab() {
+function MbrCustomersTab({ onAddService }: { onAddService?: (email: string) => void }) {
   const { toast } = useToast();
   const [customers, setCustomers] = useState<MbrCustomer[]>([]);
   const [loading, setLoading]     = useState(false);
@@ -351,7 +351,18 @@ function MbrCustomersTab() {
             </div>
 
             {/* Sticky Footer */}
-            <div className="p-4 sm:p-5 border-t border-white/10 bg-slate-900/50 sticky bottom-0 z-10 flex justify-end">
+            <div className="p-4 sm:p-5 border-t border-white/10 bg-slate-900/50 sticky bottom-0 z-10 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  if (onAddService && customerDetails?.email) {
+                    onAddService(customerDetails.email);
+                    closeModal();
+                  }
+                }}
+                className="w-full sm:w-auto px-6 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white transition-colors text-sm"
+              >
+                Add Service
+              </button>
               <button
                 onClick={closeModal}
                 className="w-full sm:w-auto px-6 py-2 rounded-lg border border-white/20 text-white hover:bg-white/10 transition-colors text-sm"
@@ -369,11 +380,27 @@ function MbrCustomersTab() {
 // ══════════════════════════════════════════════════════════════════════════════
 // Tab 2 — Add Service
 // ══════════════════════════════════════════════════════════════════════════════
-function AddServiceTab() {
+function AddServiceTab({ initialSearch }: { initialSearch?: string }) {
   const { toast } = useToast();
 
-  const [clientSearch, setClientSearch]     = useState("");
+  const [clientSearch, setClientSearch]     = useState(initialSearch || "");
   const [clients, setClients]               = useState<ProvisionedClient[]>([]);
+
+  useEffect(() => {
+    if (initialSearch) {
+      setClientSearch(initialSearch);
+      setClientsLoading(true);
+      api.get("/admin/vilcom-safetika/provisioned-clients", { params: { search: initialSearch } })
+        .then((res) => {
+          const matches = res.data?.data ?? [];
+          setClients(matches);
+          if (matches.length === 1) {
+            setSelectedClient(matches[0]);
+          }
+        })
+        .finally(() => setClientsLoading(false));
+    }
+  }, [initialSearch]);
   const [selectedClient, setSelectedClient] = useState<ProvisionedClient | null>(null);
   const [clientsLoading, setClientsLoading] = useState(false);
 
@@ -422,7 +449,7 @@ function AddServiceTab() {
     setAcctTypesLoading(true);
     setAccountType("");
     safetikaDropdownsApi.getAccountTypesByCategory(serviceCategory).then((d) => {
-      if (!cancelled) setFilteredAccountTypes(d.length ? d : dropdowns.accountTypes);
+      if (!cancelled) setFilteredAccountTypes(d);
     }).finally(() => { if (!cancelled) setAcctTypesLoading(false); });
     return () => { cancelled = true; };
   }, [serviceCategory, dropdowns.accountTypes]);
@@ -817,6 +844,13 @@ export default function SafetikaPortal() {
   const { hasRole, isAdmin, isStaff } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("customers");
+  const [initialSearch, setInitialSearch] = useState("");
+
+  const handleAddService = (email: string) => {
+    setInitialSearch(email);
+    setTab("add-service");
+  };
+
   const [stats, setStats] = useState({ safetika_provisioned: 0, safetika_pending: 0, not_provisioned_at_all: 0 });
 
   useEffect(() => {
@@ -872,8 +906,8 @@ export default function SafetikaPortal() {
       </div>
 
       {/* Tab Content */}
-      {tab === "customers"   && <MbrCustomersTab />}
-      {tab === "add-service" && <AddServiceTab />}
+      {tab === "customers"   && <MbrCustomersTab onAddService={handleAddService} />}
+      {tab === "add-service" && <AddServiceTab initialSearch={initialSearch} />}
       {tab === "inventory"   && <InventoryTab />}
     </DashboardLayout>
   );

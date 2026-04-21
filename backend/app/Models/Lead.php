@@ -384,7 +384,7 @@ class Lead extends Model
     /**
      * Mark lead as lost
      */
-    public function markAsLost(string $reason = null): void
+    public function markAsLost(?string $reason = null): void
     {
         $this->update(['status' => 'lost']);
     }
@@ -400,7 +400,7 @@ class Lead extends Model
     /**
      * Find duplicate leads by email or phone
      */
-    public static function findDuplicates(string $email = null, string $phone = null): \Illuminate\Database\Eloquent\Collection
+    public static function findDuplicates(?string $email = null, ?string $phone = null): \Illuminate\Database\Eloquent\Collection
     {
         return self::where(function ($query) use ($email, $phone) {
             if ($email) {
@@ -454,7 +454,9 @@ class Lead extends Model
     public static function getNextAvailableStaff(): ?User
     {
         return User::role(['admin', 'staff', 'sales'])
-            ->where('is_active', true)
+            ->where(function ($q) {
+                $q->where('is_active', true)->orWhereNull('is_active');
+            })
             ->withCount(['leads' => function ($query) {
                 $query->whereIn('status', ['new', 'contacted', 'qualified', 'proposal']);
             }])

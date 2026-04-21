@@ -35,7 +35,14 @@ export interface Lead {
     name: string;
     slug: string;
   };
+  // Laravel serializes the 'assignedStaff' relation as 'assigned_staff' (snake_case)
   assigned_staff?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  // Keep camelCase alias for any legacy references
+  assignedStaff?: {
     id: number;
     name: string;
     email: string;

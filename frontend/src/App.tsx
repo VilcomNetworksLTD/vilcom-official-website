@@ -41,6 +41,8 @@ const IspDeviceManagement= lazy(() => import("./pages/IspDeviceManagement"));
 const FirewallSolutions  = lazy(() => import("./pages/FirewallSolutions"));
 const DeepPacketInspection=lazy(() => import("./pages/DeepPacketInspection"));
 const SatelliteConnectivity=lazy(()=> import("./pages/SatelliteConnectivity"));
+const DataAiWorkflows    = lazy(() => import("./pages/DataAiWorkflows"));
+const TechnologyEvents   = lazy(() => import("./pages/TechnologyEvents"));
 const Domains            = lazy(() => import("./pages/Domains"));
 const Blog               = lazy(() => import("./pages/Blog"));
 const Careers            = lazy(() => import("./pages/Careers"));
@@ -146,13 +148,28 @@ const App = () => (
                 <Route path="/fiber"                    element={<Plans />} />
                 <Route path="/coverage"                 element={<Coverage />} />
                 <Route path="/speed-test"               element={<SpeedTest />} />
+                <Route path="/services/hosting-packages"          element={<Hosting />} />
+                <Route path="/services/web-development-enterprise"          element={<WebDevelopment />} />
+                <Route path="/services/cloud-solutions"          element={<CloudSolutions />} />
+                <Route path="/services/cyber-security"           element={<CyberSecurity />} />
+                <Route path="/services/smart-integration"        element={<SmartIntegration />} />
+                <Route path="/services/software-development"     element={<SoftwareDevelopment />} />
+                <Route path="/services/erp-service"              element={<ErpService />} />
+                <Route path="/services/isp-billing"              element={<IspBilling />} />
+                <Route path="/services/isp-cpe"                  element={<IspCpe />} />
+                <Route path="/services/isp-device-management"    element={<IspDeviceManagement />} />
+                <Route path="/services/firewall-solutions"       element={<FirewallSolutions />} />
+                <Route path="/services/deep-packet-inspection"   element={<DeepPacketInspection />} />
+                <Route path="/services/satellite-connectivity"   element={<SatelliteConnectivity />} />
+                <Route path="/services/data-ai-workflows"        element={<DataAiWorkflows />} />
+                <Route path="/services/technology-events"        element={<TechnologyEvents />} />
                 <Route path="/services/:slug"           element={<ServicesSlug />} />
-                <Route path="/hosting"                  element={<Hosting />} />
+                <Route path="/hosting"                  element={<Navigate to="/services/hosting-packages" replace />} />
                 <Route path="/web-development"          element={<Navigate to="/services/web-development-enterprise" replace />} />
                 <Route path="/cloud-solutions"          element={<Navigate to="/services/cloud-solutions" replace />} />
                 <Route path="/cyber-security"           element={<Navigate to="/services/cyber-security" replace />} />
                 <Route path="/smart-integration"        element={<Navigate to="/services/smart-integration" replace />} />
-                <Route path="/software-development"     element={<Navigate to="/services/web-development-enterprise" replace />} />
+                <Route path="/software-development"     element={<Navigate to="/services/software-development" replace />} />
                 <Route path="/erp-service"              element={<Navigate to="/services/erp-service" replace />} />
                 <Route path="/isp-billing"              element={<Navigate to="/services/isp-billing" replace />} />
                 <Route path="/isp-cpe"                  element={<Navigate to="/services/isp-cpe" replace />} />

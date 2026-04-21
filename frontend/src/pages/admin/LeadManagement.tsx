@@ -171,10 +171,10 @@ const LeadCard = ({ lead, onView, onQuickStatus, onDelete }: {
     </div>
 
     <div className="flex items-center justify-between pt-3 border-t border-white/10 mt-auto">
-      <div className="flex items-center gap-1.5">
+       <div className="flex items-center gap-1.5">
          <DeviceIcon type={lead.device_type} />
          <span className="text-xs text-slate-400 truncate max-w-[120px]">
-           {lead.assignedStaff?.name ?? <span className="text-slate-600 italic">Unassigned</span>}
+           {lead.assigned_staff?.name ?? <span className="text-slate-600 italic">Unassigned</span>}
          </span>
       </div>
       <span className="text-slate-500 text-[10px]">{fmtDate(lead.created_at)}</span>
@@ -194,21 +194,52 @@ const LeadDetailModal = ({ leadId, onClose, onAction }: {
   const [staffList, setStaffList] = useState<{id:number;name:string}[]>([]);
   const [assignId, setAssignId]   = useState('');
   const [newStatus, setNewStatus] = useState('');
+  // Editable contact fields for anonymous/incomplete leads
+  const [editingContact, setEditingContact] = useState(false);
+  const [contactEdit, setContactEdit] = useState({ name: '', email: '', phone: '', company_name: '' });
+
+  const refreshLead = async () => {
+    const r = await adminLeadsApi.get(leadId);
+    setLead(r);
+    setNewStatus(r.status);
+  };
 
   useEffect(() => {
     adminLeadsApi.get(leadId)
-      .then(r => { setLead(r.data ?? r); setNewStatus((r.data ?? r).status); })
+      .then(r => { setLead(r); setNewStatus(r.status); })
       .finally(() => setLoading(false));
-    adminLeadsApi.getStaff().then(r => setStaffList(r.data ?? []));
+    // getStaff() already returns the array directly — no .data needed
+    adminLeadsApi.getStaff().then(list => setStaffList(list ?? []));
   }, [leadId]);
 
   const act = async (action: string, fn: () => Promise<any>) => {
     setActing(action);
-    try { await fn(); onAction(); const r = await adminLeadsApi.get(leadId); setLead(r.data ?? r); }
+    try { await fn(); onAction(); await refreshLead(); }
     catch (e) { console.error(e); } finally { setActing(null); }
   };
 
+  const saveContactEdit = async () => {
+    if (!lead) return;
+    setActing('contact-edit');
+    try {
+      await adminLeadsApi.update(lead.id, {
+        name: contactEdit.name || undefined,
+        email: contactEdit.email || undefined,
+        phone: contactEdit.phone || undefined,
+        company_name: contactEdit.company_name || undefined,
+      } as any);
+      onAction();
+      await refreshLead();
+      setEditingContact(false);
+    } catch (e) { console.error(e); }
+    finally { setActing(null); }
+  };
+
   const ic = "w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 transition text-sm";
+  // Selects need a solid bg — semi-transparent bg-white/5 renders as white in native dropdown
+  const sc = "w-full px-3 py-2 bg-[#1a2540] border border-white/10 rounded-lg text-white focus:outline-none focus:border-blue-500/50 transition text-sm cursor-pointer";
+
+  const isAnonymous = lead && !lead.name && !lead.email && !lead.phone;
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -234,25 +265,88 @@ const LeadDetailModal = ({ leadId, onClose, onAction }: {
               {lead.is_business && (
                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold text-cyan-400 bg-cyan-400/10">Business</span>
               )}
+              {isAnonymous && (
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold text-amber-400 bg-amber-400/10">Anonymous Visitor</span>
+              )}
             </div>
 
-            <div className="rounded-xl bg-white/5 border border-white/10 p-3 sm:p-4">
-              <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-3">Contact Info</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                {[
-                  ['Name',    lead.name],
-                  ['Email',   lead.email],
-                  ['Phone',   lead.phone],
-                  ['Company', lead.company_name],
-                  ['Source',  SOURCE_LABELS[lead.source] ?? lead.source],
-                  ['Product', lead.product?.name],
-                ].filter(([,v]) => v).map(([k,v]) => (
-                  <div key={k as string}>
-                    <p className="text-xs text-slate-500 mb-0.5">{k as string}</p>
-                    <p className="text-sm text-white font-medium break-all">{v as string}</p>
-                  </div>
-                ))}
+            {/* Anonymous visitor notice */}
+            {isAnonymous && !editingContact && (
+              <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 flex items-start gap-3">
+                <Globe className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-amber-300 mb-0.5">No contact details yet</p>
+                  <p className="text-xs text-amber-400/80">This visitor browsed the site without submitting a form. They were tracked via visitor ID <span className="font-mono text-amber-300">{lead.vlc_vid?.slice(0,8)}…</span>. Add their contact info manually if you spoke to them, or wait for them to submit a form (quote, newsletter, plan CTA, etc.).</p>
+                </div>
+                <button
+                  onClick={() => { setContactEdit({ name: '', email: '', phone: '', company_name: '' }); setEditingContact(true); }}
+                  className="shrink-0 text-xs text-amber-300 border border-amber-500/30 rounded-lg px-2.5 py-1.5 hover:bg-amber-500/20 transition"
+                >Add Info</button>
               </div>
+            )}
+
+            {/* Contact info card */}
+            <div className="rounded-xl bg-white/5 border border-white/10 p-3 sm:p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Contact Info</p>
+                {!editingContact && !isAnonymous && (
+                  <button
+                    onClick={() => { setContactEdit({ name: lead.name ?? '', email: lead.email ?? '', phone: lead.phone ?? '', company_name: lead.company_name ?? '' }); setEditingContact(true); }}
+                    className="text-xs text-slate-400 hover:text-white border border-white/10 rounded-lg px-2 py-1 hover:border-white/20 transition"
+                  >Edit</button>
+                )}
+              </div>
+
+              {editingContact ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Name</p>
+                      <input value={contactEdit.name} onChange={e => setContactEdit(c => ({...c, name: e.target.value}))} placeholder="Full name" className={ic} />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Email</p>
+                      <input type="email" value={contactEdit.email} onChange={e => setContactEdit(c => ({...c, email: e.target.value}))} placeholder="email@example.com" className={ic} />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Phone</p>
+                      <input type="tel" value={contactEdit.phone} onChange={e => setContactEdit(c => ({...c, phone: e.target.value}))} placeholder="+254 700 000 000" className={ic} />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Company</p>
+                      <input value={contactEdit.company_name} onChange={e => setContactEdit(c => ({...c, company_name: e.target.value}))} placeholder="Company name" className={ic} />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" disabled={acting === 'contact-edit'}
+                      onClick={saveContactEdit}
+                      className="bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 h-8 px-4 rounded-lg text-xs font-semibold">
+                      {acting === 'contact-edit' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Save'}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setEditingContact(false)}
+                      className="h-8 px-3 text-slate-400 hover:text-white text-xs">Cancel</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                  {([
+                    ['Name',    lead.name],
+                    ['Email',   lead.email],
+                    ['Phone',   lead.phone],
+                    ['Company', lead.company_name],
+                    ['Source',  SOURCE_LABELS[lead.source] ?? lead.source],
+                    ['Product', lead.product?.name],
+                  ] as [string, string | undefined][]).filter(([,v]) => v).map(([k,v]) => (
+                    <div key={k}>
+                      <p className="text-xs text-slate-500 mb-0.5">{k}</p>
+                      <p className="text-sm text-white font-medium break-all">{v}</p>
+                    </div>
+                  ))}
+                  {!lead.name && !lead.email && !lead.phone && (
+                    <p className="text-xs text-slate-600 italic col-span-2">No contact details collected yet</p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-2 sm:gap-3">
@@ -307,7 +401,7 @@ const LeadDetailModal = ({ leadId, onClose, onAction }: {
               <div>
                 <Label className="text-slate-400 text-sm mb-1.5 block">Update Status</Label>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <select value={newStatus} onChange={e => setNewStatus(e.target.value)} className={`${ic} flex-1`}>
+                  <select value={newStatus} onChange={e => setNewStatus(e.target.value)} className={`${sc} flex-1`}>
                     {PIPELINE_STATUSES.map(s => <option key={s} value={s} className="capitalize">{STATUS_META[s]?.label ?? s}</option>)}
                   </select>
                   <Button size="sm" disabled={newStatus === lead.status || acting === 'status'}
@@ -319,10 +413,10 @@ const LeadDetailModal = ({ leadId, onClose, onAction }: {
               </div>
               <div>
                 <Label className="text-slate-400 text-sm mb-1.5 block">
-                  Assign to {lead.assignedStaff ? <span className="text-white">({lead.assignedStaff.name})</span> : null}
+                  Assign to {lead.assigned_staff ? <span className="text-white">({lead.assigned_staff.name})</span> : <span className="text-slate-600 italic text-xs">currently unassigned</span>}
                 </Label>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <select value={assignId} onChange={e => setAssignId(e.target.value)} className={`${ic} flex-1`}>
+                  <select value={assignId} onChange={e => setAssignId(e.target.value)} className={`${sc} flex-1`}>
                     <option value="">Select staff…</option>
                     {staffList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
